@@ -4,11 +4,11 @@ $activeNav = 'home';
 include __DIR__ . '/header.php';
 
 $categories = [
-    'Gaming Desktops'        => '/desktops.php',
-    'Ready to Ship Desktops' => '/desktops.php?filter=ready-to-ship',
-    'Gaming Laptops'         => '/laptops.php',
-    'Workstation Desktops'   => '/desktops.php?filter=workstation',
-    'Gear Shop'              => '/accessories.php',
+    'Gaming Desktops'        => 'desktops.php',
+    'Ready to Ship Desktops' => 'desktops.php?filter=ready-to-ship',
+    'Gaming Laptops'         => 'laptops.php',
+    'Workstation Desktops'   => 'desktops.php?filter=workstation',
+    'Gear Shop'              => 'accessories.php',
 ];
 ?>
 

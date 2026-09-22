@@ -2,6 +2,7 @@
 include dirname(__DIR__,2) . '/config/database.php';
 
 $pageTitle = 'Gaming Desktops — Davao Boss Computer';
+$activePage = 'desktops';
 $activeNav = 'desktops';
 
 $filter = $_GET['filter'] ?? 'all';
@@ -12,25 +13,33 @@ if (!in_array($filter, $allowedFilters, true)) {
     $filter = 'all';
 }
 
-$sql = "SELECT * FROM products WHERE type = 'desktop' AND is_active = 1";
-$params = [];
+$products = [];
 
-if ($filter !== 'all') {
-    $sql .= " AND category = :category";
-    $params[':category'] = $filter;
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $sql = "SELECT * FROM products WHERE type = 'desktop' AND is_active = 1";
+        $params = [];
+
+        if ($filter !== 'all') {
+            $sql .= " AND category = :category";
+            $params[':category'] = $filter;
+        }
+
+        if ($sort === 'price-asc') {
+            $sql .= " ORDER BY price ASC";
+        } elseif ($sort === 'price-desc') {
+            $sql .= " ORDER BY price DESC";
+        } else {
+            $sql .= " ORDER BY name ASC";
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll();
+    } catch (Throwable $e) {
+        $products = [];
+    }
 }
-
-if ($sort === 'price-asc') {
-    $sql .= " ORDER BY price ASC";
-} elseif ($sort === 'price-desc') {
-    $sql .= " ORDER BY price DESC";
-} else {
-    $sql .= " ORDER BY name ASC";
-}
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$products = $stmt->fetchAll();
 
 include __DIR__ . '/header.php';
 ?>
@@ -72,7 +81,7 @@ include __DIR__ . '/header.php';
                         </label>
                     <?php endforeach; ?>
                 </form>
-                <a href="/advisor.php" class="block text-center bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-3">
+                <a href="advisor.php" class="block text-center bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-4 py-3">
                     NOT SURE? TRY THE ADVISOR
                 </a>
             </aside>
@@ -83,7 +92,7 @@ include __DIR__ . '/header.php';
                     <p class="col-span-full text-sm text-gray-500 py-12 text-center">No desktops match this filter yet.</p>
                 <?php else: ?>
                     <?php foreach ($products as $product): ?>
-                        <a href="/product.php?type=desktop&amp;slug=<?= urlencode($product['slug']) ?>"
+                        <a href="product.php?type=desktop&amp;slug=<?= urlencode($product['slug']) ?>"
                            class="group border border-gray-200 hover:border-purple-400 rounded p-4 flex flex-col">
                             <div class="placeholder-img w-full h-40 rounded flex items-center justify-center text-gray-400 text-[11px] mb-4">
                                 <?php if (!empty($product['image_path'])): ?>

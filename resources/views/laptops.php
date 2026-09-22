@@ -2,6 +2,7 @@
 include dirname(__DIR__,2) . '/config/database.php';
 
 $pageTitle = 'Gaming Laptops — Davao Boss Computer';
+$activePage = 'laptops';
 $activeNav = 'laptops';
 
 $filter = $_GET['filter'] ?? 'all';
@@ -12,25 +13,33 @@ if (!in_array($filter, $allowedFilters, true)) {
     $filter = 'all';
 }
 
-$sql = "SELECT * FROM products WHERE type = 'laptop' AND is_active = 1";
-$params = [];
+$products = [];
 
-if ($filter !== 'all') {
-    $sql .= " AND category = :category";
-    $params[':category'] = $filter;
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $sql = "SELECT * FROM products WHERE type = 'laptop' AND is_active = 1";
+        $params = [];
+
+        if ($filter !== 'all') {
+            $sql .= " AND category = :category";
+            $params[':category'] = $filter;
+        }
+
+        if ($sort === 'price-asc') {
+            $sql .= " ORDER BY price ASC";
+        } elseif ($sort === 'price-desc') {
+            $sql .= " ORDER BY price DESC";
+        } else {
+            $sql .= " ORDER BY name ASC";
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $products = $stmt->fetchAll();
+    } catch (Throwable $e) {
+        $products = [];
+    }
 }
-
-if ($sort === 'price-asc') {
-    $sql .= " ORDER BY price ASC";
-} elseif ($sort === 'price-desc') {
-    $sql .= " ORDER BY price DESC";
-} else {
-    $sql .= " ORDER BY name ASC";
-}
-
-$stmt = $pdo->prepare($sql);
-$stmt->execute($params);
-$products = $stmt->fetchAll();
 
 include __DIR__ . '/header.php';
 ?>

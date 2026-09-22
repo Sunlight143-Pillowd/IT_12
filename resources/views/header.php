@@ -1,9 +1,8 @@
 <?php
     require_once dirname(__DIR__, 2) . '/config/auth.php';
-    // $activePage should be set by the including page (e.g. 'desktops') so the
-    // current nav link can be highlighted. Defaults to '' (home).
-    $activePage = $activePage ?? '';
-    // $pageTitle can be set by the including page (index.php already does this).
+    // Pages set $activeNav (legacy) or $activePage (newer pattern). Normalize both
+    // so the current nav link stays highlighted regardless of how the page loads it.
+    $activePage = $activePage ?? ($activeNav ?? '');
     $pageTitle = $pageTitle ?? 'Davao Boss Computer';
     $navLink = function (string $page, string $href, string $label) use ($activePage) {
         $isActive = $activePage === $page;
@@ -12,7 +11,9 @@
         . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
     };
 
-    $lowStockCount = isEmployee() ? count(lowStockProducts($pdo)) : 0;
+    $lowStockCount = isEmployee() && isset($pdo) && $pdo instanceof PDO
+        ? count(lowStockProducts($pdo))
+        : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -57,13 +58,12 @@
             </span>
             <span class="text-3xl font-black tracking-tight text-purple-600">DAVAO BOSS COMPUTER</span>
         </a>
-        <nav class="hidden lg:flex items-center gap-8 text-sm font-semibold text-gray-800">
+        <nav class="hidden lg:flex items-center gap-10 text-sm font-semibold text-gray-800">
             <?php $navLink('desktops', 'desktops.php', 'DESKTOPS'); ?>
             <?php $navLink('laptops', 'laptops.php', 'LAPTOPS'); ?>
-            <?php $navLink('shopping-tools', 'shopping-tools.php', 'SHOPPING TOOLS'); ?>
+            <?php $navLink('Computer-tools', 'computer-tools.php', 'COMPUTER TOOLS'); ?>
             <?php $navLink('accessories', 'accessories.php', 'ACCESSORIES'); ?>
             <a href="special-offers.php" class="text-purple-600 hover:text-purple-700">SPECIAL OFFERS</a>
-            <?php $navLink('more', 'more.php', 'MORE'); ?>
             <?php if (isEmployee()): ?>
                 <a href="warehouse/index.php" class="flex items-center gap-1.5 hover:text-purple-600">
                     WAREHOUSE
@@ -75,8 +75,8 @@
                 </a>
             <?php endif; ?>
         </nav>
-        <div class="flex items-center gap-5 text-gray-700">
-            <button id="search-toggle-btn" aria-label="Search" aria-expanded="false" aria-controls="search-overlay" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Search</button>
+        <div class="flex items-center gap-9 text-gray-700">
+            <a id="search-toggle-btn" aria-label="Search" aria-expanded="false" aria-controls="search-overlay" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600" href="search.php">Search</a>
             <?php if (isLoggedIn()): ?>
                 <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">
                     Hi, <?= htmlspecialchars(currentUser()['name'], ENT_QUOTES, 'UTF-8') ?>
@@ -85,7 +85,7 @@
             <?php else: ?>
                 <a href="login.php" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
             <?php endif; ?>
-            <button id="cart-toggle-btn" aria-label="Cart" aria-expanded="false" aria-controls="cart-drawer" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Cart</button>
+            <a href="cart.php" id="cart-toggle-btn" aria-label="Cart" aria-expanded="false" aria-controls="cart-drawer" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Cart</a>
         </div>
     </div>
 
