@@ -3,12 +3,30 @@ $activeEmployeeNav = 'pos';
 $pageTitle = 'Point of Sale — Davao Boss Computer';
 include __DIR__ . '/header.php';
 
-$products = $pdo->query(
-    "SELECT id, name, category, type, price, stock_quantity
-     FROM products
-     WHERE is_active = 1 AND stock_quantity > 0
-     ORDER BY name"
-)->fetchAll();
+$products = [];
+if (isset($pdo) && $pdo instanceof PDO) {
+    try {
+        $products = $pdo->query(
+            "SELECT p.id, p.name, p.category, p.type, p.price, p.stock_quantity,
+                    COALESCE(SUM(si.quantity), 0) AS units_sold,
+                    COALESCE(SUM(si.subtotal), 0) AS total_revenue
+             FROM products p
+             LEFT JOIN sale_items si ON si.product_id = p.id
+             WHERE p.is_active = 1 AND p.stock_quantity > 0
+             GROUP BY p.id, p.name, p.category, p.type, p.price, p.stock_quantity
+             ORDER BY p.name"
+        )->fetchAll();
+    } catch (\PDOException $e) {
+        $products = $pdo->query(
+            "SELECT id, name, category, type, price, stock_quantity,
+                    0 AS units_sold,
+                    0 AS total_revenue
+             FROM products
+             WHERE is_active = 1 AND stock_quantity > 0
+             ORDER BY name"
+        )->fetchAll();
+    }
+}
 ?>
 
 <section class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -30,6 +48,8 @@ $products = $pdo->query(
                     <p class="text-xs text-gray-500"><?= htmlspecialchars($product['category'], ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="text-sm font-bold text-purple-600 mt-1">₱<?= number_format($product['price']) ?></p>
                     <p class="text-[11px] text-gray-400"><?= (int) $product['stock_quantity'] ?> in stock</p>
+                    <p class="text-[11px] text-gray-500 mt-1"><?= (int) $product['units_sold'] ?> sold</p>
+                    <p class="text-[11px] text-gray-500">Revenue: ₱<?= number_format((float) $product['total_revenue'], 2) ?></p>
                 </button>
             <?php endforeach; ?>
         </div>

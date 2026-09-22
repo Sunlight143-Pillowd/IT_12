@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/config/auth.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
 
 $error = null;
 
@@ -8,7 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = $_POST['password'] ?? '';
 
     if (attemptLogin($pdo, $email, $password)) {
-        header('Location: ' . (isEmployee() ? 'warehouse/index.php' : 'index.php'));
+        header('Location: ' . (isEmployee() ? 'employee/dashboard.php' : 'index.php'));
         exit;
     }
 

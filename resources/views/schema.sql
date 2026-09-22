@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS products (
     type ENUM('desktop', 'laptop', 'accessory') NOT NULL,
     category VARCHAR(50) NOT NULL,
     price INT UNSIGNED NOT NULL,
+    stock_quantity INT NOT NULL DEFAULT 0,
+    low_stock_threshold INT NOT NULL DEFAULT 5,
+    stock_location ENUM('warehouse', 'store', 'used_in_pc') NOT NULL DEFAULT 'warehouse',
     size VARCHAR(20) DEFAULT NULL,
     tags VARCHAR(255) DEFAULT NULL, -- comma-separated, e.g. "itx,1080p"
     image_path VARCHAR(255) DEFAULT NULL,

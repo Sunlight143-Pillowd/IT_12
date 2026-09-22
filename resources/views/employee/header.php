@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__, 3) . '/config/auth.php';
+require_once dirname(__DIR__, 3) . '/config/database.php';
 requireEmployee();
 
 $activeEmployeeNav = $activeEmployeeNav ?? '';
@@ -13,7 +14,7 @@ $empNavLink = function (string $key, string $href, string $label) use ($activeEm
         . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</a>';
 };
 
-$lowStockCount = count(lowStockProducts($pdo));
+$lowStockCount = isset($pdo) && $pdo instanceof PDO ? count(lowStockProducts($pdo)) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">

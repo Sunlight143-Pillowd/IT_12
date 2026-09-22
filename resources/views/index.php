@@ -8,7 +8,7 @@ $categories = [
     'Ready to Ship Desktops' => 'desktops.php?filter=ready-to-ship',
     'Gaming Laptops'         => 'laptops.php',
     'Workstation Desktops'   => 'desktops.php?filter=workstation',
-    'Gear Shop'              => 'accessories.php',
+    'Gear Shop'               => 'accessories.php',
 ];
 ?>
 
