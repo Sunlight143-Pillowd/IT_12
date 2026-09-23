@@ -1,73 +1,99 @@
 <?php
-/**
- * config/auth.php
- *
- * Session + account helpers, shared by every page. Include this before
- * you need to know who's logged in, or before checking employee access:
- *
- *   require __DIR__ . '/config/auth.php';
- */
 
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+return [
 
-require_once __DIR__ . '/database.php'; // gives us $pdo
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Defaults
+    |--------------------------------------------------------------------------
+    |
+    | This option controls the default authentication "guard" and password
+    | reset options for your application. You may modify these options as
+    | required, but they are a good starting point for most applications.
+    |
+    */
 
-/** The logged-in user's session data, or null if nobody's logged in. */
-function currentUser(): ?array
-{
-    return $_SESSION['user'] ?? null;
-}
+    'defaults' => [
+        'guard' => 'web',
+        'passwords' => 'users',
+    ],
 
-function isLoggedIn(): bool
-{
-    return currentUser() !== null;
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Authentication Guards
+    |--------------------------------------------------------------------------
+    |
+    | Next, you may define every authentication guard for your application.
+    | Of course, a great default configuration has been defined for you
+    | which uses session storage and the Eloquent user provider.
+    |
+    | All authentication drivers have a user provider. This defines how the
+    | users are actually retrieved out of your database or other storage
+    | mechanisms used by the application.
+    |
+    | Supported: "session"
+    |
+    */
 
-/** True for account_status 'employee' or 'admin'. */
-function isEmployee(): bool
-{
-    $user = currentUser();
-    return $user !== null && in_array($user['account_status'], ['employee', 'admin'], true);
-}
+    'guards' => [
+        'web' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+    ],
 
-/** Call at the top of any page that only employees/admins should reach. */
-function requireEmployee(): void
-{
-    if (!isEmployee()) {
-        $target = isLoggedIn() ? '../index.php' : '../login.php';
-        header('Location: ' . $target);
-        exit;
-    }
-}
+    /*
+    |--------------------------------------------------------------------------
+    | User Providers
+    |--------------------------------------------------------------------------
+    |
+    | All authentication drivers have a user provider. This defines how the
+    | users are actually retrieved out of your database or other storage
+    | mechanisms used by the application.
+    |
+    | If you have multiple user tables or models you may configure multiple
+    | providers to represent the model / table. These providers may then
+    | be assigned to any extra authentication guards you have defined.
+    |
+    */
 
-/** Attempts login; on success stores the user (minus password) in the session. */
-function attemptLogin(PDO $pdo, string $email, string $password): bool
-{
-    $stmt = $pdo->prepare('SELECT * FROM users WHERE email = ?');
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
+    'providers' => [
+        'users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\User::class,
+        ],
+    ],
 
-    if ($user && password_verify($password, $user['password_hash'])) {
-        unset($user['password_hash']);
-        $_SESSION['user'] = $user;
-        return true;
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Resetting Passwords
+    |--------------------------------------------------------------------------
+    |
+    | These configuration options specify the behavior of Laravel's password
+    | reset functionality, including the table utilized for token storage
+    | and the user provider that is responsible for retrieving users.
+    |
+    */
 
-    return false;
-}
+    'passwords' => [
+        'users' => [
+            'provider' => 'users',
+            'table' => 'password_reset_tokens',
+            'expire' => 60,
+            'throttle' => 60,
+        ],
+    ],
 
-function logoutUser(): void
-{
-    $_SESSION = [];
-    session_destroy();
-}
+    /*
+    |--------------------------------------------------------------------------
+    | Password Confirmation Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define the amount of seconds before a password confirmation
+    | times out and the user is prompted to re-enter their password.
+    |
+    */
 
-/** Products at or below their low_stock_threshold, lowest stock first. */
-function lowStockProducts(PDO $pdo): array
-{
-    return $pdo
-        ->query('SELECT * FROM products WHERE stock_quantity <= low_stock_threshold ORDER BY stock_quantity ASC')
-        ->fetchAll();
-}
+    'password_timeout' => 10800,
+
+];

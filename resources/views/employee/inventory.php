@@ -30,6 +30,30 @@ $colorClass = function (string $status): string {
     };
 };
 
+$productTypes = [
+    'desktop' => 'Desktop',
+    'laptop' => 'Laptop',
+    'accessory' => 'Accessory',
+    'gpu' => 'GPU',
+    'cpu' => 'CPU',
+    'monitor' => 'Monitor',
+    'mouse' => 'Mouse',
+    'keyboard' => 'Keyboard',
+    'case' => 'Case',
+    'fan' => 'Fan',
+    'cpu_cooler' => 'CPU Cooler',
+    'ssd' => 'SSD',
+    'ram' => 'RAM',
+    'motherboard' => 'Motherboard',
+    'power_supply' => 'Power Supply',
+    'speaker' => 'Speaker',
+    'headset' => 'Headset',
+    'printer' => 'Printer',
+    'router' => 'Router',
+    'storage' => 'Storage',
+    'networking' => 'Networking',
+];
+
 $products = $pdo->query('SELECT * FROM products ORDER BY type, name')->fetchAll();
 ?>
 
@@ -51,14 +75,31 @@ $products = $pdo->query('SELECT * FROM products ORDER BY type, name')->fetchAll(
             <div>
                 <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Type</label>
                 <select name="type" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
-                    <option value="desktop">Desktop</option>
-                    <option value="laptop">Laptop</option>
-                    <option value="accessory">Accessory</option>
+                    <?php foreach ($productTypes as $value => $label): ?>
+                        <option value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($label, ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div>
                 <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Category</label>
-                <input type="text" name="category" value="general" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                <select name="category" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option value="general" selected>general</option>
+                    <?php foreach ($productTypes as $value => $label): ?>
+                        <?php $categoryOption = match ($value) {
+                            'desktop' => 'Desktop',
+                            'laptop' => 'Laptop',
+                            'accessory' => 'Accessory',
+                            default => strtoupper(str_replace('_', ' ', $label)),
+                        }; ?>
+                        <option value="<?= htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryOption, ENT_QUOTES, 'UTF-8') ?></option>
+                    <?php endforeach; ?>
+                    <?php foreach ($products as $product): ?>
+                        <?php $categoryName = trim((string) ($product['category'] ?? '')); ?>
+                        <?php if ($categoryName !== '' && $categoryName !== 'general'): ?>
+                            <option value="<?= htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($categoryName, ENT_QUOTES, 'UTF-8') ?></option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="block text-[11px] uppercase tracking-wide text-gray-500 mb-1">Price</label>

@@ -1,5 +1,5 @@
 <?php
-require_once dirname(__DIR__, 3) . '/config/auth.php';
+require_once dirname(__DIR__, 3) . '/legacy/legacy_auth.php';
 requireEmployee();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

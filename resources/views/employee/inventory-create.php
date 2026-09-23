@@ -1,6 +1,6 @@
 <?php
-require_once dirname(__DIR__, 3) . '/config/auth.php';
-require_once dirname(__DIR__, 3) . '/config/database.php';
+require_once dirname(__DIR__, 3) . '/legacy/legacy_auth.php';
+require_once dirname(__DIR__, 3) . '/legacy/legacy_database.php';
 requireEmployee();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name) ?? $name);
     $slug = trim((string) $slug, '-');
 
-    $allowedTypes = ['desktop', 'laptop', 'accessory'];
+    $allowedTypes = ['desktop', 'laptop', 'accessory', 'gpu', 'cpu', 'monitor', 'mouse', 'keyboard', 'case', 'fan', 'cpu_cooler', 'ssd', 'ram', 'motherboard', 'power_supply', 'speaker', 'headset', 'printer', 'router', 'storage', 'networking'];
     $allowedLocations = ['warehouse', 'store', 'used_in_pc'];
 
     if (isset($pdo) && $pdo instanceof PDO && $name !== '' && in_array($type, $allowedTypes, true) && in_array($stockLocation, $allowedLocations, true) && $price >= 0) {

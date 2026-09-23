@@ -22,7 +22,7 @@ class HeaderNavigationTest extends TestCase
         $pageTitle = 'Test Header';
 
         ob_start();
-        include __DIR__ . '/../../resources/views/header.php';
+        include __DIR__ . '/../../resources/views/storefront/header.php';
         $output = ob_get_clean();
 
         $this->assertStringContainsString('DESKTOPS', $output);
