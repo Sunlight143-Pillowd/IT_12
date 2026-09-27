@@ -8884,3 +8884,96 @@
 #67 C:/Users/Francisco Luis/Downloads/IT_12/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php(23): require_once('C://Users//Franci...')
 #68 {main}
 "} 
+[2026-09-24 13:58:16] local.ERROR: SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: database/database.sqlite, SQL: delete from "products") {"exception":"[object] (Illuminate\\Database\\QueryException(code: 23000): SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed (Connection: sqlite, Database: database/database.sqlite, SQL: delete from \"products\") at C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php:838)
+[stacktrace]
+#0 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(794): Illuminate/Database/Connection->runQueryCallback('delete from \"pr...', Array, Object(Closure))
+#1 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(597): Illuminate/Database/Connection->run('delete from \"pr...', Array, Object(Closure))
+#2 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(561): Illuminate/Database/Connection->affectingStatement('delete from \"pr...', Array)
+#3 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(4426): Illuminate/Database/Connection->delete('delete from \"pr...', Array)
+#4 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php(1480): Illuminate/Database/Query/Builder->delete()
+#5 C:/Users/Cyrus/Downloads/IT12/database/seeders/DatabaseSeeder.php(34): Illuminate/Database/Eloquent/Builder->delete()
+#6 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/DatabaseSeeder->run()
+#7 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#8 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#9 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#10 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#11 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(184): Illuminate/Container/Container->call(Array, Array)
+#12 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/HasEvents.php(454): Illuminate/Database/Seeder->Illuminate/Database/{closure}()
+#13 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/WithoutModelEvents.php(17): Illuminate/Database/Eloquent/Model::withoutEvents(Object(Closure))
+#14 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(193): Database/Seeders/DatabaseSeeder->Illuminate/Database/Console/Seeds/{closure}()
+#15 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(71): Illuminate/Database/Seeder->__invoke()
+#16 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/GuardsAttributes.php(157): Illuminate/Database/Console/Seeds/SeedCommand->Illuminate/Database/Console/Seeds/{closure}()
+#17 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(70): Illuminate/Database/Eloquent/Model::unguarded(Object(Closure))
+#18 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Illuminate/Database/Console/Seeds/SeedCommand->handle()
+#19 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#20 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#21 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#22 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#23 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate/Container/Container->call(Array)
+#24 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#25 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#26 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#27 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Illuminate/Database/Console/Seeds/SeedCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#28 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#29 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#30 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#31 C:/Users/Cyrus/Downloads/IT12/artisan(16): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#32 {main}
+
+[previous exception] [object] (PDOException(code: 23000): SQLSTATE[23000]: Integrity constraint violation: 19 FOREIGN KEY constraint failed at C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php:609)
+[stacktrace]
+#0 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(609): PDOStatement->execute()
+#1 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(827): Illuminate/Database/Connection->Illuminate/Database/{closure}('delete from \"pr...', Array)
+#2 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(794): Illuminate/Database/Connection->runQueryCallback('delete from \"pr...', Array, Object(Closure))
+#3 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(597): Illuminate/Database/Connection->run('delete from \"pr...', Array, Object(Closure))
+#4 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Connection.php(561): Illuminate/Database/Connection->affectingStatement('delete from \"pr...', Array)
+#5 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php(4426): Illuminate/Database/Connection->delete('delete from \"pr...', Array)
+#6 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php(1480): Illuminate/Database/Query/Builder->delete()
+#7 C:/Users/Cyrus/Downloads/IT12/database/seeders/DatabaseSeeder.php(34): Illuminate/Database/Eloquent/Builder->delete()
+#8 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Database/Seeders/DatabaseSeeder->run()
+#9 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#10 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#11 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#12 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#13 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(184): Illuminate/Container/Container->call(Array, Array)
+#14 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/HasEvents.php(454): Illuminate/Database/Seeder->Illuminate/Database/{closure}()
+#15 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/WithoutModelEvents.php(17): Illuminate/Database/Eloquent/Model::withoutEvents(Object(Closure))
+#16 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Seeder.php(193): Database/Seeders/DatabaseSeeder->Illuminate/Database/Console/Seeds/{closure}()
+#17 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(71): Illuminate/Database/Seeder->__invoke()
+#18 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Concerns/GuardsAttributes.php(157): Illuminate/Database/Console/Seeds/SeedCommand->Illuminate/Database/Console/Seeds/{closure}()
+#19 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Database/Console/Seeds/SeedCommand.php(70): Illuminate/Database/Eloquent/Model::unguarded(Object(Closure))
+#20 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Illuminate/Database/Console/Seeds/SeedCommand->handle()
+#21 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Util.php(43): Illuminate/Container/BoundMethod::Illuminate/Container/{closure}()
+#22 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(96): Illuminate/Container/Util::unwrapIfClosure(Object(Closure))
+#23 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate/Container/BoundMethod::callBoundMethod(Object(Illuminate/Foundation/Application), Array, Object(Closure))
+#24 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Container/Container.php(799): Illuminate/Container/BoundMethod::call(Object(Illuminate/Foundation/Application), Array, Array, NULL)
+#25 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate/Container/Container->call(Array)
+#26 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Command/Command.php(341): Illuminate/Console/Command->execute(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#27 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony/Component/Console/Command/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Illuminate/Console/OutputStyle))
+#28 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(1117): Illuminate/Console/Command->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#29 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(356): Symfony/Component/Console/Application->doRunCommand(Object(Illuminate/Database/Console/Seeds/SeedCommand), Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#30 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#31 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#32 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#33 C:/Users/Cyrus/Downloads/IT12/artisan(16): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#34 {main}
+"} 
+[2026-09-24 18:56:17] local.ERROR: Command "server" is not defined.
+
+Did you mean one of these?
+    make:mcp-server
+    make:observer
+    serve {"exception":"[object] (Symfony\\Component\\Console\\Exception\\CommandNotFoundException(code: 0): Command \"server\" is not defined.
+
+Did you mean one of these?
+    make:mcp-server
+    make:observer
+    serve at C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php:759)
+[stacktrace]
+#0 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(298): Symfony/Component/Console/Application->find('server')
+#1 C:/Users/Cyrus/Downloads/IT12/vendor/symfony/console/Application.php(195): Symfony/Component/Console/Application->doRun(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#2 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(198): Symfony/Component/Console/Application->run(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#3 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/Application.php(1235): Illuminate/Foundation/Console/Kernel->handle(Object(Symfony/Component/Console/Input/ArgvInput), Object(Symfony/Component/Console/Output/ConsoleOutput))
+#4 C:/Users/Cyrus/Downloads/IT12/artisan(16): Illuminate/Foundation/Application->handleCommand(Object(Symfony/Component/Console/Input/ArgvInput))
+#5 {main}
+"} 
