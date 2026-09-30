@@ -73,7 +73,7 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Back to Main Dashboard');
     }
 
-    public function test_pos_shows_recent_sale_receipt_with_saved_items(): void
+    public function test_pos_shows_receipts_and_build_orders_without_checkout_controls(): void
     {
         $user = User::factory()->create();
         $product = Product::create([
@@ -100,18 +100,42 @@ class AdminDashboardTest extends TestCase
             'quantity' => 2,
             'subtotal' => 2998.00,
         ]);
+        $build = PcBuild::create([
+            'build_number' => 'PC-RECEIPT-0001',
+            'customer_name' => 'Build Customer',
+            'employee_id' => $user->id,
+            'status' => 'reserved',
+            'total_cost' => 1499.00,
+            'notes' => 'Gaming setup',
+        ]);
+        $build->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 1499.00,
+            'subtotal' => 1499.00,
+        ]);
 
         $response = $this->actingAs($user)->get('/dashboard/pos');
 
         $response->assertOk();
-        $response->assertSee('Recent Orders');
-        $response->assertSee('Order #'.$sale->id);
+        $response->assertSee('Receipts');
+        $response->assertSee('Computer Build Orders');
+        $response->assertSee('Receipt #'.$sale->id);
         $response->assertSee('Receipt Customer');
         $response->assertSee('Receipt Test Keyboard');
         $response->assertSee('data-receipt-id="receipt-'.$sale->id.'"', false);
         $response->assertSee('id="receipt-'.$sale->id.'"', false);
         $response->assertSee('1,499.00 × 2');
         $response->assertSee('₱2,998.00');
+        $response->assertSee($build->build_number);
+        $response->assertSee('Build Customer');
+        $response->assertSee('Gaming setup');
+        $response->assertSee('data-build-id="build-'.$build->id.'"', false);
+        $response->assertSee('id="build-'.$build->id.'"', false);
+        $response->assertSee('₱1,499.00 × 1');
+        $response->assertDontSee('Products');
+        $response->assertDontSee('Cart');
+        $response->assertDontSee('Complete Sale');
     }
 
     public function test_admin_can_add_and_edit_categories(): void
@@ -275,9 +299,11 @@ class AdminDashboardTest extends TestCase
 
         $pos = $this->actingAs($user)->get('/dashboard/pos');
         $pos->assertOk();
-        $pos->assertSee('Filter by category');
-        $pos->assertSee('All Categories');
-        $pos->assertSee('product-category-filter');
+        $pos->assertSee('Receipts');
+        $pos->assertSee('Computer Build Orders');
+        $pos->assertDontSee('Products');
+        $pos->assertDontSee('Cart');
+        $pos->assertDontSee('Complete Sale');
 
         $quotation = $this->actingAs($user)->get('/dashboard/quotations');
         $quotation->assertOk();
