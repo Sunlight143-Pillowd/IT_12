@@ -39,6 +39,7 @@ class HomeController extends Controller
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
 
         $routeMap = [
+            'custom build' => ['route' => 'store.desktops', 'filter' => 'all'],
             'gaming' => ['route' => 'store.desktops', 'filter' => 'gaming'],
             'ready to ship' => ['route' => 'store.desktops', 'filter' => 'ready-to-ship'],
             'ready-to-ship' => ['route' => 'store.desktops', 'filter' => 'ready-to-ship'],
@@ -47,11 +48,15 @@ class HomeController extends Controller
             'thin-and-light' => ['route' => 'store.laptops', 'filter' => 'thin-and-light'],
             'performance' => ['route' => 'store.laptops', 'filter' => 'performance'],
             'gpu' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'psu' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'storage' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'networking' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'fan' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'fans' => ['route' => 'store.accessories', 'filter' => 'components'],
             'graphics card' => ['route' => 'store.accessories', 'filter' => 'components'],
             'graphics cards' => ['route' => 'store.accessories', 'filter' => 'components'],
             'cpu' => ['route' => 'store.accessories', 'filter' => 'components'],
             'case' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'fans' => ['route' => 'store.accessories', 'filter' => 'components'],
             'cpu cooler' => ['route' => 'store.accessories', 'filter' => 'components'],
             'ssd' => ['route' => 'store.accessories', 'filter' => 'components'],
             'ram' => ['route' => 'store.accessories', 'filter' => 'components'],
@@ -59,6 +64,7 @@ class HomeController extends Controller
             'power supply' => ['route' => 'store.accessories', 'filter' => 'components'],
             'power supplies' => ['route' => 'store.accessories', 'filter' => 'components'],
             'motherboard' => ['route' => 'store.accessories', 'filter' => 'components'],
+            'mother board' => ['route' => 'store.accessories', 'filter' => 'components'],
             'motherboards' => ['route' => 'store.accessories', 'filter' => 'components'],
             'network attached storage' => ['route' => 'store.accessories', 'filter' => 'components'],
             'network attached storage(nas)' => ['route' => 'store.accessories', 'filter' => 'components'],
@@ -109,6 +115,7 @@ class HomeController extends Controller
             'thin-and-light' => 'Thin & Light',
             'performance' => 'Performance',
             'gpu' => 'GPU',
+            'psu' => 'Power Supply',
             'graphics card' => 'GPU',
             'graphics cards' => 'GPU',
             'cpu' => 'CPU',
@@ -121,6 +128,7 @@ class HomeController extends Controller
             'power supply' => 'Power Supply',
             'power supplies' => 'Power Supply',
             'motherboard' => 'Motherboard',
+            'mother board' => 'Motherboard',
             'motherboards' => 'Motherboard',
             'network attached storage' => 'NAS',
             'network attached storage(nas)' => 'NAS',
@@ -157,13 +165,20 @@ class HomeController extends Controller
 
     public function index(): View
     {
-        $categoryCards = [
-            ['label' => 'Gaming Desktops', 'route' => route('store.desktops', ['filter' => 'gaming']), 'type' => 'desktop'],
-            ['label' => 'Ready to Ship', 'route' => route('store.desktops', ['filter' => 'ready-to-ship']), 'type' => 'desktop'],
-            ['label' => 'Gaming Laptops', 'route' => route('store.laptops', ['filter' => 'performance']), 'type' => 'laptop'],
-            ['label' => 'Workstation', 'route' => route('store.desktops', ['filter' => 'workstation']), 'type' => 'desktop'],
-            ['label' => 'Categories', 'route' => route('store.categories'), 'type' => 'category'],
-        ];
+        $categoryCards = Schema::hasTable('products')
+            ? Product::query()
+                ->where('is_active', true)
+                ->whereNotNull('category')
+                ->select('category')
+                ->distinct()
+                ->orderBy('category')
+                ->get()
+                ->map(fn (Product $product): array => [
+                    'label' => $this->categoryDisplayName($product->category),
+                    'route' => $this->categoryRouteFor($product->category),
+                ])
+                ->all()
+            : [];
 
         $featured = Schema::hasTable('products')
             ? Product::query()->where('is_active', true)->orderBy('price', 'desc')->limit(4)->get()
@@ -180,6 +195,7 @@ class HomeController extends Controller
 
         $products = Schema::hasTable('products')
             ? Product::query()
+                ->where('is_active', true)
                 ->where('type', 'desktop')
                 ->when($filter !== 'all', function ($query) use ($filter) {
                     $query->where('category', $this->categoryValueFromFilter($filter));
@@ -211,6 +227,7 @@ class HomeController extends Controller
 
         $products = Schema::hasTable('products')
             ? Product::query()
+                ->where('is_active', true)
                 ->where('type', 'laptop')
                 ->when($filter !== 'all', function ($query) use ($filter) {
                     $query->where('category', $this->categoryValueFromFilter($filter));
@@ -241,14 +258,43 @@ class HomeController extends Controller
 
         $products = Schema::hasTable('products')
             ? Product::query()
-                ->where('type', 'accessory')
-                ->when($filter !== 'all', function ($query) use ($filter) {
-                    $query->where('category', match ($filter) {
-                        'peripherals' => 'peripherals',
-                        'displays' => 'displays',
-                        'audio' => 'audio',
-                        'components' => 'components',
-                        default => null,
+                ->where('is_active', true)
+                ->whereNotIn('type', ['desktop', 'laptop'])
+                ->when($filter === 'components', function ($query) {
+                    $query->where(function ($query) {
+                        $query->whereIn('type', [
+                            'gpu',
+                            'cpu',
+                            'case',
+                            'fan',
+                            'cpu_cooler',
+                            'ssd',
+                            'ram',
+                            'motherboard',
+                            'power_supply',
+                            'storage',
+                            'networking',
+                            'printer',
+                            'router',
+                        ])->orWhere(function ($query) {
+                            $query->where('type', 'accessory')
+                                ->whereRaw('LOWER(category) = ?', ['components']);
+                        });
+                    });
+                })
+                ->when(in_array($filter, ['peripherals', 'displays', 'audio'], true), function ($query) use ($filter) {
+                    $types = match ($filter) {
+                        'peripherals' => ['keyboard', 'mouse'],
+                        'displays' => ['monitor'],
+                        'audio' => ['headset', 'speaker'],
+                    };
+
+                    $query->where(function ($query) use ($filter, $types) {
+                        $query->whereIn('type', $types)
+                            ->orWhere(function ($query) use ($filter) {
+                                $query->where('type', 'accessory')
+                                    ->whereRaw('LOWER(category) = ?', [$filter]);
+                            });
                     });
                 })
                 ->orderBy('name')
@@ -275,6 +321,7 @@ class HomeController extends Controller
     {
         $categories = Schema::hasTable('products')
             ? Product::query()
+                ->where('is_active', true)
                 ->select('category')
                 ->whereNotNull('category')
                 ->distinct()

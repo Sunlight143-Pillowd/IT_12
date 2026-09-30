@@ -76,6 +76,61 @@
                     </form>
                 </div>
             </div>
+
+            <section aria-labelledby="recent-orders-heading" class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <h3 id="recent-orders-heading" class="mb-4 text-xl font-bold text-gray-900">Recent Orders</h3>
+
+                @if ($recentSales->isEmpty())
+                    <p class="text-sm text-gray-500">No completed sales yet.</p>
+                @else
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        @foreach ($recentSales as $sale)
+                            <button type="button"
+                                    class="receipt-trigger rounded border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-purple-600 hover:bg-purple-50"
+                                    data-receipt-id="receipt-{{ $sale->id }}"
+                                    aria-haspopup="dialog">
+                                <span class="flex items-center justify-between gap-3">
+                                    <span class="font-bold text-gray-900">Order #{{ $sale->id }}</span>
+                                    <span class="text-sm font-bold text-purple-600">₱{{ number_format($sale->total_amount, 2) }}</span>
+                                </span>
+                                <span class="mt-2 block text-sm text-gray-700">{{ $sale->customer_name ?: 'Walk-in customer' }}</span>
+                                <span class="mt-1 block text-xs text-gray-500">{{ $sale->created_at->format('M j, Y g:i A') }}</span>
+                                <span class="mt-3 block text-xs font-semibold text-purple-700">View receipt</span>
+                            </button>
+
+                            <dialog id="receipt-{{ $sale->id }}" class="m-auto max-h-[85vh] w-[min(32rem,calc(100%-2rem))] max-w-none overflow-y-auto rounded-lg border border-gray-200 bg-white p-0 shadow-xl backdrop:bg-black/50">
+                                <div class="p-6">
+                                    <div class="flex items-start justify-between gap-4 border-b border-gray-200 pb-4">
+                                        <div>
+                                            <h4 class="text-lg font-bold text-gray-900">Receipt #{{ $sale->id }}</h4>
+                                            <p class="mt-1 text-sm text-gray-600">{{ $sale->customer_name ?: 'Walk-in customer' }}</p>
+                                            <p class="mt-1 text-xs text-gray-500">{{ $sale->created_at->format('M j, Y g:i A') }}</p>
+                                        </div>
+                                        <button type="button" class="receipt-close rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Close</button>
+                                    </div>
+
+                                    <div class="mt-4 space-y-3">
+                                        @foreach ($sale->items as $item)
+                                            <div class="flex items-start justify-between gap-4 text-sm">
+                                                <div>
+                                                    <p class="font-semibold text-gray-900">{{ $item->product_name }}</p>
+                                                    <p class="text-gray-500">{{ number_format($item->unit_price, 2) }} × {{ $item->quantity }}</p>
+                                                </div>
+                                                <p class="font-semibold text-gray-900">₱{{ number_format($item->subtotal, 2) }}</p>
+                                            </div>
+                                        @endforeach
+                                    </div>
+
+                                    <div class="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 text-base font-bold text-gray-900">
+                                        <span>Total</span>
+                                        <span>₱{{ number_format($sale->total_amount, 2) }}</span>
+                                    </div>
+                                </div>
+                            </dialog>
+                        @endforeach
+                    </div>
+                @endif
+            </section>
         </div>
     </div>
 
@@ -89,6 +144,16 @@
             const checkoutBtn = document.getElementById('checkout-btn');
             const categoryFilter = document.getElementById('product-category-filter');
             const productSearch = document.getElementById('product-search');
+
+            document.querySelectorAll('.receipt-trigger').forEach((trigger) => {
+                trigger.addEventListener('click', () => {
+                    document.getElementById(trigger.dataset.receiptId)?.showModal();
+                });
+            });
+
+            document.querySelectorAll('.receipt-close').forEach((button) => {
+                button.addEventListener('click', () => button.closest('dialog')?.close());
+            });
 
             function applyProductFilters() {
                 const categoryValue = categoryFilter ? categoryFilter.value : 'all';

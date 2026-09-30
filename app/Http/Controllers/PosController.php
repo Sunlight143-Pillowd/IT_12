@@ -19,7 +19,12 @@ class PosController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('pos', compact('products'));
+        $recentSales = Sale::with('items')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return view('pos', compact('products', 'recentSales'));
     }
 
     public function checkout(Request $request): RedirectResponse
@@ -45,7 +50,7 @@ class PosController extends Controller
 
             $qty = (int) ($item['quantity'] ?? 0);
             if ($qty <= 0 || $qty > $product->stock_quantity) {
-                return back()->with('error', 'Insufficient stock for ' . $product->name . '.');
+                return back()->with('error', 'Insufficient stock for '.$product->name.'.');
             }
 
             $subtotal = $product->price * $qty;

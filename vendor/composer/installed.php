@@ -3,7 +3,7 @@
         'name' => 'it12/davao-boss-computer',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => '37d97c6be84e22163e390d42935a2871c9faff13',
+        'reference' => '3394f921a6c484accf6e11fba1f5bcefc6ddc0f1',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -394,7 +394,7 @@
         'it12/davao-boss-computer' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => '37d97c6be84e22163e390d42935a2871c9faff13',
+            'reference' => '3394f921a6c484accf6e11fba1f5bcefc6ddc0f1',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

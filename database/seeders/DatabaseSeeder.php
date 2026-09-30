@@ -2,9 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -31,8 +34,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        \App\Models\Product::query()->delete();
-
         $products = [
             ['name' => 'Boss Strike ITX', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 54999, 'stock_quantity' => 14, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
             ['name' => 'Boss Vanguard Mid', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 74999, 'stock_quantity' => 11, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
@@ -45,18 +46,31 @@ class DatabaseSeeder extends Seeder
         ];
 
         foreach ($products as $product) {
-            \App\Models\Product::create([
-                'name' => $product['name'],
-                'slug' => \Illuminate\Support\Str::slug($product['name']) . '-' . rand(100, 999),
-                'type' => $product['type'],
-                'category' => $product['category'],
-                'price' => $product['price'],
-                'stock_quantity' => $product['stock_quantity'],
-                'low_stock_threshold' => $product['low_stock_threshold'],
-                'stock_location' => $product['stock_location'],
-                'description' => 'System inventory item',
-                'is_active' => true,
-            ]);
+            Category::firstOrCreate(
+                ['slug' => Str::slug($product['category'])],
+                ['name' => $product['category']]
+            );
+
+            $slug = Str::slug($product['name']);
+            $productExists = Product::query()
+                ->where('slug', $slug)
+                ->orWhere('name', $product['name'])
+                ->exists();
+
+            if (! $productExists) {
+                Product::create([
+                    'name' => $product['name'],
+                    'slug' => $slug,
+                    'type' => $product['type'],
+                    'category' => $product['category'],
+                    'price' => $product['price'],
+                    'stock_quantity' => $product['stock_quantity'],
+                    'low_stock_threshold' => $product['low_stock_threshold'],
+                    'stock_location' => $product['stock_location'],
+                    'description' => 'System inventory item',
+                    'is_active' => true,
+                ]);
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
@@ -72,6 +73,47 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Back to Main Dashboard');
     }
 
+    public function test_pos_shows_recent_sale_receipt_with_saved_items(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::create([
+            'name' => 'Receipt Test Keyboard',
+            'slug' => 'receipt-test-keyboard',
+            'type' => 'accessory',
+            'category' => 'Peripherals',
+            'price' => 1499,
+            'stock_quantity' => 5,
+            'low_stock_threshold' => 1,
+            'stock_location' => 'store',
+            'description' => 'Mechanical keyboard',
+            'is_active' => true,
+        ]);
+        $sale = Sale::create([
+            'employee_id' => $user->id,
+            'customer_name' => 'Receipt Customer',
+            'total_amount' => 2998.00,
+        ]);
+        $sale->items()->create([
+            'product_id' => $product->id,
+            'product_name' => 'Receipt Test Keyboard',
+            'unit_price' => 1499.00,
+            'quantity' => 2,
+            'subtotal' => 2998.00,
+        ]);
+
+        $response = $this->actingAs($user)->get('/dashboard/pos');
+
+        $response->assertOk();
+        $response->assertSee('Recent Orders');
+        $response->assertSee('Order #'.$sale->id);
+        $response->assertSee('Receipt Customer');
+        $response->assertSee('Receipt Test Keyboard');
+        $response->assertSee('data-receipt-id="receipt-'.$sale->id.'"', false);
+        $response->assertSee('id="receipt-'.$sale->id.'"', false);
+        $response->assertSee('1,499.00 × 2');
+        $response->assertSee('₱2,998.00');
+    }
+
     public function test_admin_can_add_and_edit_categories(): void
     {
         $user = User::factory()->create([
@@ -84,10 +126,10 @@ class AdminDashboardTest extends TestCase
             ->post('/dashboard/inventory/categories', ['name' => 'GPU'])
             ->assertRedirect('/dashboard/inventory');
 
-        $category = \App\Models\Category::where('slug', 'gpu')->firstOrFail();
+        $category = Category::where('slug', 'gpu')->firstOrFail();
 
         $this->actingAs($user)
-            ->patch('/dashboard/inventory/categories/' . $category->id, ['name' => 'Graphics Card'])
+            ->patch('/dashboard/inventory/categories/'.$category->id, ['name' => 'Graphics Card'])
             ->assertRedirect('/dashboard/inventory');
 
         $category->refresh();
