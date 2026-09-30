@@ -31,7 +31,7 @@
                     <span class="flex h-5 w-5 items-center justify-center rounded-full border-4 border-purple-600">
                         <span class="h-1.5 w-1.5 rounded-full bg-purple-600"></span>
                     </span>
-                    <span class="text-3xl font-black tracking-tight text-purple-600">COMPUTER BOSS DAVAO </span>
+                    <span class="text-3xl font-black tracking-tight text-purple-600">DAVAO BOSS COMPUTER</span>
                 </a>
 
                 <nav class="hidden lg:flex items-center gap-10 text-sm font-semibold text-gray-800">
@@ -125,6 +125,34 @@
                             </span>
                         </a>
                     @endforeach
+                </div>
+            </section>
+
+            <section class="py-12">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="mb-6 flex items-end justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">In stock now</p>
+                            <h2 class="mt-2 text-2xl font-black text-gray-900">Featured Products</h2>
+                        </div>
+                        <a href="{{ route('store.desktops') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-700">Browse store</a>
+                    </div>
+
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        @forelse ($featured as $product)
+                            <article class="border border-gray-200 bg-white p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $product->category }}</p>
+                                <h3 class="mt-2 text-lg font-bold text-gray-900">{{ $product->name }}</h3>
+                                <p class="mt-2 min-h-10 text-sm text-gray-600">{{ $product->description ?? 'Available in store now.' }}</p>
+                                <div class="mt-4 flex items-center justify-between gap-3">
+                                    <span class="font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
+                                    <span class="text-xs font-semibold text-gray-500">{{ $product->stock_quantity }} in stock</span>
+                                </div>
+                            </article>
+                        @empty
+                            <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>
+                        @endforelse
+                    </div>
                 </div>
             </section>
         </main>

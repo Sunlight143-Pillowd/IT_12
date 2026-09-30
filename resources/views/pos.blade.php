@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Point of Sale') }}
+            {{ __('Receipts & Computer Build Orders') }}
         </h2>
     </x-slot>
 
@@ -20,184 +20,195 @@
             @endif
 
             <div class="grid gap-6 lg:grid-cols-3">
-                <div class="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h3 class="mb-4 text-xl font-bold text-gray-900">Products</h3>
-
-                    <div class="mb-4">
-                        <label for="product-category-filter" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Filter by category</label>
-                        <select id="product-category-filter" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                            <option value="all">All Categories</option>
-                            @foreach ($products->pluck('category')->filter()->unique()->sort()->values() as $category)
-                                <option value="{{ strtolower($category) }}">{{ $category }}</option>
-                            @endforeach
-                        </select>
+                <section aria-labelledby="order-list-heading" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <h3 id="order-list-heading" class="text-xl font-bold text-gray-900">Receipts & Computer Build Orders</h3>
+                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $recentSales->count() + $recentBuilds->count() }} records</span>
                     </div>
 
-                    <input id="product-search" type="text" placeholder="Search products…" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm">
-
-                    <div id="product-grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        @foreach ($products as $product)
-                            <button type="button"
-                                    class="pos-product-btn rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50"
-                                    data-search="{{ strtolower($product->name . ' ' . $product->category) }}"
-                                    data-category="{{ strtolower($product->category) }}"
-                                    data-id="{{ $product->id }}"
-                                    data-name="{{ $product->name }}"
-                                    data-price="{{ $product->price }}"
-                                    data-stock="{{ $product->stock_quantity }}">
-                                <p class="text-sm font-bold text-gray-900">{{ $product->name }}</p>
-                                <p class="text-xs text-gray-500">{{ $product->category }}</p>
-                                <p class="mt-2 text-sm font-bold text-purple-600">₱{{ number_format($product->price, 2) }}</p>
-                                <p class="text-[11px] text-gray-400">{{ $product->stock_quantity }} in stock</p>
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h3 class="mb-4 text-xl font-bold text-gray-900">Cart</h3>
-                    <form method="POST" action="{{ route('pos.checkout') }}" id="pos-form">
-                        @csrf
-                        <input type="hidden" name="cart_json" id="cart-json-input">
-                        <input type="text" name="customer_name" placeholder="Customer name (optional)" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm">
-
-                        <div id="cart-items" class="mb-4 min-h-[120px] space-y-2 text-sm">
-                            <p id="cart-empty-msg" class="text-gray-400">No items yet.</p>
-                        </div>
-
-                        <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
-                            <span>Total</span>
-                            <span id="cart-total">₱0.00</span>
-                        </div>
-
-                        <button type="submit" id="checkout-btn" disabled class="mt-4 w-full rounded bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40">
-                            Complete Sale
+                    <div class="mb-4 flex gap-2" role="group" aria-label="Order type">
+                        <button type="button" class="history-tab rounded border border-purple-600 bg-purple-600 px-3 py-2 text-sm font-semibold text-white" data-history-tab="receipts" aria-pressed="true">
+                            Receipts ({{ $recentSales->count() }})
                         </button>
-                    </form>
-                </div>
+                        <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="builds" aria-pressed="false">
+                            Computer Builds ({{ $recentBuilds->count() }})
+                        </button>
+                    </div>
+
+                    <div id="receipt-list" class="history-panel grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-history-panel="receipts">
+                        @forelse ($recentSales as $sale)
+                            <button type="button"
+                                    class="order-card rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    data-detail-template="receipt-detail-{{ $sale->id }}"
+                                    data-record-type="Receipt"
+                                    aria-pressed="false">
+                                <span class="block truncate text-sm font-bold text-gray-900">Receipt #{{ $sale->id }}</span>
+                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $sale->customer_name ?: 'Walk-in customer' }}</span>
+                                <span class="mt-2 block text-sm font-bold text-purple-600">₱{{ number_format($sale->total_amount, 2) }}</span>
+                                <span class="mt-1 block text-[11px] text-gray-500">{{ $sale->items->count() }} item(s) · {{ $sale->created_at->format('M j, Y') }}</span>
+                            </button>
+                        @empty
+                            <p class="col-span-full rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No receipts yet.</p>
+                        @endforelse
+                    </div>
+
+                    <div id="build-list" class="history-panel grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-history-panel="builds" hidden>
+                        @forelse ($recentBuilds as $build)
+                            <button type="button"
+                                    class="order-card rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    data-detail-template="build-detail-{{ $build->id }}"
+                                    data-record-type="Computer Build"
+                                    aria-pressed="false">
+                                <span class="block truncate text-sm font-bold text-gray-900">{{ $build->build_number }}</span>
+                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $build->customer_name ?: 'Walk-in customer' }}</span>
+                                <span class="mt-2 block text-sm font-bold text-purple-600">₱{{ number_format($build->total_cost, 2) }}</span>
+                                <span class="mt-1 block text-[11px] uppercase text-gray-500">{{ $build->status }} · {{ $build->items->count() }} part(s)</span>
+                            </button>
+                        @empty
+                            <p class="col-span-full rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No computer build orders yet.</p>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section aria-labelledby="selected-order-title" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <h3 id="selected-order-title" class="mb-4 text-xl font-bold text-gray-900">Order Details</h3>
+                    <div id="selected-order-details" aria-live="polite" class="min-h-30">
+                        <p class="text-sm text-gray-400">Select a receipt or computer build to view its items.</p>
+                    </div>
+                </section>
+            </div>
+
+            <div class="hidden" aria-hidden="true">
+                @foreach ($recentSales as $sale)
+                    <template id="receipt-detail-{{ $sale->id }}">
+                        <div>
+                            <div class="border-b border-gray-200 pb-3">
+                                <p class="font-bold text-gray-900">Receipt #{{ $sale->id }}</p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $sale->customer_name ?: 'Walk-in customer' }}</p>
+                                <p class="mt-1 text-xs text-gray-500">{{ $sale->created_at->format('M j, Y g:i A') }}</p>
+                            </div>
+                            <div class="space-y-3 py-4">
+                                @foreach ($sale->items as $item)
+                                    <div class="flex items-start justify-between gap-2 text-sm">
+                                        <div class="min-w-0">
+                                            <p class="wrap-break-word font-semibold text-gray-900">{{ $item->product_name }}</p>
+                                            <p class="text-xs text-gray-500">₱{{ number_format($item->unit_price, 2) }} × {{ $item->quantity }}</p>
+                                        </div>
+                                        <p class="shrink-0 font-semibold text-gray-900">₱{{ number_format($item->subtotal, 2) }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                            <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                                <span>Total</span>
+                                <span>₱{{ number_format($sale->total_amount, 2) }}</span>
+                            </div>
+                        </div>
+                    </template>
+                @endforeach
+
+                @foreach ($recentBuilds as $build)
+                    <template id="build-detail-{{ $build->id }}">
+                        <div>
+                            <div class="border-b border-gray-200 pb-3">
+                                <p class="font-bold text-gray-900">{{ $build->build_number }}</p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $build->customer_name ?: 'Walk-in customer' }}</p>
+                                <p class="mt-1 text-xs uppercase text-gray-500">{{ $build->status }} · {{ $build->created_at->format('M j, Y g:i A') }}</p>
+                            </div>
+                            <div class="space-y-3 py-4">
+                                @foreach ($build->items as $item)
+                                    <div class="flex items-start justify-between gap-2 text-sm">
+                                        <div class="min-w-0">
+                                            <p class="wrap-break-word font-semibold text-gray-900">{{ $item->product->name }}</p>
+                                            <p class="text-xs text-gray-500">₱{{ number_format($item->unit_price, 2) }} × {{ $item->quantity }}</p>
+                                        </div>
+                                        <p class="shrink-0 font-semibold text-gray-900">₱{{ number_format($item->subtotal, 2) }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @if ($build->notes)
+                                <div class="mb-3 border-t border-gray-200 pt-3">
+                                    <p class="text-xs font-semibold uppercase text-gray-500">Notes</p>
+                                        <p class="mt-1 wrap-break-word text-sm text-gray-700">{{ $build->notes }}</p>
+                                </div>
+                            @endif
+                            <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                                <span>Total</span>
+                                <span>₱{{ number_format($build->total_cost, 2) }}</span>
+                            </div>
+                        </div>
+                    </template>
+                @endforeach
             </div>
         </div>
     </div>
 
     <script>
         (function () {
-            const cart = new Map();
-            const cartItemsEl = document.getElementById('cart-items');
-            const cartEmptyMsg = document.getElementById('cart-empty-msg');
-            const cartTotalEl = document.getElementById('cart-total');
-            const cartJsonInput = document.getElementById('cart-json-input');
-            const checkoutBtn = document.getElementById('checkout-btn');
-            const categoryFilter = document.getElementById('product-category-filter');
-            const productSearch = document.getElementById('product-search');
+            const orderCards = document.querySelectorAll('.order-card');
+            const orderDetails = document.getElementById('selected-order-details');
+            const orderDetailsTitle = document.getElementById('selected-order-title');
+            const historyTabs = document.querySelectorAll('.history-tab');
 
-            function applyProductFilters() {
-                const categoryValue = categoryFilter ? categoryFilter.value : 'all';
-                const searchValue = (productSearch ? productSearch.value : '').trim().toLowerCase();
-
-                document.querySelectorAll('.pos-product-btn').forEach((btn) => {
-                    const matchesCategory = categoryValue === 'all' || (btn.dataset.category || '') === categoryValue;
-                    const matchesSearch = (btn.dataset.search || '').includes(searchValue);
-                    btn.style.display = (matchesCategory && matchesSearch) ? '' : 'none';
+            function selectOrder(card) {
+                orderCards.forEach((orderCard) => {
+                    const selected = orderCard === card;
+                    orderCard.setAttribute('aria-pressed', String(selected));
+                    orderCard.classList.toggle('border-purple-600', selected);
+                    orderCard.classList.toggle('bg-purple-50', selected);
                 });
-            }
 
-            function money(value) {
-                return '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
-
-            function render() {
-                cartItemsEl.innerHTML = '';
-                if (cart.size === 0) {
-                    cartItemsEl.appendChild(cartEmptyMsg);
-                    cartTotalEl.textContent = money(0);
-                    cartJsonInput.value = '';
-                    checkoutBtn.disabled = true;
-                    return;
+                const detailTemplate = document.getElementById(card.dataset.detailTemplate);
+                if (detailTemplate) {
+                    orderDetails.replaceChildren(detailTemplate.content.cloneNode(true));
+                    orderDetailsTitle.textContent = `${card.dataset.recordType} Details`;
                 }
-
-                let total = 0;
-                cart.forEach((item, id) => {
-                    const subtotal = item.price * item.qty;
-                    total += subtotal;
-
-                    const row = document.createElement('div');
-                    row.className = 'flex items-center justify-between gap-2 rounded border border-gray-200 p-2';
-                    row.innerHTML = `
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate font-semibold text-gray-900">${item.name}</p>
-                            <p class="text-xs text-gray-500">${money(item.price)} × ${item.qty} = ${money(subtotal)}</p>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <button type="button" data-id="${id}" data-delta="-1" class="qty-btn h-6 w-6 rounded border border-gray-300 text-sm">−</button>
-                            <button type="button" data-id="${id}" data-delta="1" class="qty-btn h-6 w-6 rounded border border-gray-300 text-sm">+</button>
-                            <button type="button" data-id="${id}" class="remove-btn ml-2 text-xs font-semibold text-red-500">Remove</button>
-                        </div>
-                    `;
-                    cartItemsEl.appendChild(row);
-                });
-
-                cartTotalEl.textContent = money(total);
-                cartJsonInput.value = JSON.stringify(Array.from(cart, ([id, item]) => ({
-                    product_id: Number(id),
-                    quantity: item.qty,
-                })));
-                checkoutBtn.disabled = false;
             }
 
-            document.querySelectorAll('.pos-product-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const stock = Number(btn.dataset.stock);
-                    const existing = cart.get(id);
+            orderCards.forEach((card) => {
+                card.addEventListener('click', () => selectOrder(card));
+            });
 
-                    if (existing) {
-                        if (existing.qty < stock) {
-                            existing.qty += 1;
-                        }
-                    } else {
-                        cart.set(id, {
-                            name: btn.dataset.name,
-                            price: Number(btn.dataset.price),
-                            qty: 1,
-                            stock,
-                        });
+            historyTabs.forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    const selectedPanel = tab.dataset.historyTab;
+
+                    historyTabs.forEach((historyTab) => {
+                        const selected = historyTab === tab;
+                        historyTab.setAttribute('aria-pressed', String(selected));
+                        historyTab.classList.toggle('border-purple-600', selected);
+                        historyTab.classList.toggle('bg-purple-600', selected);
+                        historyTab.classList.toggle('text-white', selected);
+                        historyTab.classList.toggle('border-gray-300', !selected);
+                        historyTab.classList.toggle('bg-white', !selected);
+                        historyTab.classList.toggle('text-gray-700', !selected);
+                    });
+
+                    document.querySelectorAll('.history-panel').forEach((panel) => {
+                        const hidden = panel.dataset.historyPanel !== selectedPanel;
+                        panel.hidden = hidden;
+                    });
+
+                    const selectedCard = document.querySelector(`[data-history-panel="${selectedPanel}"] .order-card`);
+                    if (selectedCard) {
+                        selectOrder(selectedCard);
+                        return;
                     }
 
-                    render();
+                    orderCards.forEach((orderCard) => orderCard.setAttribute('aria-pressed', 'false'));
+                    orderDetailsTitle.textContent = selectedPanel === 'receipts' ? 'Receipt Details' : 'Computer Build Details';
+                    orderDetails.replaceChildren();
+
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.className = 'text-sm text-gray-400';
+                    emptyMessage.textContent = selectedPanel === 'receipts' ? 'No receipts yet.' : 'No computer build orders yet.';
+                    orderDetails.appendChild(emptyMessage);
                 });
             });
 
-            cartItemsEl.addEventListener('click', (event) => {
-                const qtyBtn = event.target.closest('.qty-btn');
-                const removeBtn = event.target.closest('.remove-btn');
-
-                if (qtyBtn) {
-                    const id = qtyBtn.dataset.id;
-                    const item = cart.get(id);
-                    const nextQty = item.qty + Number(qtyBtn.dataset.delta);
-
-                    if (nextQty <= 0) {
-                        cart.delete(id);
-                    } else if (nextQty <= item.stock) {
-                        item.qty = nextQty;
-                    }
-
-                    render();
-                }
-
-                if (removeBtn) {
-                    cart.delete(removeBtn.dataset.id);
-                    render();
-                }
-            });
-
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyProductFilters);
-            }
-
-            if (productSearch) {
-                productSearch.addEventListener('input', applyProductFilters);
-            }
+            const initialTab = document.querySelector('[data-history-panel="receipts"] .order-card')
+                ? 'receipts'
+                : 'builds';
+            document.querySelector(`[data-history-tab="${initialTab}"]`)?.click();
         })();
     </script>
 </x-app-layout>

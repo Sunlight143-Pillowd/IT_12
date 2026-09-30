@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -14,12 +15,17 @@ class PosController extends Controller
 {
     public function index(): View
     {
-        $products = Product::where('is_active', true)
-            ->where('stock_quantity', '>', 0)
-            ->orderBy('name')
+        $recentSales = Sale::with('items')
+            ->latest()
+            ->limit(10)
             ->get();
 
-        return view('pos', compact('products'));
+        $recentBuilds = PcBuild::with('items.product')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        return view('pos', compact('recentSales', 'recentBuilds'));
     }
 
     public function checkout(Request $request): RedirectResponse
@@ -45,7 +51,7 @@ class PosController extends Controller
 
             $qty = (int) ($item['quantity'] ?? 0);
             if ($qty <= 0 || $qty > $product->stock_quantity) {
-                return back()->with('error', 'Insufficient stock for ' . $product->name . '.');
+                return back()->with('error', 'Insufficient stock for '.$product->name.'.');
             }
 
             $subtotal = $product->price * $qty;
