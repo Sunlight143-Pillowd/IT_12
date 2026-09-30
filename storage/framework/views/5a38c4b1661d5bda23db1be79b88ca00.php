@@ -10,7 +10,7 @@
 <?php $component->withAttributes([]); ?>
      <?php $__env->slot('header', null, []); ?> 
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            <?php echo e(__('Point of Sale')); ?>
+            <?php echo e(__('Receipts & Computer Build Orders')); ?>
 
         </h2>
      <?php $__env->endSlot(); ?>
@@ -32,249 +32,195 @@
             <?php endif; ?>
 
             <div class="grid gap-6 lg:grid-cols-3">
-                <div class="lg:col-span-2 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h3 class="mb-4 text-xl font-bold text-gray-900">Products</h3>
-
-                    <div class="mb-4">
-                        <label for="product-category-filter" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Filter by category</label>
-                        <select id="product-category-filter" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                            <option value="all">All Categories</option>
-                            <?php $__currentLoopData = $products->pluck('category')->filter()->unique()->sort()->values(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <option value="<?php echo e(strtolower($category)); ?>"><?php echo e($category); ?></option>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </select>
+                <section aria-labelledby="order-list-heading" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+                    <div class="mb-4 flex items-center justify-between gap-3">
+                        <h3 id="order-list-heading" class="text-xl font-bold text-gray-900">Receipts & Computer Build Orders</h3>
+                        <span class="text-xs font-semibold uppercase tracking-wide text-gray-500"><?php echo e($recentSales->count() + $recentBuilds->count()); ?> records</span>
                     </div>
 
-                    <input id="product-search" type="text" placeholder="Search products…" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm">
-
-                    <div id="product-grid" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <?php $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <button type="button"
-                                    class="pos-product-btn rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50"
-                                    data-search="<?php echo e(strtolower($product->name . ' ' . $product->category)); ?>"
-                                    data-category="<?php echo e(strtolower($product->category)); ?>"
-                                    data-id="<?php echo e($product->id); ?>"
-                                    data-name="<?php echo e($product->name); ?>"
-                                    data-price="<?php echo e($product->price); ?>"
-                                    data-stock="<?php echo e($product->stock_quantity); ?>">
-                                <p class="text-sm font-bold text-gray-900"><?php echo e($product->name); ?></p>
-                                <p class="text-xs text-gray-500"><?php echo e($product->category); ?></p>
-                                <p class="mt-2 text-sm font-bold text-purple-600">₱<?php echo e(number_format($product->price, 2)); ?></p>
-                                <p class="text-[11px] text-gray-400"><?php echo e($product->stock_quantity); ?> in stock</p>
-                            </button>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </div>
-                </div>
-
-                <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <h3 class="mb-4 text-xl font-bold text-gray-900">Cart</h3>
-                    <form method="POST" action="<?php echo e(route('pos.checkout')); ?>" id="pos-form">
-                        <?php echo csrf_field(); ?>
-                        <input type="hidden" name="cart_json" id="cart-json-input">
-                        <input type="text" name="customer_name" placeholder="Customer name (optional)" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm">
-
-                        <div id="cart-items" class="mb-4 min-h-[120px] space-y-2 text-sm">
-                            <p id="cart-empty-msg" class="text-gray-400">No items yet.</p>
-                        </div>
-
-                        <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
-                            <span>Total</span>
-                            <span id="cart-total">₱0.00</span>
-                        </div>
-
-                        <button type="submit" id="checkout-btn" disabled class="mt-4 w-full rounded bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40">
-                            Complete Sale
+                    <div class="mb-4 flex gap-2" role="group" aria-label="Order type">
+                        <button type="button" class="history-tab rounded border border-purple-600 bg-purple-600 px-3 py-2 text-sm font-semibold text-white" data-history-tab="receipts" aria-pressed="true">
+                            Receipts (<?php echo e($recentSales->count()); ?>)
                         </button>
-                    </form>
-                </div>
+                        <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="builds" aria-pressed="false">
+                            Computer Builds (<?php echo e($recentBuilds->count()); ?>)
+                        </button>
+                    </div>
+
+                    <div id="receipt-list" class="history-panel grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-history-panel="receipts">
+                        <?php $__empty_1 = true; $__currentLoopData = $recentSales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sale): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <button type="button"
+                                    class="order-card rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    data-detail-template="receipt-detail-<?php echo e($sale->id); ?>"
+                                    data-record-type="Receipt"
+                                    aria-pressed="false">
+                                <span class="block truncate text-sm font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></span>
+                                <span class="mt-1 block truncate text-xs text-gray-600"><?php echo e($sale->customer_name ?: 'Walk-in customer'); ?></span>
+                                <span class="mt-2 block text-sm font-bold text-purple-600">₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
+                                <span class="mt-1 block text-[11px] text-gray-500"><?php echo e($sale->items->count()); ?> item(s) · <?php echo e($sale->created_at->format('M j, Y')); ?></span>
+                            </button>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <p class="col-span-full rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No receipts yet.</p>
+                        <?php endif; ?>
+                    </div>
+
+                    <div id="build-list" class="history-panel grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-history-panel="builds" hidden>
+                        <?php $__empty_1 = true; $__currentLoopData = $recentBuilds; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $build): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <button type="button"
+                                    class="order-card rounded border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    data-detail-template="build-detail-<?php echo e($build->id); ?>"
+                                    data-record-type="Computer Build"
+                                    aria-pressed="false">
+                                <span class="block truncate text-sm font-bold text-gray-900"><?php echo e($build->build_number); ?></span>
+                                <span class="mt-1 block truncate text-xs text-gray-600"><?php echo e($build->customer_name ?: 'Walk-in customer'); ?></span>
+                                <span class="mt-2 block text-sm font-bold text-purple-600">₱<?php echo e(number_format($build->total_cost, 2)); ?></span>
+                                <span class="mt-1 block text-[11px] uppercase text-gray-500"><?php echo e($build->status); ?> · <?php echo e($build->items->count()); ?> part(s)</span>
+                            </button>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <p class="col-span-full rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No computer build orders yet.</p>
+                        <?php endif; ?>
+                    </div>
+                </section>
+
+                <section aria-labelledby="selected-order-title" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <h3 id="selected-order-title" class="mb-4 text-xl font-bold text-gray-900">Order Details</h3>
+                    <div id="selected-order-details" aria-live="polite" class="min-h-30">
+                        <p class="text-sm text-gray-400">Select a receipt or computer build to view its items.</p>
+                    </div>
+                </section>
             </div>
 
-            <section aria-labelledby="recent-orders-heading" class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <h3 id="recent-orders-heading" class="mb-4 text-xl font-bold text-gray-900">Recent Orders</h3>
-
-                <?php if($recentSales->isEmpty()): ?>
-                    <p class="text-sm text-gray-500">No completed sales yet.</p>
-                <?php else: ?>
-                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                        <?php $__currentLoopData = $recentSales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sale): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                            <button type="button"
-                                    class="receipt-trigger rounded border border-gray-200 bg-gray-50 p-4 text-left transition hover:border-purple-600 hover:bg-purple-50"
-                                    data-receipt-id="receipt-<?php echo e($sale->id); ?>"
-                                    aria-haspopup="dialog">
-                                <span class="flex items-center justify-between gap-3">
-                                    <span class="font-bold text-gray-900">Order #<?php echo e($sale->id); ?></span>
-                                    <span class="text-sm font-bold text-purple-600">₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
-                                </span>
-                                <span class="mt-2 block text-sm text-gray-700"><?php echo e($sale->customer_name ?: 'Walk-in customer'); ?></span>
-                                <span class="mt-1 block text-xs text-gray-500"><?php echo e($sale->created_at->format('M j, Y g:i A')); ?></span>
-                                <span class="mt-3 block text-xs font-semibold text-purple-700">View receipt</span>
-                            </button>
-
-                            <dialog id="receipt-<?php echo e($sale->id); ?>" class="m-auto max-h-[85vh] w-[min(32rem,calc(100%-2rem))] max-w-none overflow-y-auto rounded-lg border border-gray-200 bg-white p-0 shadow-xl backdrop:bg-black/50">
-                                <div class="p-6">
-                                    <div class="flex items-start justify-between gap-4 border-b border-gray-200 pb-4">
-                                        <div>
-                                            <h4 class="text-lg font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></h4>
-                                            <p class="mt-1 text-sm text-gray-600"><?php echo e($sale->customer_name ?: 'Walk-in customer'); ?></p>
-                                            <p class="mt-1 text-xs text-gray-500"><?php echo e($sale->created_at->format('M j, Y g:i A')); ?></p>
+            <div class="hidden" aria-hidden="true">
+                <?php $__currentLoopData = $recentSales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sale): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <template id="receipt-detail-<?php echo e($sale->id); ?>">
+                        <div>
+                            <div class="border-b border-gray-200 pb-3">
+                                <p class="font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></p>
+                                <p class="mt-1 text-sm text-gray-600"><?php echo e($sale->customer_name ?: 'Walk-in customer'); ?></p>
+                                <p class="mt-1 text-xs text-gray-500"><?php echo e($sale->created_at->format('M j, Y g:i A')); ?></p>
+                            </div>
+                            <div class="space-y-3 py-4">
+                                <?php $__currentLoopData = $sale->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="flex items-start justify-between gap-2 text-sm">
+                                        <div class="min-w-0">
+                                            <p class="wrap-break-word font-semibold text-gray-900"><?php echo e($item->product_name); ?></p>
+                                            <p class="text-xs text-gray-500">₱<?php echo e(number_format($item->unit_price, 2)); ?> × <?php echo e($item->quantity); ?></p>
                                         </div>
-                                        <button type="button" class="receipt-close rounded border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Close</button>
+                                        <p class="shrink-0 font-semibold text-gray-900">₱<?php echo e(number_format($item->subtotal, 2)); ?></p>
                                     </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                                <span>Total</span>
+                                <span>₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
+                            </div>
+                        </div>
+                    </template>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
 
-                                    <div class="mt-4 space-y-3">
-                                        <?php $__currentLoopData = $sale->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <div class="flex items-start justify-between gap-4 text-sm">
-                                                <div>
-                                                    <p class="font-semibold text-gray-900"><?php echo e($item->product_name); ?></p>
-                                                    <p class="text-gray-500"><?php echo e(number_format($item->unit_price, 2)); ?> × <?php echo e($item->quantity); ?></p>
-                                                </div>
-                                                <p class="font-semibold text-gray-900">₱<?php echo e(number_format($item->subtotal, 2)); ?></p>
-                                            </div>
-                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                <?php $__currentLoopData = $recentBuilds; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $build): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <template id="build-detail-<?php echo e($build->id); ?>">
+                        <div>
+                            <div class="border-b border-gray-200 pb-3">
+                                <p class="font-bold text-gray-900"><?php echo e($build->build_number); ?></p>
+                                <p class="mt-1 text-sm text-gray-600"><?php echo e($build->customer_name ?: 'Walk-in customer'); ?></p>
+                                <p class="mt-1 text-xs uppercase text-gray-500"><?php echo e($build->status); ?> · <?php echo e($build->created_at->format('M j, Y g:i A')); ?></p>
+                            </div>
+                            <div class="space-y-3 py-4">
+                                <?php $__currentLoopData = $build->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="flex items-start justify-between gap-2 text-sm">
+                                        <div class="min-w-0">
+                                            <p class="wrap-break-word font-semibold text-gray-900"><?php echo e($item->product->name); ?></p>
+                                            <p class="text-xs text-gray-500">₱<?php echo e(number_format($item->unit_price, 2)); ?> × <?php echo e($item->quantity); ?></p>
+                                        </div>
+                                        <p class="shrink-0 font-semibold text-gray-900">₱<?php echo e(number_format($item->subtotal, 2)); ?></p>
                                     </div>
-
-                                    <div class="mt-5 flex items-center justify-between border-t border-gray-200 pt-4 text-base font-bold text-gray-900">
-                                        <span>Total</span>
-                                        <span>₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
-                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                            <?php if($build->notes): ?>
+                                <div class="mb-3 border-t border-gray-200 pt-3">
+                                    <p class="text-xs font-semibold uppercase text-gray-500">Notes</p>
+                                        <p class="mt-1 wrap-break-word text-sm text-gray-700"><?php echo e($build->notes); ?></p>
                                 </div>
-                            </dialog>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                    </div>
-                <?php endif; ?>
-            </section>
+                            <?php endif; ?>
+                            <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                                <span>Total</span>
+                                <span>₱<?php echo e(number_format($build->total_cost, 2)); ?></span>
+                            </div>
+                        </div>
+                    </template>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
         </div>
     </div>
 
     <script>
         (function () {
-            const cart = new Map();
-            const cartItemsEl = document.getElementById('cart-items');
-            const cartEmptyMsg = document.getElementById('cart-empty-msg');
-            const cartTotalEl = document.getElementById('cart-total');
-            const cartJsonInput = document.getElementById('cart-json-input');
-            const checkoutBtn = document.getElementById('checkout-btn');
-            const categoryFilter = document.getElementById('product-category-filter');
-            const productSearch = document.getElementById('product-search');
+            const orderCards = document.querySelectorAll('.order-card');
+            const orderDetails = document.getElementById('selected-order-details');
+            const orderDetailsTitle = document.getElementById('selected-order-title');
+            const historyTabs = document.querySelectorAll('.history-tab');
 
-            document.querySelectorAll('.receipt-trigger').forEach((trigger) => {
-                trigger.addEventListener('click', () => {
-                    document.getElementById(trigger.dataset.receiptId)?.showModal();
+            function selectOrder(card) {
+                orderCards.forEach((orderCard) => {
+                    const selected = orderCard === card;
+                    orderCard.setAttribute('aria-pressed', String(selected));
+                    orderCard.classList.toggle('border-purple-600', selected);
+                    orderCard.classList.toggle('bg-purple-50', selected);
                 });
-            });
 
-            document.querySelectorAll('.receipt-close').forEach((button) => {
-                button.addEventListener('click', () => button.closest('dialog')?.close());
-            });
-
-            function applyProductFilters() {
-                const categoryValue = categoryFilter ? categoryFilter.value : 'all';
-                const searchValue = (productSearch ? productSearch.value : '').trim().toLowerCase();
-
-                document.querySelectorAll('.pos-product-btn').forEach((btn) => {
-                    const matchesCategory = categoryValue === 'all' || (btn.dataset.category || '') === categoryValue;
-                    const matchesSearch = (btn.dataset.search || '').includes(searchValue);
-                    btn.style.display = (matchesCategory && matchesSearch) ? '' : 'none';
-                });
-            }
-
-            function money(value) {
-                return '₱' + Number(value).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
-
-            function render() {
-                cartItemsEl.innerHTML = '';
-                if (cart.size === 0) {
-                    cartItemsEl.appendChild(cartEmptyMsg);
-                    cartTotalEl.textContent = money(0);
-                    cartJsonInput.value = '';
-                    checkoutBtn.disabled = true;
-                    return;
+                const detailTemplate = document.getElementById(card.dataset.detailTemplate);
+                if (detailTemplate) {
+                    orderDetails.replaceChildren(detailTemplate.content.cloneNode(true));
+                    orderDetailsTitle.textContent = `${card.dataset.recordType} Details`;
                 }
-
-                let total = 0;
-                cart.forEach((item, id) => {
-                    const subtotal = item.price * item.qty;
-                    total += subtotal;
-
-                    const row = document.createElement('div');
-                    row.className = 'flex items-center justify-between gap-2 rounded border border-gray-200 p-2';
-                    row.innerHTML = `
-                        <div class="min-w-0 flex-1">
-                            <p class="truncate font-semibold text-gray-900">${item.name}</p>
-                            <p class="text-xs text-gray-500">${money(item.price)} × ${item.qty} = ${money(subtotal)}</p>
-                        </div>
-                        <div class="flex items-center gap-1">
-                            <button type="button" data-id="${id}" data-delta="-1" class="qty-btn h-6 w-6 rounded border border-gray-300 text-sm">−</button>
-                            <button type="button" data-id="${id}" data-delta="1" class="qty-btn h-6 w-6 rounded border border-gray-300 text-sm">+</button>
-                            <button type="button" data-id="${id}" class="remove-btn ml-2 text-xs font-semibold text-red-500">Remove</button>
-                        </div>
-                    `;
-                    cartItemsEl.appendChild(row);
-                });
-
-                cartTotalEl.textContent = money(total);
-                cartJsonInput.value = JSON.stringify(Array.from(cart, ([id, item]) => ({
-                    product_id: Number(id),
-                    quantity: item.qty,
-                })));
-                checkoutBtn.disabled = false;
             }
 
-            document.querySelectorAll('.pos-product-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const id = btn.dataset.id;
-                    const stock = Number(btn.dataset.stock);
-                    const existing = cart.get(id);
+            orderCards.forEach((card) => {
+                card.addEventListener('click', () => selectOrder(card));
+            });
 
-                    if (existing) {
-                        if (existing.qty < stock) {
-                            existing.qty += 1;
-                        }
-                    } else {
-                        cart.set(id, {
-                            name: btn.dataset.name,
-                            price: Number(btn.dataset.price),
-                            qty: 1,
-                            stock,
-                        });
+            historyTabs.forEach((tab) => {
+                tab.addEventListener('click', () => {
+                    const selectedPanel = tab.dataset.historyTab;
+
+                    historyTabs.forEach((historyTab) => {
+                        const selected = historyTab === tab;
+                        historyTab.setAttribute('aria-pressed', String(selected));
+                        historyTab.classList.toggle('border-purple-600', selected);
+                        historyTab.classList.toggle('bg-purple-600', selected);
+                        historyTab.classList.toggle('text-white', selected);
+                        historyTab.classList.toggle('border-gray-300', !selected);
+                        historyTab.classList.toggle('bg-white', !selected);
+                        historyTab.classList.toggle('text-gray-700', !selected);
+                    });
+
+                    document.querySelectorAll('.history-panel').forEach((panel) => {
+                        const hidden = panel.dataset.historyPanel !== selectedPanel;
+                        panel.hidden = hidden;
+                    });
+
+                    const selectedCard = document.querySelector(`[data-history-panel="${selectedPanel}"] .order-card`);
+                    if (selectedCard) {
+                        selectOrder(selectedCard);
+                        return;
                     }
 
-                    render();
+                    orderCards.forEach((orderCard) => orderCard.setAttribute('aria-pressed', 'false'));
+                    orderDetailsTitle.textContent = selectedPanel === 'receipts' ? 'Receipt Details' : 'Computer Build Details';
+                    orderDetails.replaceChildren();
+
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.className = 'text-sm text-gray-400';
+                    emptyMessage.textContent = selectedPanel === 'receipts' ? 'No receipts yet.' : 'No computer build orders yet.';
+                    orderDetails.appendChild(emptyMessage);
                 });
             });
 
-            cartItemsEl.addEventListener('click', (event) => {
-                const qtyBtn = event.target.closest('.qty-btn');
-                const removeBtn = event.target.closest('.remove-btn');
-
-                if (qtyBtn) {
-                    const id = qtyBtn.dataset.id;
-                    const item = cart.get(id);
-                    const nextQty = item.qty + Number(qtyBtn.dataset.delta);
-
-                    if (nextQty <= 0) {
-                        cart.delete(id);
-                    } else if (nextQty <= item.stock) {
-                        item.qty = nextQty;
-                    }
-
-                    render();
-                }
-
-                if (removeBtn) {
-                    cart.delete(removeBtn.dataset.id);
-                    render();
-                }
-            });
-
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', applyProductFilters);
-            }
-
-            if (productSearch) {
-                productSearch.addEventListener('input', applyProductFilters);
-            }
+            const initialTab = document.querySelector('[data-history-panel="receipts"] .order-card')
+                ? 'receipts'
+                : 'builds';
+            document.querySelector(`[data-history-tab="${initialTab}"]`)?.click();
         })();
     </script>
  <?php echo $__env->renderComponent(); ?>
