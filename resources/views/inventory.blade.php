@@ -1,8 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Inventory') }}
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Inventory') }}</h2>
+            <div class="flex gap-2">
+                <a href="{{ route('dashboard') }}" class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600">Back to Dashboard</a>
+                <a href="{{ route('stock-in.index') }}" class="rounded bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">Stock In Delivery</a>
+            </div>
+        </div>
     </x-slot>
 
     <div class="py-6">
@@ -48,7 +52,7 @@
                     $productTypeOptions = \App\Http\Controllers\InventoryController::productTypeOptions();
                 @endphp
 
-                <form method="POST" action="{{ route('inventory.store') }}" class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
+                <form method="POST" action="{{ route('inventory.store') }}" enctype="multipart/form-data" class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
                     @csrf
                     <div class="xl:col-span-2">
                         <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Name</label>
@@ -76,10 +80,6 @@
                         <input type="number" name="price" min="0" value="0" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
                     </div>
                     <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Stock</label>
-                        <input type="number" name="stock_quantity" min="0" value="0" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <div>
                         <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Location</label>
                         <select name="stock_location" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
                             <option value="warehouse">Warehouse</option>
@@ -95,6 +95,26 @@
                         <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Description</label>
                         <input type="text" name="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="Optional description">
                     </div>
+                    <div class="xl:col-span-2">
+                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Product photo</label>
+                        <input type="file" name="image" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Before photo</label>
+                        <input type="file" name="before_image" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">After photo</label>
+                        <input type="file" name="after_image" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Warranty (months)</label>
+                        <input type="number" name="warranty_months" min="0" max="1200" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
+                    </div>
+                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 xl:col-span-2">
+                        <input type="checkbox" name="requires_serial" value="1" class="rounded border-gray-300">
+                        Track serial number for each unit
+                    </label>
                     <div class="xl:col-span-7 flex justify-end">
                         <button type="submit" class="rounded bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">Add Item</button>
                     </div>
@@ -112,7 +132,7 @@
                                 <th class="px-4 py-3">Price</th>
                                 <th class="px-4 py-3">Stock</th>
                                 <th class="px-4 py-3">Location</th>
-                                <th class="px-4 py-3">Update</th>
+                                <th class="px-4 py-3">Edit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,17 +147,7 @@
                                     </td>
                                     <td class="px-4 py-3 capitalize">{{ str_replace('_', ' ', $product->stock_location) }}</td>
                                     <td class="px-4 py-3">
-                                        <form method="POST" action="{{ route('inventory.update') }}" class="flex items-center gap-2">
-                                            @csrf
-                                            <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                            <input type="number" name="stock_quantity" value="{{ $product->stock_quantity }}" min="0" class="w-20 rounded border border-gray-300 px-2 py-1 text-sm">
-                                            <select name="stock_location" class="rounded border border-gray-300 px-2 py-1 text-sm">
-                                                <option value="warehouse" {{ $product->stock_location === 'warehouse' ? 'selected' : '' }}>Warehouse</option>
-                                                <option value="store" {{ $product->stock_location === 'store' ? 'selected' : '' }}>Store</option>
-                                                <option value="used_in_pc" {{ $product->stock_location === 'used_in_pc' ? 'selected' : '' }}>Used in PC</option>
-                                            </select>
-                                            <button type="submit" class="rounded bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
-                                        </form>
+                                        <a href="{{ route('inventory.products.edit', $product) }}" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">Edit item</a>
                                     </td>
                                 </tr>
                             @endforeach

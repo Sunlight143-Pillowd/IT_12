@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\PcBuild;
-use App\Models\PcBuildItem;
 use App\Models\Product;
+use App\Models\ProductUnit;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockReservation;
@@ -93,7 +93,7 @@ class PcBuildService
 
             $build = PcBuild::create([
                 'build_number' => $this->nextBuildNumber(),
-                'customer_name' => trim((string) ($payload['customer_name'] ?? '')), 
+                'customer_name' => trim((string) ($payload['customer_name'] ?? '')),
                 'customer_email' => trim((string) ($payload['customer_email'] ?? '')) ?: null,
                 'employee_id' => $user->id,
                 'status' => 'reserved',
@@ -186,16 +186,32 @@ class PcBuildService
 
             $sale = Sale::create([
                 'employee_id' => $user->id,
-                'customer_name' => $build->customer_name ?: 'Walk-in Customer',
+                'customer_name' => $build->customer_name,
                 'total_amount' => (float) $build->total_cost,
             ]);
 
             foreach ($build->items as $item) {
-                $product = $item->product;
-                $product->lockForUpdate();
+                $product = Product::query()->whereKey($item->product_id)->lockForUpdate()->firstOrFail();
+
+                if ($product->requires_serial) {
+                    $units = ProductUnit::query()
+                        ->where('product_id', $product->id)
+                        ->where('status', 'in_stock')
+                        ->orderBy('id')
+                        ->limit($item->quantity)
+                        ->lockForUpdate()
+                        ->get();
+
+                    if ($units->count() !== $item->quantity) {
+                        throw ValidationException::withMessages([
+                            'items' => ["Unable to sell {$product->name}: not enough serialized units are available."],
+                        ]);
+                    }
+                }
+
                 $product->decrement('stock_quantity', $item->quantity);
 
-                SaleItem::create([
+                $saleItem = SaleItem::create([
                     'sale_id' => $sale->id,
                     'product_id' => $product->id,
                     'product_name' => $product->name,
@@ -203,6 +219,16 @@ class PcBuildService
                     'quantity' => $item->quantity,
                     'subtotal' => (float) $item->subtotal,
                 ]);
+
+                if ($product->requires_serial) {
+                    foreach ($units as $unit) {
+                        $unit->update([
+                            'sale_item_id' => $saleItem->id,
+                            'status' => 'sold',
+                            'sold_at' => now(),
+                        ]);
+                    }
+                }
             }
 
             foreach ($build->reservations as $reservation) {
@@ -267,7 +293,7 @@ class PcBuildService
             $sequence = (int) $matches[1] + 1;
         }
 
-        return 'PC-' . str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+        return 'PC-'.str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
     }
 
     protected function createStorefrontProduct(PcBuild $build): void
@@ -278,12 +304,12 @@ class PcBuildService
             ->map(fn ($item) => "- {$item->product->name} x{$item->quantity} ({$item->product->category})")
             ->implode("\n");
 
-        $productName = 'Custom PC Build ' . $build->build_number;
+        $productName = 'Custom PC Build '.$build->build_number;
 
         $product = Product::query()->firstOrCreate(
             ['name' => $productName],
             [
-                'slug' => Str::slug($productName) . '-' . $build->id,
+                'slug' => Str::slug($productName).'-'.$build->id,
                 'type' => 'desktop',
                 'category' => 'Custom Build',
                 'price' => (int) $build->total_cost,

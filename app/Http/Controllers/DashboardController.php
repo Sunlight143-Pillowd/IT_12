@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
+use App\Models\StockIn;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -18,7 +20,15 @@ class DashboardController extends Controller
         $todaySales = Sale::whereDate('created_at', today())->sum('total_amount');
         $todayOrders = Sale::whereDate('created_at', today())->count();
         $revenue = Sale::sum('total_amount');
-        $topProducts = Product::orderByDesc('stock_quantity')->limit(3)->get();
+        $topProducts = SaleItem::query()
+            ->select('product_id', 'product_name')
+            ->selectRaw('SUM(quantity) AS units_sold, SUM(subtotal) AS sales_total')
+            ->groupBy('product_id', 'product_name')
+            ->orderByDesc('units_sold')
+            ->limit(5)
+            ->get();
+        $recentSales = Sale::withCount('items')->latest()->limit(10)->get();
+        $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
 
         $purchaseHistory = $user
             ? Sale::where(function ($query) use ($user) {
@@ -40,6 +50,8 @@ class DashboardController extends Controller
             'todayOrders' => $todayOrders,
             'revenue' => $revenue,
             'topProducts' => $topProducts,
+            'recentSales' => $recentSales,
+            'recentStockIns' => $recentStockIns,
             'purchaseHistory' => $purchaseHistory,
         ]);
     }

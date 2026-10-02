@@ -44,7 +44,7 @@
                     </div>
                     <div>
                         <label for="customer_name" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Customer</label>
-                        <input id="customer_name" name="customer_name" value="<?php echo e(old('customer_name')); ?>" form="build-pc-form" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="John Doe" />
+                        <input id="customer_name" name="customer_name" required value="<?php echo e(old('customer_name')); ?>" form="build-pc-form" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="John Doe" />
                     </div>
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Status</p>
@@ -136,7 +136,7 @@
                         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <p class="text-sm font-bold uppercase tracking-[0.2em] text-gray-500"><?php echo e($build->build_number); ?></p>
-                                <p class="mt-1 text-lg font-black text-gray-900"><?php echo e($build->customer_name ?: 'Walk-in Customer'); ?></p>
+                                <p class="mt-1 text-lg font-black text-gray-900"><?php echo e($build->customer_name ?: 'Customer not recorded'); ?></p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700"><?php echo e($build->status); ?></span>

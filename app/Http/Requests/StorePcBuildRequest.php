@@ -14,7 +14,7 @@ class StorePcBuildRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'customer_name' => ['nullable', 'string', 'max:150'],
+            'customer_name' => ['required', 'string', 'max:150'],
             'customer_email' => ['nullable', 'email', 'max:150'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],

@@ -20,11 +20,18 @@ class QuotationController extends Controller
         return view('quotations', compact('products', 'quotations'));
     }
 
+    public function show(Quotation $quotation): View
+    {
+        $quotation->load('items');
+
+        return view('quotation-show', compact('quotation'));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'cart_json' => ['required', 'string'],
-            'customer_name' => ['nullable', 'string', 'max:150'],
+            'customer_name' => ['required', 'string', 'max:150'],
             'customer_contact' => ['nullable', 'string', 'max:150'],
             'notes' => ['nullable', 'string', 'max:255'],
         ]);

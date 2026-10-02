@@ -15,7 +15,7 @@
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
                 <section class="relative overflow-hidden rounded-2xl bg-black text-white shadow-xl">
-                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.55),_transparent_55%)]"></div>
+                    <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.55),transparent_55%)]"></div>
                     <div class="relative grid gap-8 p-8 lg:grid-cols-2 lg:p-10">
                         <div>
                             <p class="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-purple-300">Admin access</p>
@@ -61,8 +61,8 @@
                 <div class="grid gap-4 md:grid-cols-4">
                     @php
                         $stats = [
-                            ['label' => 'Products', 'value' => number_format($products), 'tone' => 'text-gray-900'],
-                            ['label' => 'Low Stock', 'value' => number_format($lowStock), 'tone' => 'text-red-600'],
+                            ['label' => 'Products', 'value' => number_format((int) $products), 'tone' => 'text-gray-900'],
+                            ['label' => 'Low Stock', 'value' => number_format((int) $lowStock), 'tone' => 'text-red-600'],
                             ['label' => 'Sales Today', 'value' => number_format($todayOrders), 'tone' => 'text-emerald-600'],
                             ['label' => 'Revenue', 'value' => '₱' . number_format($revenue, 0), 'tone' => 'text-purple-600'],
                         ];
@@ -77,21 +77,21 @@
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-3">
-                    <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm lg:col-span-2">
+                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm lg:col-span-2">
                         <div class="mb-5 flex items-center justify-between">
                             <h2 class="text-xl font-black text-gray-900">Top Selling Products</h2>
-                            <span class="text-xs font-semibold uppercase tracking-wide text-purple-600">This month</span>
                         </div>
-                        <div class="space-y-4">
-                            @foreach($topProducts as $product)
-                                <div class="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
-                                    <div>
-                                        <p class="font-bold text-gray-900">{{ $product->name }}</p>
-                                        <p class="text-sm text-gray-500">{{ $product->stock_quantity }} units in stock</p>
-                                    </div>
-                                    <span class="font-bold text-purple-600">₱{{ number_format($product->price, 0) }}</span>
-                                </div>
-                            @endforeach
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Product</th><th class="px-4 py-3">Units Sold</th><th class="px-4 py-3 text-right">Sales</th></tr></thead>
+                                <tbody>
+                                    @forelse($topProducts as $product)
+                                        <tr class="border-t border-gray-200"><td class="px-4 py-3 font-semibold text-gray-900">{{ $product->product_name }}</td><td class="px-4 py-3">{{ $product->units_sold }}</td><td class="px-4 py-3 text-right font-semibold">₱{{ number_format($product->sales_total, 2) }}</td></tr>
+                                    @empty
+                                        <tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">No product sales recorded.</td></tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
@@ -117,6 +117,44 @@
                         </div>
                     </div>
                 </div>
+
+                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex items-center justify-between gap-3 p-5">
+                        <h2 class="text-xl font-black text-gray-900">Recent Sales</h2>
+                        <a href="{{ route('pos.index') }}" class="text-sm font-semibold text-purple-700 hover:underline">All receipts</a>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Receipt</th><th class="px-4 py-3">Customer</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Date</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Document</th></tr></thead>
+                            <tbody>
+                                @forelse($recentSales as $sale)
+                                    <tr class="border-t border-gray-200"><td class="px-4 py-3 font-semibold text-gray-900">#{{ $sale->id }}</td><td class="px-4 py-3">{{ $sale->customer_name ?: 'Customer not recorded' }}</td><td class="px-4 py-3">{{ $sale->items_count }}</td><td class="px-4 py-3">{{ $sale->created_at->format('M j, Y') }}</td><td class="px-4 py-3 text-right font-semibold">₱{{ number_format($sale->total_amount, 2) }}</td><td class="px-4 py-3"><a href="{{ route('pos.receipt', $sale) }}" class="rounded border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:border-purple-600">View receipt</a></td></tr>
+                                @empty
+                                    <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No sales recorded.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex items-center justify-between gap-3 p-5">
+                        <h2 class="text-xl font-black text-gray-900">Stock-In Transactions</h2>
+                        <a href="{{ route('stock-in.index') }}" class="text-sm font-semibold text-purple-700 hover:underline">All deliveries</a>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Date</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Invoice Number</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Document</th></tr></thead>
+                            <tbody>
+                                @forelse($recentStockIns as $stockIn)
+                                    <tr class="border-t border-gray-200"><td class="px-4 py-3">{{ $stockIn->received_at->format('M j, Y') }}</td><td class="px-4 py-3 font-semibold">{{ $stockIn->supplier_name }}</td><td class="px-4 py-3">{{ $stockIn->invoice_number }}</td><td class="px-4 py-3">{{ $stockIn->items_count }}</td><td class="px-4 py-3">@if ($stockIn->delivery_document_path)<a href="{{ asset('storage/'.$stockIn->delivery_document_path) }}" target="_blank" rel="noopener" class="font-semibold text-purple-700 hover:underline">View document</a>@else<span class="text-gray-400">None</span>@endif</td></tr>
+                                @empty
+                                    <tr><td colspan="5" class="px-4 py-6 text-center text-gray-500">No delivery transactions recorded.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </div>
     @else
@@ -152,7 +190,7 @@
                                     <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
                                         <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
                                             <div>
-                                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Order #{{ $sale->id }}</p>
+                                                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Receipt #{{ $sale->id }}</p>
                                                 <p class="mt-1 text-sm text-gray-600">{{ $sale->created_at->format('F d, Y h:i A') }}</p>
                                             </div>
                                             <div class="text-left sm:text-right">
