@@ -25,7 +25,7 @@
     <div class="meta">
         <div><strong>Build Number:</strong> {{ $pcBuild->build_number }}</div>
         <div><strong>Date:</strong> {{ $pcBuild->created_at->format('F d, Y') }}</div>
-        <div><strong>Customer:</strong> {{ $pcBuild->customer_name ?: 'Walk-in Customer' }}</div>
+        <div><strong>Customer:</strong> {{ $pcBuild->customer_name ?: 'Customer not recorded' }}</div>
         <div><strong>Status:</strong> {{ $pcBuild->status }}</div>
     </div>
 

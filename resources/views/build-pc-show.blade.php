@@ -14,7 +14,7 @@
                 <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">{{ $pcBuild->build_number }}</p>
-                        <h3 class="mt-2 text-2xl font-black text-gray-900">{{ $pcBuild->customer_name ?: 'Walk-in Customer' }}</h3>
+                        <h3 class="mt-2 text-2xl font-black text-gray-900">{{ $pcBuild->customer_name ?: 'Customer not recorded' }}</h3>
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">{{ $pcBuild->status }}</span>

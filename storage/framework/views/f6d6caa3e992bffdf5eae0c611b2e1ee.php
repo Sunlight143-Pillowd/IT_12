@@ -9,10 +9,10 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
      <?php $__env->slot('header', null, []); ?> 
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            <?php echo e(__('Quotations')); ?>
-
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight"><?php echo e(__('Quotations')); ?></h2>
+            <a href="<?php echo e(route('dashboard')); ?>" class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600">Back to Dashboard</a>
+        </div>
      <?php $__env->endSlot(); ?>
 
     <div class="py-6">
@@ -69,11 +69,11 @@
                     <form method="POST" action="<?php echo e(route('quotation.store')); ?>" id="quote-form">
                         <?php echo csrf_field(); ?>
                         <input type="hidden" name="cart_json" id="quote-cart-json">
-                        <input type="text" name="customer_name" placeholder="Customer name" class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
+                        <input type="text" name="customer_name" placeholder="Customer name" required class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
                         <input type="text" name="customer_contact" placeholder="Phone or email" class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
                         <textarea name="notes" rows="3" placeholder="Notes (optional)" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm"></textarea>
 
-                        <div id="quote-cart-items" class="mb-4 min-h-[120px] space-y-2 text-sm">
+                        <div id="quote-cart-items" class="mb-4 min-h-30 space-y-2 text-sm">
                             <p id="quote-cart-empty-msg" class="text-gray-400">No items yet.</p>
                         </div>
 
@@ -99,19 +99,21 @@
                                 <th class="px-4 py-3">Contact</th>
                                 <th class="px-4 py-3">Total</th>
                                 <th class="px-4 py-3">Items</th>
+                                <th class="px-4 py-3">Details</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php $__empty_1 = true; $__currentLoopData = $quotations; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $quotation): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <tr class="border-t border-gray-200">
-                                    <td class="px-4 py-3 font-semibold text-gray-900"><?php echo e($quotation->customer_name ?? 'Walk-in'); ?></td>
+                                    <td class="px-4 py-3 font-semibold text-gray-900"><?php echo e($quotation->customer_name ?: 'Customer not recorded'); ?></td>
                                     <td class="px-4 py-3"><?php echo e($quotation->customer_contact ?? 'N/A'); ?></td>
                                     <td class="px-4 py-3 font-bold text-purple-600">₱<?php echo e(number_format($quotation->total_amount, 2)); ?></td>
                                     <td class="px-4 py-3"><?php echo e($quotation->items->count()); ?></td>
+                                    <td class="px-4 py-3"><a href="<?php echo e(route('quotation.show', $quotation)); ?>" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">View</a></td>
                                 </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <tr>
-                                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">No quotations yet.</td>
+                                    <td colspan="5" class="px-4 py-6 text-center text-gray-500">No quotations yet.</td>
                                 </tr>
                             <?php endif; ?>
                         </tbody>

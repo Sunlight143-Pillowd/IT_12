@@ -8,6 +8,7 @@ use App\Http\Controllers\PcBuildController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuotationController;
+use App\Http\Controllers\StockInController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -23,12 +24,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dashboard/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::post('/dashboard/inventory/categories', [CategoryController::class, 'store'])->name('inventory.categories.store');
     Route::patch('/dashboard/inventory/categories/{category}', [CategoryController::class, 'update'])->name('inventory.categories.update');
-    Route::post('/dashboard/inventory/update', [InventoryController::class, 'update'])->name('inventory.update');
+    Route::get('/dashboard/inventory/products/{product}/edit', [InventoryController::class, 'edit'])->name('inventory.products.edit');
+    Route::patch('/dashboard/inventory/products/{product}', [InventoryController::class, 'updateProduct'])->name('inventory.products.update');
+
+    Route::get('/dashboard/stock-in', [StockInController::class, 'index'])->name('stock-in.index');
+    Route::post('/dashboard/stock-in', [StockInController::class, 'store'])->name('stock-in.store');
 
     Route::get('/dashboard/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::get('/dashboard/pos/receipts/{sale}', [PosController::class, 'receipt'])->name('pos.receipt');
     Route::post('/dashboard/pos/checkout', [PosController::class, 'checkout'])->name('pos.checkout');
 
     Route::get('/dashboard/quotations', [QuotationController::class, 'index'])->name('quotation.index');
+    Route::get('/dashboard/quotations/{quotation}', [QuotationController::class, 'show'])->name('quotation.show');
     Route::post('/dashboard/quotations', [QuotationController::class, 'store'])->name('quotation.store');
 
     Route::get('/dashboard/build-pc', [PcBuildController::class, 'index'])->name('buildpc.index');

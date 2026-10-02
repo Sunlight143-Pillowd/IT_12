@@ -1,8 +1,9 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Quotations') }}
-        </h2>
+        <div class="flex items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Quotations') }}</h2>
+            <a href="{{ route('dashboard') }}" class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600">Back to Dashboard</a>
+        </div>
     </x-slot>
 
     <div class="py-6">
@@ -57,11 +58,11 @@
                     <form method="POST" action="{{ route('quotation.store') }}" id="quote-form">
                         @csrf
                         <input type="hidden" name="cart_json" id="quote-cart-json">
-                        <input type="text" name="customer_name" placeholder="Customer name" class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
+                        <input type="text" name="customer_name" placeholder="Customer name" required class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
                         <input type="text" name="customer_contact" placeholder="Phone or email" class="mb-3 w-full rounded border border-gray-300 px-3 py-2 text-sm">
                         <textarea name="notes" rows="3" placeholder="Notes (optional)" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm"></textarea>
 
-                        <div id="quote-cart-items" class="mb-4 min-h-[120px] space-y-2 text-sm">
+                        <div id="quote-cart-items" class="mb-4 min-h-30 space-y-2 text-sm">
                             <p id="quote-cart-empty-msg" class="text-gray-400">No items yet.</p>
                         </div>
 
@@ -87,19 +88,21 @@
                                 <th class="px-4 py-3">Contact</th>
                                 <th class="px-4 py-3">Total</th>
                                 <th class="px-4 py-3">Items</th>
+                                <th class="px-4 py-3">Details</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($quotations as $quotation)
                                 <tr class="border-t border-gray-200">
-                                    <td class="px-4 py-3 font-semibold text-gray-900">{{ $quotation->customer_name ?? 'Walk-in' }}</td>
+                                    <td class="px-4 py-3 font-semibold text-gray-900">{{ $quotation->customer_name ?: 'Customer not recorded' }}</td>
                                     <td class="px-4 py-3">{{ $quotation->customer_contact ?? 'N/A' }}</td>
                                     <td class="px-4 py-3 font-bold text-purple-600">₱{{ number_format($quotation->total_amount, 2) }}</td>
                                     <td class="px-4 py-3">{{ $quotation->items->count() }}</td>
+                                    <td class="px-4 py-3"><a href="{{ route('quotation.show', $quotation) }}" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">View</a></td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-6 text-center text-gray-500">No quotations yet.</td>
+                                    <td colspan="5" class="px-4 py-6 text-center text-gray-500">No quotations yet.</td>
                                 </tr>
                             @endforelse
                         </tbody>

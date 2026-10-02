@@ -3,7 +3,7 @@
     // Pages set $activeNav (legacy) or $activePage (newer pattern). Normalize both
     // so the current nav link stays highlighted regardless of how the page loads it.
     $activePage = $activePage ?? ($activeNav ?? '');
-    $pageTitle = $pageTitle ?? 'Davao Boss Computer';
+    $pageTitle = $pageTitle ?? 'Computer Boss Davao';
     $navLink = function (string $page, string $href, string $label) use ($activePage) {
         $isActive = $activePage === $page;
         $class = 'hover:text-purple-600' . ($isActive ? ' text-purple-600' : '');
@@ -56,7 +56,7 @@
             <span class="inline-flex h-5 w-5 items-center justify-center rounded-full border-4 border-purple-600">
                 <span class="h-1.5 w-1.5 rounded-full bg-purple-600"></span>
             </span>
-            <span class="text-3xl font-black tracking-tight text-purple-600">DAVAO BOSS COMPUTER</span>
+            <span class="text-3xl font-black tracking-tight text-purple-600">COMPUTER BOSS DAVAO</span>
         </a>
         <nav class="hidden lg:flex items-center gap-8 text-sm font-bold uppercase tracking-wide text-gray-800">
             <?php $navLink('desktops', 'desktops.php', 'DESKTOPS'); ?>

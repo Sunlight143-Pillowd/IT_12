@@ -35,6 +35,9 @@
                         </button>
                     </div>
 
+                    <label for="history-search" class="sr-only">Search receipts and computer builds</label>
+                    <input id="history-search" type="search" placeholder="Search receipts, customers, items, serial numbers..." autocomplete="off" class="mb-4 w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-purple-600 focus:ring-purple-600">
+
                     <div id="receipt-list" class="history-panel grid gap-3 sm:grid-cols-2 xl:grid-cols-3" data-history-panel="receipts">
                         @forelse ($recentSales as $sale)
                             <button type="button"
@@ -43,7 +46,7 @@
                                     data-record-type="Receipt"
                                     aria-pressed="false">
                                 <span class="block truncate text-sm font-bold text-gray-900">Receipt #{{ $sale->id }}</span>
-                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $sale->customer_name ?: 'Walk-in customer' }}</span>
+                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $sale->customer_name ?: 'Customer not recorded' }}</span>
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱{{ number_format($sale->total_amount, 2) }}</span>
                                 <span class="mt-1 block text-[11px] text-gray-500">{{ $sale->items->count() }} item(s) · {{ $sale->created_at->format('M j, Y') }}</span>
                             </button>
@@ -60,7 +63,7 @@
                                     data-record-type="Computer Build"
                                     aria-pressed="false">
                                 <span class="block truncate text-sm font-bold text-gray-900">{{ $build->build_number }}</span>
-                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $build->customer_name ?: 'Walk-in customer' }}</span>
+                                <span class="mt-1 block truncate text-xs text-gray-600">{{ $build->customer_name ?: 'Customer not recorded' }}</span>
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱{{ number_format($build->total_cost, 2) }}</span>
                                 <span class="mt-1 block text-[11px] uppercase text-gray-500">{{ $build->status }} · {{ $build->items->count() }} part(s)</span>
                             </button>
@@ -68,6 +71,7 @@
                             <p class="col-span-full rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No computer build orders yet.</p>
                         @endforelse
                     </div>
+                    <p id="history-no-results" class="hidden rounded border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">No matching records.</p>
                 </section>
 
                 <section aria-labelledby="selected-order-title" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -84,7 +88,7 @@
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">Receipt #{{ $sale->id }}</p>
-                                <p class="mt-1 text-sm text-gray-600">{{ $sale->customer_name ?: 'Walk-in customer' }}</p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $sale->customer_name ?: 'Customer not recorded' }}</p>
                                 <p class="mt-1 text-xs text-gray-500">{{ $sale->created_at->format('M j, Y g:i A') }}</p>
                             </div>
                             <div class="space-y-3 py-4">
@@ -93,6 +97,12 @@
                                         <div class="min-w-0">
                                             <p class="wrap-break-word font-semibold text-gray-900">{{ $item->product_name }}</p>
                                             <p class="text-xs text-gray-500">₱{{ number_format($item->unit_price, 2) }} × {{ $item->quantity }}</p>
+                                            @if ($item->product?->description)
+                                                <p class="mt-1 wrap-break-word text-xs text-gray-600">{{ $item->product->description }}</p>
+                                            @endif
+                                            @foreach ($item->units as $unit)
+                                                <p class="mt-1 text-xs text-gray-500">Serial: {{ $unit->serial_number ?? 'Not recorded' }} · Warranty: {{ $unit->warranty_months !== null ? $unit->warranty_months.' months' : 'Not recorded' }}</p>
+                                            @endforeach
                                         </div>
                                         <p class="shrink-0 font-semibold text-gray-900">₱{{ number_format($item->subtotal, 2) }}</p>
                                     </div>
@@ -111,7 +121,7 @@
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">{{ $build->build_number }}</p>
-                                <p class="mt-1 text-sm text-gray-600">{{ $build->customer_name ?: 'Walk-in customer' }}</p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $build->customer_name ?: 'Customer not recorded' }}</p>
                                 <p class="mt-1 text-xs uppercase text-gray-500">{{ $build->status }} · {{ $build->created_at->format('M j, Y g:i A') }}</p>
                             </div>
                             <div class="space-y-3 py-4">
@@ -148,6 +158,47 @@
             const orderDetails = document.getElementById('selected-order-details');
             const orderDetailsTitle = document.getElementById('selected-order-title');
             const historyTabs = document.querySelectorAll('.history-tab');
+            const historySearch = document.getElementById('history-search');
+            const noResultsMessage = document.getElementById('history-no-results');
+
+            function filterHistory() {
+                const activePanel = document.querySelector('.history-panel:not([hidden])');
+                if (!activePanel) {
+                    return;
+                }
+
+                const searchTerm = historySearch.value.trim().toLowerCase();
+                const cards = Array.from(activePanel.querySelectorAll('.order-card'));
+                let visibleCount = 0;
+
+                cards.forEach((card) => {
+                    const detailTemplate = document.getElementById(card.dataset.detailTemplate);
+                    const searchableText = `${card.textContent} ${detailTemplate?.content.textContent || ''}`.toLowerCase();
+                    const matches = searchTerm === '' || searchableText.includes(searchTerm);
+                    card.hidden = !matches;
+                    if (matches) {
+                        visibleCount += 1;
+                    }
+                });
+
+                noResultsMessage.classList.toggle('hidden', cards.length === 0 || visibleCount > 0);
+
+                const selectedCard = cards.find((card) => card.getAttribute('aria-pressed') === 'true');
+                if (!selectedCard || selectedCard.hidden) {
+                    const nextCard = cards.find((card) => !card.hidden);
+                    if (nextCard) {
+                        selectOrder(nextCard);
+                    } else if (cards.length > 0) {
+                        cards.forEach((card) => card.setAttribute('aria-pressed', 'false'));
+                        orderDetailsTitle.textContent = 'No matching order';
+                        orderDetails.replaceChildren();
+                        const emptyMessage = document.createElement('p');
+                        emptyMessage.className = 'text-sm text-gray-400';
+                        emptyMessage.textContent = 'Try a different search.';
+                        orderDetails.appendChild(emptyMessage);
+                    }
+                }
+            }
 
             function selectOrder(card) {
                 orderCards.forEach((orderCard) => {
@@ -188,9 +239,15 @@
                         panel.hidden = hidden;
                     });
 
-                    const selectedCard = document.querySelector(`[data-history-panel="${selectedPanel}"] .order-card`);
+                    filterHistory();
+                    const selectedCard = document.querySelector(`[data-history-panel="${selectedPanel}"] .order-card:not([hidden])`);
                     if (selectedCard) {
                         selectOrder(selectedCard);
+                        return;
+                    }
+
+                    const panelHasCards = document.querySelector(`[data-history-panel="${selectedPanel}"] .order-card`);
+                    if (panelHasCards) {
                         return;
                     }
 
@@ -204,6 +261,8 @@
                     orderDetails.appendChild(emptyMessage);
                 });
             });
+
+            historySearch.addEventListener('input', filterHistory);
 
             const initialTab = document.querySelector('[data-history-panel="receipts"] .order-card')
                 ? 'receipts'

@@ -22,13 +22,35 @@ class Product extends Model
         'size',
         'tags',
         'image_path',
+        'before_image_path',
+        'after_image_path',
+        'requires_serial',
+        'warranty_months',
         'description',
         'is_active',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'requires_serial' => 'boolean',
+            'warranty_months' => 'integer',
+        ];
+    }
+
     public function reservations(): HasMany
     {
         return $this->hasMany(StockReservation::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(ProductUnit::class);
+    }
+
+    public function stockInItems(): HasMany
+    {
+        return $this->hasMany(StockInItem::class);
     }
 
     public function availableStock(): int
