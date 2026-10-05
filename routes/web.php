@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -17,9 +18,15 @@ Route::get('/laptops', [HomeController::class, 'laptops'])->name('store.laptops'
 Route::get('/accessories', [HomeController::class, 'accessories'])->name('store.accessories');
 Route::get('/categories', [HomeController::class, 'categories'])->name('store.categories');
 Route::get('/special-offers', [HomeController::class, 'specialOffers'])->name('store.special-offers');
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::post('/cart/order', [CartController::class, 'placeOrder'])->name('cart.order');
+Route::post('/cart/{product}', [CartController::class, 'store'])->name('cart.items.store');
+Route::put('/cart/{product}', [CartController::class, 'update'])->name('cart.items.update');
+Route::delete('/cart/{product}', [CartController::class, 'destroy'])->name('cart.items.destroy');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/orders/{storeOrder}/accept', [DashboardController::class, 'acceptOrder'])->name('dashboard.orders.accept');
     Route::get('/dashboard/inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::post('/dashboard/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::post('/dashboard/inventory/categories', [CategoryController::class, 'store'])->name('inventory.categories.store');

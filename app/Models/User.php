@@ -45,6 +45,21 @@ class User extends Authenticatable
 
     public function isAdmin(): bool
     {
-        return $this->email === 'admin@davaobosscomputer.com';
+        return strtolower($this->email) === 'admin@davaobosscomputer.com';
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->isAdmin() || strtolower($this->email) === 'employee@davaobosscomputer.com';
+    }
+
+    public function canManageOrders(): bool
+    {
+        return $this->isEmployee();
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->canManageOrders();
     }
 }

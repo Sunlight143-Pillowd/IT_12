@@ -40,18 +40,21 @@
                     <a href="{{ route('store.categories') }}" class="hover:text-purple-600">CATEGORIES</a>
                     <a href="{{ route('store.special-offers') }}" class="text-purple-600 hover:text-purple-700">SPECIAL OFFERS</a>
                     @auth
-                        <a href="{{ route('dashboard') }}" class="hover:text-purple-600">DASHBOARD</a>
+                        <a href="{{ route('dashboard') }}" class="hover:text-purple-600">{{ Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS' }}</a>
                     @endauth
                 </nav>
 
                 <div class="flex items-center gap-6 text-gray-700">
+                    <a href="{{ route('cart.index') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">
+                        CART ({{ array_sum(session('cart', [])) }})
+                    </a>
                     @guest
-                        <a href="{{ route('login') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
-                        @endif
+                    <a href="{{ route('login') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
+                    @if (Route::has('register'))
+                    <a href="{{ route('register') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
+                    @endif
                     @else
-                        <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
                             <button type="button"
                                     @click="open = !open"
                                     aria-haspopup="true"
@@ -69,7 +72,7 @@
                                  class="absolute right-0 z-50 mt-2 w-52 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
                                  style="display: none;">
                                 @if (Auth::user()?->isAdmin())
-                                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
+                                <a href="{{ route('dashboard') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
                                 @endif
                                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
                                 <form method="POST" action="{{ route('logout') }}">
@@ -84,6 +87,16 @@
         </header>
 
         <main>
+            @if (session('status'))
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-green-700" role="status">
+                    {{ session('status') }}
+                </div>
+            @endif
+            @if ($errors->has('quantity'))
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-red-700" role="alert">
+                    {{ $errors->first('quantity') }}
+                </div>
+            @endif
             <section class="relative bg-black overflow-hidden">
                 <div class="placeholder-img absolute inset-0 opacity-40"></div>
                 <div class="relative max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[520px]">
@@ -148,6 +161,23 @@
                                     <span class="font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
                                     <span class="text-xs font-semibold text-gray-500">{{ $product->stock_quantity }} in stock</span>
                                 </div>
+                                @if ($product->stock_quantity > 0)
+                                    <form method="POST" action="{{ route('cart.items.store', $product) }}" class="mt-4 flex items-end gap-2">
+                                        @csrf
+                                        <label class="text-xs font-medium text-gray-700">
+                                            Quantity
+                                            <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="{{ $product->stock_quantity }}" required
+                                                   class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                        </label>
+                                        <button type="submit" class="rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">
+                                            Add to cart
+                                        </button>
+                                    </form>
+                                @else
+                                    <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">
+                                        Out of stock
+                                    </button>
+                                @endif
                             </article>
                         @empty
                             <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>
