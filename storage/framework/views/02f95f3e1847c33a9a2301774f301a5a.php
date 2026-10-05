@@ -149,6 +149,47 @@
 
                 <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     <div class="flex items-center justify-between gap-3 p-5">
+                        <h2 class="text-xl font-black text-gray-900">Pending Customer Orders</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Order</th><th class="px-4 py-3">Customer</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Date</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Status</th></tr></thead>
+                            <tbody>
+                                <?php $__empty_1 = true; $__currentLoopData = $pendingStoreOrders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                    <tr class="border-t border-gray-200">
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#<?php echo e($order->id); ?></td>
+                                        <td class="px-4 py-3"><?php echo e($order->customer_name); ?><br><span class="text-xs text-gray-500"><?php echo e($order->customer_email); ?></span></td>
+                                        <td class="px-4 py-3">
+                                            <ul class="space-y-1">
+                                                <?php $__currentLoopData = $order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                    <li><?php echo e($item->product_name); ?> × <?php echo e($item->quantity); ?></li>
+                                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                            </ul>
+                                        </td>
+                                        <td class="px-4 py-3"><?php echo e($order->created_at->format('M j, Y')); ?></td>
+                                        <td class="px-4 py-3 text-right font-semibold">₱<?php echo e(number_format($order->total_amount, 2)); ?></td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800"><?php echo e(ucfirst($order->status)); ?></span>
+                                                <?php if($order->status === 'pending' && Auth::user()?->canManageOrders()): ?>
+                                                    <form method="POST" action="<?php echo e(route('dashboard.orders.accept', $order)); ?>" class="inline-block">
+                                                        <?php echo csrf_field(); ?>
+                                                        <button type="submit" class="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700">Accept order</button>
+                                                    </form>
+                                                <?php endif; ?>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                    <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No pending customer orders.</td></tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex items-center justify-between gap-3 p-5">
                         <h2 class="text-xl font-black text-gray-900">Stock-In Transactions</h2>
                         <a href="<?php echo e(route('stock-in.index')); ?>" class="text-sm font-semibold text-purple-700 hover:underline">All deliveries</a>
                     </div>
@@ -180,51 +221,61 @@
                     </a>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        <div class="mb-6 flex items-center justify-between">
-                            <h2 class="text-2xl font-black text-gray-900">Purchase History</h2>
-                            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">
-                                <?php echo e($purchaseHistory->count()); ?> order(s)
-                            </span>
+<?php
+    $allOrders = $customerStoreOrders->concat($purchaseHistory)->sortByDesc('created_at');
+?>
+
+<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="p-6 text-gray-900">
+        <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-2xl font-black text-gray-900">Purchase History</h2>
+            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">
+                <?php echo e($allOrders->count()); ?> order(s)
+            </span>
+        </div>
+
+        <?php if($allOrders->isEmpty()): ?>
+            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+                <p class="text-lg font-semibold text-gray-700">No purchases yet.</p>
+                <p class="mt-2 text-sm text-gray-500">Your recent orders and product purchases will appear here.</p>
+            </div>
+        <?php else: ?>
+            <div class="space-y-4">
+                <?php $__currentLoopData = $allOrders; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $order): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                                    <?php echo e(isset($order->status) ? 'Order' : 'Receipt'); ?> #<?php echo e($order->id); ?>
+
+                                </p>
+                                <p class="mt-1 text-sm text-gray-600"><?php echo e($order->created_at->format('F d, Y h:i A')); ?></p>
+                            </div>
+                            <div class="text-left sm:text-right">
+                                <?php if(isset($order->status)): ?>
+                                    <p class="text-sm text-gray-500">Status: <?php echo e(ucfirst($order->status)); ?></p>
+                                <?php endif; ?>
+                                <p class="mt-1 text-xl font-black text-gray-900">₱<?php echo e(number_format($order->total_amount, 2)); ?></p>
+                            </div>
                         </div>
 
-                        <?php if($purchaseHistory->isEmpty()): ?>
-                            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
-                                <p class="text-lg font-semibold text-gray-700">No purchases yet.</p>
-                                <p class="mt-2 text-sm text-gray-500">Your recent orders and product purchases will appear here.</p>
-                            </div>
-                        <?php else: ?>
-                            <div class="space-y-4">
-                                <?php $__currentLoopData = $purchaseHistory; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sale): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                                        <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                            <div>
-                                                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Receipt #<?php echo e($sale->id); ?></p>
-                                                <p class="mt-1 text-sm text-gray-600"><?php echo e($sale->created_at->format('F d, Y h:i A')); ?></p>
-                                            </div>
-                                            <div class="text-left sm:text-right">
-                                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Total</p>
-                                                <p class="mt-1 text-xl font-black text-gray-900">₱<?php echo e(number_format($sale->total_amount, 2)); ?></p>
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-4 space-y-3">
-                                            <?php $__currentLoopData = $sale->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <div class="flex items-center justify-between gap-4 border-b border-gray-200 pb-2 last:border-0 last:pb-0">
-                                                    <div>
-                                                        <p class="font-semibold text-gray-900"><?php echo e($item->product_name); ?></p>
-                                                        <p class="text-sm text-gray-500">Qty: <?php echo e($item->quantity); ?></p>
-                                                    </div>
-                                                    <p class="text-sm font-bold text-gray-700">₱<?php echo e(number_format($item->subtotal, 2)); ?></p>
-                                                </div>
-                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                        </div>
+                        <div class="mt-4 space-y-3">
+                            <?php $__currentLoopData = $order->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <div class="flex items-center justify-between gap-4 border-b border-gray-200 pb-2 last:border-0 last:pb-0">
+                                    <div>
+                                        <p class="font-semibold text-gray-900"><?php echo e($item->product_name); ?></p>
+                                        <p class="text-sm text-gray-500">Qty: <?php echo e($item->quantity); ?></p>
                                     </div>
-                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                            </div>
-                        <?php endif; ?>
+                                    <p class="text-sm font-bold text-gray-700">₱<?php echo e(number_format($item->subtotal, 2)); ?></p>
+                                </div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
                     </div>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
                 </div>
             </div>
         </div>

@@ -139,6 +139,47 @@
 
                 <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     <div class="flex items-center justify-between gap-3 p-5">
+                        <h2 class="text-xl font-black text-gray-900">Pending Customer Orders</h2>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-xs uppercase text-gray-500"><tr><th class="px-4 py-3">Order</th><th class="px-4 py-3">Customer</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Date</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Status</th></tr></thead>
+                            <tbody>
+                                @forelse($pendingStoreOrders as $order)
+                                    <tr class="border-t border-gray-200">
+                                        <td class="px-4 py-3 font-semibold text-gray-900">#{{ $order->id }}</td>
+                                        <td class="px-4 py-3">{{ $order->customer_name }}<br><span class="text-xs text-gray-500">{{ $order->customer_email }}</span></td>
+                                        <td class="px-4 py-3">
+                                            <ul class="space-y-1">
+                                                @foreach ($order->items as $item)
+                                                    <li>{{ $item->product_name }} × {{ $item->quantity }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </td>
+                                        <td class="px-4 py-3">{{ $order->created_at->format('M j, Y') }}</td>
+                                        <td class="px-4 py-3 text-right font-semibold">₱{{ number_format($order->total_amount, 2) }}</td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{{ ucfirst($order->status) }}</span>
+                                                @if ($order->status === 'pending' && Auth::user()?->canManageOrders())
+                                                    <form method="POST" action="{{ route('dashboard.orders.accept', $order) }}" class="inline-block">
+                                                        @csrf
+                                                        <button type="submit" class="rounded bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700">Accept order</button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">No pending customer orders.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex items-center justify-between gap-3 p-5">
                         <h2 class="text-xl font-black text-gray-900">Stock-In Transactions</h2>
                         <a href="{{ route('stock-in.index') }}" class="text-sm font-semibold text-purple-700 hover:underline">All deliveries</a>
                     </div>
@@ -170,51 +211,60 @@
                     </a>
                 </div>
 
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        <div class="mb-6 flex items-center justify-between">
-                            <h2 class="text-2xl font-black text-gray-900">Purchase History</h2>
-                            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">
-                                {{ $purchaseHistory->count() }} order(s)
-                            </span>
+@php
+    $allOrders = $customerStoreOrders->concat($purchaseHistory)->sortByDesc('created_at');
+@endphp
+
+<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+    <div class="p-6 text-gray-900">
+        <div class="mb-6 flex items-center justify-between">
+            <h2 class="text-2xl font-black text-gray-900">Purchase History</h2>
+            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">
+                {{ $allOrders->count() }} order(s)
+            </span>
+        </div>
+
+        @if ($allOrders->isEmpty())
+            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
+                <p class="text-lg font-semibold text-gray-700">No purchases yet.</p>
+                <p class="mt-2 text-sm text-gray-500">Your recent orders and product purchases will appear here.</p>
+            </div>
+        @else
+            <div class="space-y-4">
+                @foreach ($allOrders as $order)
+                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
+                        <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">
+                                    {{ isset($order->status) ? 'Order' : 'Receipt' }} #{{ $order->id }}
+                                </p>
+                                <p class="mt-1 text-sm text-gray-600">{{ $order->created_at->format('F d, Y h:i A') }}</p>
+                            </div>
+                            <div class="text-left sm:text-right">
+                                @isset($order->status)
+                                    <p class="text-sm text-gray-500">Status: {{ ucfirst($order->status) }}</p>
+                                @endisset
+                                <p class="mt-1 text-xl font-black text-gray-900">₱{{ number_format($order->total_amount, 2) }}</p>
+                            </div>
                         </div>
 
-                        @if($purchaseHistory->isEmpty())
-                            <div class="rounded-xl border border-dashed border-gray-200 bg-gray-50 p-6 text-center">
-                                <p class="text-lg font-semibold text-gray-700">No purchases yet.</p>
-                                <p class="mt-2 text-sm text-gray-500">Your recent orders and product purchases will appear here.</p>
-                            </div>
-                        @else
-                            <div class="space-y-4">
-                                @foreach($purchaseHistory as $sale)
-                                    <div class="rounded-xl border border-gray-200 bg-gray-50 p-5">
-                                        <div class="flex flex-col gap-3 border-b border-gray-200 pb-4 sm:flex-row sm:items-center sm:justify-between">
-                                            <div>
-                                                        <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Receipt #{{ $sale->id }}</p>
-                                                <p class="mt-1 text-sm text-gray-600">{{ $sale->created_at->format('F d, Y h:i A') }}</p>
-                                            </div>
-                                            <div class="text-left sm:text-right">
-                                                <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Total</p>
-                                                <p class="mt-1 text-xl font-black text-gray-900">₱{{ number_format($sale->total_amount, 2) }}</p>
-                                            </div>
-                                        </div>
-
-                                        <div class="mt-4 space-y-3">
-                                            @foreach($sale->items as $item)
-                                                <div class="flex items-center justify-between gap-4 border-b border-gray-200 pb-2 last:border-0 last:pb-0">
-                                                    <div>
-                                                        <p class="font-semibold text-gray-900">{{ $item->product_name }}</p>
-                                                        <p class="text-sm text-gray-500">Qty: {{ $item->quantity }}</p>
-                                                    </div>
-                                                    <p class="text-sm font-bold text-gray-700">₱{{ number_format($item->subtotal, 2) }}</p>
-                                                </div>
-                                            @endforeach
-                                        </div>
+                        <div class="mt-4 space-y-3">
+                            @foreach ($order->items as $item)
+                                <div class="flex items-center justify-between gap-4 border-b border-gray-200 pb-2 last:border-0 last:pb-0">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ $item->product_name }}</p>
+                                        <p class="text-sm text-gray-500">Qty: {{ $item->quantity }}</p>
                                     </div>
-                                @endforeach
-                            </div>
-                        @endif
+                                    <p class="text-sm font-bold text-gray-700">₱{{ number_format($item->subtotal, 2) }}</p>
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
+                @endforeach
+            </div>
+        @endif
+    </div>
+</div>
                 </div>
             </div>
         </div>

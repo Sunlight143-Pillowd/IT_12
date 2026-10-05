@@ -23,6 +23,20 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="mb-6 text-sm text-gray-500"><?php echo e($description); ?></p>
 
+            <?php if(session('status')): ?>
+                <div class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
+                    <?php echo e(session('status')); ?>
+
+                </div>
+            <?php endif; ?>
+
+            <?php if($errors->has('quantity')): ?>
+                <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    <?php echo e($errors->first('quantity')); ?>
+
+                </div>
+            <?php endif; ?>
+
             <div class="mb-8 flex flex-wrap gap-2">
                 <?php $__currentLoopData = $filters; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php
@@ -56,6 +70,23 @@
                                 <span class="text-lg font-black text-purple-600">₱<?php echo e(number_format($product->price, 0)); ?></span>
                                 <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"><?php echo e($product->stock_quantity); ?> in stock</span>
                             </div>
+                            <?php if($product->stock_quantity > 0): ?>
+                                <form method="POST" action="<?php echo e(route('cart.items.store', $product)); ?>" class="mt-4 flex items-end gap-3">
+                                    <?php echo csrf_field(); ?>
+                                    <label class="text-xs font-medium text-gray-700">
+                                        Quantity
+                                        <input type="number" name="quantity" value="<?php echo e(old('quantity', 1)); ?>" min="1" max="<?php echo e($product->stock_quantity); ?>" required
+                                               class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <button type="submit" class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">
+                                        Add to cart
+                                    </button>
+                                </form>
+                            <?php else: ?>
+                                <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-4 py-2 text-sm font-semibold text-gray-600">
+                                    Out of stock
+                                </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>

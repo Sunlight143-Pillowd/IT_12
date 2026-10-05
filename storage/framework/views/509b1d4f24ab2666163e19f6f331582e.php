@@ -40,18 +40,21 @@
                     <a href="<?php echo e(route('store.categories')); ?>" class="hover:text-purple-600">CATEGORIES</a>
                     <a href="<?php echo e(route('store.special-offers')); ?>" class="text-purple-600 hover:text-purple-700">SPECIAL OFFERS</a>
                     <?php if(auth()->guard()->check()): ?>
-                        <a href="<?php echo e(route('dashboard')); ?>" class="hover:text-purple-600">DASHBOARD</a>
+                        <a href="<?php echo e(route('dashboard')); ?>" class="hover:text-purple-600"><?php echo e(Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS'); ?></a>
                     <?php endif; ?>
                 </nav>
 
                 <div class="flex items-center gap-6 text-gray-700">
+                    <a href="<?php echo e(route('cart.index')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">
+                        CART (<?php echo e(array_sum(session('cart', []))); ?>)
+                    </a>
                     <?php if(auth()->guard()->guest()): ?>
-                        <a href="<?php echo e(route('login')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
-                        <?php if(Route::has('register')): ?>
-                            <a href="<?php echo e(route('register')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
-                        <?php endif; ?>
+                    <a href="<?php echo e(route('login')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
+                    <?php if(Route::has('register')): ?>
+                    <a href="<?php echo e(route('register')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
+                    <?php endif; ?>
                     <?php else: ?>
-                        <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
                             <button type="button"
                                     @click="open = !open"
                                     aria-haspopup="true"
@@ -69,7 +72,7 @@
                                  class="absolute right-0 z-50 mt-2 w-52 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
                                  style="display: none;">
                                 <?php if(Auth::user()?->isAdmin()): ?>
-                                    <a href="<?php echo e(route('dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
+                                <a href="<?php echo e(route('dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
                                 <?php endif; ?>
                                 <a href="<?php echo e(route('profile.edit')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
                                 <form method="POST" action="<?php echo e(route('logout')); ?>">
@@ -84,6 +87,18 @@
         </header>
 
         <main>
+            <?php if(session('status')): ?>
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-green-700" role="status">
+                    <?php echo e(session('status')); ?>
+
+                </div>
+            <?php endif; ?>
+            <?php if($errors->has('quantity')): ?>
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-red-700" role="alert">
+                    <?php echo e($errors->first('quantity')); ?>
+
+                </div>
+            <?php endif; ?>
             <section class="relative bg-black overflow-hidden">
                 <div class="placeholder-img absolute inset-0 opacity-40"></div>
                 <div class="relative max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[520px]">
@@ -149,6 +164,23 @@
                                     <span class="font-black text-purple-600">₱<?php echo e(number_format($product->price, 0)); ?></span>
                                     <span class="text-xs font-semibold text-gray-500"><?php echo e($product->stock_quantity); ?> in stock</span>
                                 </div>
+                                <?php if($product->stock_quantity > 0): ?>
+                                    <form method="POST" action="<?php echo e(route('cart.items.store', $product)); ?>" class="mt-4 flex items-end gap-2">
+                                        <?php echo csrf_field(); ?>
+                                        <label class="text-xs font-medium text-gray-700">
+                                            Quantity
+                                            <input type="number" name="quantity" value="<?php echo e(old('quantity', 1)); ?>" min="1" max="<?php echo e($product->stock_quantity); ?>" required
+                                                   class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                        </label>
+                                        <button type="submit" class="rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">
+                                            Add to cart
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">
+                                        Out of stock
+                                    </button>
+                                <?php endif; ?>
                             </article>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                             <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>

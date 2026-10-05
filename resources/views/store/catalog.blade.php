@@ -13,6 +13,18 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="mb-6 text-sm text-gray-500">{{ $description }}</p>
 
+            @if (session('status'))
+                <div class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700" role="status">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if ($errors->has('quantity'))
+                <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    {{ $errors->first('quantity') }}
+                </div>
+            @endif
+
             <div class="mb-8 flex flex-wrap gap-2">
                 @foreach ($filters as $value => $label)
                     @php
@@ -45,6 +57,23 @@
                                 <span class="text-lg font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
                                 <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">{{ $product->stock_quantity }} in stock</span>
                             </div>
+                            @if ($product->stock_quantity > 0)
+                                <form method="POST" action="{{ route('cart.items.store', $product) }}" class="mt-4 flex items-end gap-3">
+                                    @csrf
+                                    <label class="text-xs font-medium text-gray-700">
+                                        Quantity
+                                        <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="{{ $product->stock_quantity }}" required
+                                               class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <button type="submit" class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">
+                                        Add to cart
+                                    </button>
+                                </form>
+                            @else
+                                <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-4 py-2 text-sm font-semibold text-gray-600">
+                                    Out of stock
+                                </button>
+                            @endif
                         </div>
                     </div>
                 @empty
