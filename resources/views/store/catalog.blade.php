@@ -9,11 +9,7 @@
         </h2>
     </x-slot>
 
-<<<<<<< HEAD
     <div class="py-4">
-=======
-    <div class="py-8">
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="mb-6 text-sm text-gray-500">{{ $description }}</p>
 
@@ -29,15 +25,12 @@
                 </div>
             @endif
 
-<<<<<<< HEAD
             @if ($errors->has('image'))
                 <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
                     {{ $errors->first('image') }}
                 </div>
             @endif
 
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             <div class="mb-8 flex flex-wrap gap-2">
                 @foreach ($filters as $value => $label)
                     @php
@@ -58,7 +51,6 @@
 
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 @forelse ($products as $product)
-<<<<<<< HEAD
                     @php($availableStock = $product->availableStock())
                     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                         <div data-photo-card class="relative h-52 bg-gray-100">
@@ -91,37 +83,6 @@
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">{{ $availableStock }} in stock</span>
                             </div>
                             <x-store.cart-controls :product="$product" :available-stock="$availableStock" :show-quantity-controls="request()->routeIs('store.laptops', 'store.top-selling')" />
-=======
-                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <div class="flex h-52 items-center justify-center bg-gray-100 text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                            [ Image Placeholder ]
-                        </div>
-                        <div class="p-4">
-                            <p class="text-xs uppercase tracking-[0.2em] text-gray-500">{{ ucfirst($product->category) }}</p>
-                            <h3 class="mt-2 text-xl font-bold text-gray-900">{{ $product->name }}</h3>
-                            <p class="mt-2 text-sm text-gray-600">{{ $product->description ?? 'High-performance product for your setup.' }}</p>
-                            <div class="mt-4 flex items-center justify-between">
-                                <span class="text-lg font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
-                                <span class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">{{ $product->stock_quantity }} in stock</span>
-                            </div>
-                            @if ($product->stock_quantity > 0)
-                                <form method="POST" action="{{ route('cart.items.store', $product) }}" class="mt-4 flex items-end gap-3">
-                                    @csrf
-                                    <label class="text-xs font-medium text-gray-700">
-                                        Quantity
-                                        <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="{{ $product->stock_quantity }}" required
-                                               class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                    </label>
-                                    <button type="submit" class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">
-                                        Add to cart
-                                    </button>
-                                </form>
-                            @else
-                                <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-4 py-2 text-sm font-semibold text-gray-600">
-                                    Out of stock
-                                </button>
-                            @endif
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                         </div>
                     </div>
                 @empty
@@ -132,7 +93,6 @@
             </div>
         </div>
     </div>
-<<<<<<< HEAD
 
 <script>
     function previewProductPhoto(input) {
@@ -152,6 +112,4 @@
         submitButton.classList.remove('hidden');
     }
 </script>
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 </x-app-layout>

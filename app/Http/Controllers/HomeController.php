@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-<<<<<<< HEAD
 use App\Models\Category;
 use App\Models\HomepageImage;
 use App\Models\Product;
@@ -10,11 +9,6 @@ use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-=======
-use App\Models\Product;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\View\View;
 
 class HomeController extends Controller
@@ -117,10 +111,7 @@ class HomeController extends Controller
         $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
 
         $displayMap = [
-<<<<<<< HEAD
             'custom build' => 'Custom Build',
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             'gaming' => 'Gaming',
             'workstation' => 'Workstation',
             'ready to ship' => 'Ready to Ship',
@@ -179,13 +170,10 @@ class HomeController extends Controller
 
     public function index(): View
     {
-<<<<<<< HEAD
         $categoryImages = Schema::hasTable('categories')
             ? Category::query()->pluck('image_path', 'slug')
             : collect();
 
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $categoryCards = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
@@ -197,18 +185,14 @@ class HomeController extends Controller
                 ->map(fn (Product $product): array => [
                     'label' => $this->categoryDisplayName($product->category),
                     'route' => $this->categoryRouteFor($product->category),
-<<<<<<< HEAD
                     'name' => $product->category,
                     'slug' => Str::slug($product->category),
                     'image_path' => $categoryImages->get(Str::slug($product->category)),
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                 ])
                 ->all()
             : [];
 
         $featured = Schema::hasTable('products')
-<<<<<<< HEAD
             ? Product::query()
                 ->where('is_active', true)
                 ->orderBy('price', 'desc')
@@ -227,12 +211,6 @@ class HomeController extends Controller
             : collect();
 
         return view('welcome', compact('categoryCards', 'featured', 'heroImages'));
-=======
-            ? Product::query()->where('is_active', true)->orderBy('price', 'desc')->limit(4)->get()
-            : collect();
-
-        return view('welcome', compact('categoryCards', 'featured'));
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 
     public function desktops(Request $request): View
@@ -378,7 +356,6 @@ class HomeController extends Controller
                 ->toArray()
             : [];
 
-<<<<<<< HEAD
         $categoryImages = Schema::hasTable('categories')
             ? Category::query()->pluck('image_path', 'slug')
             : collect();
@@ -392,12 +369,6 @@ class HomeController extends Controller
                 'name' => $category,
                 'slug' => $slug,
                 'image_path' => $categoryImages->get($slug),
-=======
-        $categoryLinks = array_map(function ($category) {
-            return [
-                'label' => $this->categoryDisplayName($category),
-                'route' => $this->categoryRouteFor($category),
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             ];
         }, $categories);
 
@@ -419,7 +390,6 @@ class HomeController extends Controller
             'filters' => ['all' => 'All Deals'],
         ]);
     }
-<<<<<<< HEAD
 
     public function topSelling(): View
     {
@@ -449,6 +419,4 @@ class HomeController extends Controller
             'filters' => ['all' => 'Best Sellers'],
         ]);
     }
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 }

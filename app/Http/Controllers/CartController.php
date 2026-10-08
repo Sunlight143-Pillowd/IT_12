@@ -97,13 +97,10 @@ class CartController extends Controller
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
-<<<<<<< HEAD
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'payment_method' => ['sometimes', 'required', 'in:cash,gcash,bank_transfer,other'],
             'fulfillment_method' => ['sometimes', 'required', 'in:pickup,delivery'],
             'delivery_address' => ['required_if:fulfillment_method,delivery', 'nullable', 'string', 'max:2000'],
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         ]);
 
         $cart = session()->get('cart', []);
@@ -146,7 +143,6 @@ class CartController extends Controller
                 'user_id' => $request->user()?->id,
                 'customer_name' => trim($validated['customer_name']),
                 'customer_email' => trim($validated['customer_email']),
-<<<<<<< HEAD
                 'customer_phone' => isset($validated['customer_phone']) ? trim($validated['customer_phone']) : null,
                 'total_amount' => $total,
                 'status' => 'pending',
@@ -155,10 +151,6 @@ class CartController extends Controller
                 'delivery_address' => ($validated['fulfillment_method'] ?? 'pickup') === 'delivery'
                     ? trim($validated['delivery_address'])
                     : null,
-=======
-                'total_amount' => $total,
-                'status' => 'pending',
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             ]);
 
             foreach ($cart as $productId => $quantity) {

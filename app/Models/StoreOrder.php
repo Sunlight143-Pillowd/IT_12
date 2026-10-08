@@ -12,17 +12,12 @@ class StoreOrder extends Model
         'user_id',
         'customer_name',
         'customer_email',
-<<<<<<< HEAD
         'customer_phone',
         'total_amount',
         'status',
         'payment_method',
         'fulfillment_method',
         'delivery_address',
-=======
-        'total_amount',
-        'status',
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     ];
 
     protected function casts(): array

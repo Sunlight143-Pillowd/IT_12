@@ -57,7 +57,6 @@
 
                 <div class="grid gap-4 md:grid-cols-3">
                     @foreach (['image' => ['Product photo', $product->image_path], 'before_image' => ['Before photo', $product->before_image_path], 'after_image' => ['After photo', $product->after_image_path]] as $field => [$label, $path])
-<<<<<<< HEAD
                         <div class="text-sm font-semibold text-gray-700">
                             <p>{{ $label }}</p>
                             @if ($path)
@@ -69,14 +68,6 @@
                                 <input type="file" name="{{ $field }}" accept="image/jpeg,image/png,image/webp" class="sr-only">
                             </label>
                         </div>
-=======
-                        <label class="text-sm font-semibold text-gray-700">{{ $label }}
-                            @if ($path)
-                                <img src="{{ asset('storage/'.$path) }}" alt="{{ $label }} for {{ $product->name }}" class="mt-2 mb-2 aspect-video w-full rounded border border-gray-200 object-cover">
-                            @endif
-                            <input type="file" name="{{ $field }}" accept="image/jpeg,image/png,image/webp" class="mt-1 block w-full text-xs font-normal">
-                        </label>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     @endforeach
                 </div>
 
