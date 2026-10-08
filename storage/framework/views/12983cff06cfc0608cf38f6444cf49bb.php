@@ -20,7 +20,7 @@
         </div>
      <?php $__env->endSlot(); ?>
 
-    <div class="py-8">
+    <div class="py-4">
         <div class="mx-auto max-w-7xl space-y-7 px-4 sm:px-6 lg:px-8">
             <?php if(session('success')): ?>
                 <div role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><?php echo e(session('success')); ?></div>

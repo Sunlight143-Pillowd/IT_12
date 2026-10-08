@@ -21,21 +21,33 @@
                     <x-nav-link :href="route('buildpc.customer')" :active="request()->routeIs('buildpc.customer')">
                         {{ __('Build PC') }}
                     </x-nav-link>
-                    @if (Auth::user()?->isAdmin())
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
+                    @auth
+                        @if (Auth::user()->isAdmin())
+                            <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                                {{ __('Dashboard') }}
+                            </x-nav-link>
+                        @else
+                            <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
+                                {{ __('Cart') }} ({{ array_sum(session('cart', [])) }})
+                            </x-nav-link>
+                        @endif
                     @else
-                        <x-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
-                            {{ __('Cart') }} ({{ array_sum(session('cart', [])) }})
+                        <x-nav-link :href="route('login')" :active="request()->routeIs('login')">
+                            {{ __('Sign In') }}
                         </x-nav-link>
-                    @endif
+                        @if (Route::has('register'))
+                            <x-nav-link :href="route('register')" :active="request()->routeIs('register')">
+                                {{ __('Register') }}
+                            </x-nav-link>
+                        @endif
+                    @endauth
                 </div>
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="app-settings-navigation hidden lg:flex lg:items-center lg:ms-6">
-                <x-dropdown align="right" width="48">
+            @auth
+                <div class="app-settings-navigation hidden lg:flex lg:items-center lg:ms-6">
+                    <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                             <div>{{ Auth::user()?->name ?? 'Guest' }}</div>
@@ -74,8 +86,9 @@
                             </x-dropdown-link>
                         </form>
                     </x-slot>
-                </x-dropdown>
-            </div>
+                    </x-dropdown>
+                </div>
+            @endauth
 
             <!-- Hamburger -->
             <div class="app-mobile-navigation-toggle -me-2 flex items-center lg:hidden">
@@ -101,23 +114,36 @@
         <x-responsive-nav-link :href="route('buildpc.customer')" :active="request()->routeIs('buildpc.customer')">
             {{ __('Build PC') }}
         </x-responsive-nav-link>
-        @if (Auth::user()?->isAdmin())
-            <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                {{ __('Dashboard') }}
-            </x-responsive-nav-link>
+        @auth
+            @if (Auth::user()->isAdmin())
+                <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    {{ __('Dashboard') }}
+                </x-responsive-nav-link>
+            @else
+                <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
+                    {{ __('Cart') }} ({{ array_sum(session('cart', [])) }})
+                </x-responsive-nav-link>
+            @endif
         @else
-            <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
-                {{ __('Cart') }} ({{ array_sum(session('cart', [])) }})
+            <x-responsive-nav-link :href="route('login')" :active="request()->routeIs('login')">
+                {{ __('Sign In') }}
             </x-responsive-nav-link>
-        @endif
+            @if (Route::has('register'))
+                <x-responsive-nav-link :href="route('register')" :active="request()->routeIs('register')">
+                    {{ __('Register') }}
+                </x-responsive-nav-link>
+            @endif
+        @endauth
         </div>
 
         <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
+        @auth
+            <div class="pt-4 pb-1 border-t border-gray-200">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800">{{ Auth::user()?->name ?? 'Guest' }}</div>
                 <div class="font-medium text-sm text-gray-500">{{ Auth::user()?->email ?? 'guest@example.com' }}</div>
-            </div>
+                </div>
+            @endauth
 
             <div class="mt-3 space-y-1">
                 @if (Auth::user()?->isAdmin())

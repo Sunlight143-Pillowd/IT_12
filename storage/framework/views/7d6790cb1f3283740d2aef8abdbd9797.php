@@ -19,7 +19,7 @@
         </h2>
      <?php $__env->endSlot(); ?>
 
-    <div class="py-8">
+    <div class="py-4">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="mb-6 text-sm text-gray-500"><?php echo e($description); ?></p>
 

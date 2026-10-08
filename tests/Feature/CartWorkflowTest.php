@@ -21,6 +21,12 @@ class CartWorkflowTest extends TestCase
             'stock_quantity' => 4,
         ]);
 
+        $this->get(route('store.top-selling'))
+            ->assertOk()
+            ->assertSee('Sign In')
+            ->assertSee('Register')
+            ->assertDontSee('Cart');
+
         $this->get(route('store.desktops'))
             ->assertSee('Guest Cart Product')
             ->assertSee('Add to cart');
@@ -38,7 +44,9 @@ class CartWorkflowTest extends TestCase
             ->assertSee('₱2,500');
 
         $this->get(route('home'))
-            ->assertSee('CART (2)')
+            ->assertDontSee('CART (2)')
+            ->assertSee('Sign In')
+            ->assertSee('Register')
             ->assertSee('Add to cart');
     }
 
@@ -206,12 +214,18 @@ class CartWorkflowTest extends TestCase
         $this->get(route('cart.index'))
             ->assertSee('₱3,000')
             ->assertSee('₱3,000.00');
-        $this->get(route('home'))->assertSee('CART (3)');
+        $this->get(route('home'))
+            ->assertDontSee('CART (3)')
+            ->assertSee('Sign In')
+            ->assertSee('Register');
 
         $this->delete(route('cart.items.destroy', $product))
             ->assertRedirect(route('cart.index'));
         $this->assertSame([], session('cart'));
-        $this->get(route('home'))->assertSee('CART (0)');
+        $this->get(route('home'))
+            ->assertDontSee('CART (0)')
+            ->assertSee('Sign In')
+            ->assertSee('Register');
     }
 
     public function test_cart_rejects_quantities_above_available_stock(): void

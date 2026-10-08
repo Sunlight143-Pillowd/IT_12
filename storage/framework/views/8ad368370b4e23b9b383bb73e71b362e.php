@@ -15,7 +15,7 @@
         </h2>
      <?php $__env->endSlot(); ?>
 
-    <div class="py-8">
+    <div class="py-4">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <?php if(session('status')): ?>
                 <div class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700" role="status">

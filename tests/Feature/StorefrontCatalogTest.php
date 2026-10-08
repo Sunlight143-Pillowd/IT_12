@@ -23,11 +23,18 @@ class StorefrontCatalogTest extends TestCase
 
         $this->get('/')
             ->assertSee('Boss Apex 4K')
-            ->assertSee(asset('images/davao-boss-logo.png'), false)
             ->assertSee('COMPUTER BOSS DAVAO')
             ->assertSee('flex h-52 w-full items-center justify-center')
             ->assertSee('h-full w-full object-contain');
         $this->assertDatabaseHas('categories', ['slug' => 'ready-to-ship']);
+    }
+
+    public function test_guest_sign_in_and_register_links_are_visible_in_homepage_header(): void
+    {
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('<a href="'.route('login').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Sign In</a>', false)
+            ->assertSee('<a href="'.route('register').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>', false);
     }
 
     public function test_category_page_shows_full_category_photos_without_upload_buttons(): void

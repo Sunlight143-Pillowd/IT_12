@@ -61,17 +61,19 @@
                 </nav>
 
                 <div class="flex items-center gap-3 text-gray-700 sm:gap-5">
+                    @auth
                     <a href="{{ route('cart.index') }}" class="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold uppercase tracking-wide hover:bg-purple-50 hover:text-purple-700" aria-label="Shopping cart, {{ array_sum(session('cart', [])) }} items">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h2l2.1 10.1a2 2 0 002 1.6h8.8a2 2 0 002-1.6L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle>
                         </svg>
                         <span>CART ({{ array_sum(session('cart', [])) }})</span>
                     </a>
+                    @endauth
                     @guest
-                    <a href="{{ route('login') }}" class="hidden text-xs font-bold uppercase tracking-wide hover:text-purple-700 sm:inline">Sign In</a>
-                    @if (Route::has('register'))
-                    <a href="{{ route('register') }}" class="hidden text-xs font-bold uppercase tracking-wide hover:text-purple-700 sm:inline">Register</a>
-                    @endif
+                        <a href="{{ route('login') }}" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Sign In</a>
+                        @if (Route::has('register'))
+                            <a href="{{ route('register') }}" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>
+                        @endif
                     @else
                     <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
                             <button type="button"
