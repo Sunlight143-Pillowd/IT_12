@@ -19,6 +19,10 @@ class StorePcBuildRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+<<<<<<< HEAD
+=======
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         ];
     }
 }

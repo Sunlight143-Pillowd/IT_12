@@ -9,8 +9,11 @@ use App\Models\Sale;
 use App\Models\StockIn;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+<<<<<<< HEAD
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Tests\TestCase;
 
 class PcBuildWorkflowTest extends TestCase
@@ -75,6 +78,7 @@ class PcBuildWorkflowTest extends TestCase
 
         $this->assertDatabaseCount('pc_builds', 0);
     }
+<<<<<<< HEAD
 
     public function test_staff_build_automatically_uses_one_of_each_selected_component(): void
     {
@@ -246,4 +250,6 @@ class PcBuildWorkflowTest extends TestCase
         $this->assertDatabaseHas('pc_builds', ['id' => $build->id, 'status' => 'cancelled']);
         $this->assertSame(1, $product->fresh()->stock_quantity);
     }
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 }

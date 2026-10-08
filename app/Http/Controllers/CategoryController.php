@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+<<<<<<< HEAD
 use App\Models\HomepageImage;
 use Closure;
 use Illuminate\Http\RedirectResponse;
@@ -10,6 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+=======
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\Support\Str;
 
 class CategoryController extends Controller
@@ -48,12 +53,15 @@ class CategoryController extends Controller
             return redirect()->route('inventory.index')->with('error', 'Category name is required.');
         }
 
+<<<<<<< HEAD
         if (Category::query()->where('slug', $slug)->where('id', '!=', $category->id)->exists()) {
             throw ValidationException::withMessages([
                 'name' => 'A category with this name already exists.',
             ]);
         }
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $category->update([
             'name' => $name,
             'slug' => $slug,
@@ -61,6 +69,7 @@ class CategoryController extends Controller
 
         return redirect()->route('inventory.index')->with('success', 'Category updated successfully.');
     }
+<<<<<<< HEAD
 
     public function destroy(Category $category): RedirectResponse
     {
@@ -165,4 +174,6 @@ class CategoryController extends Controller
 
         return back()->with('status', 'Homepage photo uploaded successfully.');
     }
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 }

@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use App\Models\Product;
+<<<<<<< HEAD
 use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+=======
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -173,6 +178,7 @@ class InventoryController extends Controller
 
         return redirect()->route('inventory.index')->with('success', 'Product details updated.');
     }
+<<<<<<< HEAD
 
     public function uploadFeaturedImage(Request $request, Product $product): RedirectResponse
     {
@@ -214,4 +220,6 @@ class InventoryController extends Controller
 
         return back()->with('status', 'Photo uploaded for '.$product->name.'.');
     }
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 }

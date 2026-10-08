@@ -21,12 +21,15 @@ class CartWorkflowTest extends TestCase
             'stock_quantity' => 4,
         ]);
 
+<<<<<<< HEAD
         $this->get(route('store.top-selling'))
             ->assertOk()
             ->assertSee('Sign In')
             ->assertSee('Register')
             ->assertDontSee('Cart');
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $this->get(route('store.desktops'))
             ->assertSee('Guest Cart Product')
             ->assertSee('Add to cart');
@@ -44,6 +47,7 @@ class CartWorkflowTest extends TestCase
             ->assertSee('₱2,500');
 
         $this->get(route('home'))
+<<<<<<< HEAD
             ->assertDontSee('CART (2)')
             ->assertSee('Sign In')
             ->assertSee('Register')
@@ -200,17 +204,37 @@ class CartWorkflowTest extends TestCase
             ->assertSee('₱2,000')
             ->assertSee('Subtotal')
             ->assertSee('Total');
+=======
+            ->assertSee('CART (2)')
+            ->assertSee('Add to cart');
+    }
+
+    public function test_signed_in_customer_can_add_products_to_the_cart(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 3]);
+
+        $this->actingAs(User::factory()->create())
+            ->post(route('cart.items.store', $product))
+            ->assertRedirect();
+
+        $this->assertSame([$product->id => 1], session('cart'));
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 
     public function test_guest_can_update_cart_quantity_and_remove_a_product(): void
     {
+<<<<<<< HEAD
         $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 5]);
+=======
+        $product = Product::factory()->create(['stock_quantity' => 5]);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         $this->post(route('cart.items.store', $product));
 
         $this->put(route('cart.items.update', $product), ['quantity' => 3])
             ->assertRedirect(route('cart.index'));
         $this->assertSame([$product->id => 3], session('cart'));
+<<<<<<< HEAD
         $this->get(route('cart.index'))
             ->assertSee('₱3,000')
             ->assertSee('₱3,000.00');
@@ -218,14 +242,19 @@ class CartWorkflowTest extends TestCase
             ->assertDontSee('CART (3)')
             ->assertSee('Sign In')
             ->assertSee('Register');
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         $this->delete(route('cart.items.destroy', $product))
             ->assertRedirect(route('cart.index'));
         $this->assertSame([], session('cart'));
+<<<<<<< HEAD
         $this->get(route('home'))
             ->assertDontSee('CART (0)')
             ->assertSee('Sign In')
             ->assertSee('Register');
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 
     public function test_cart_rejects_quantities_above_available_stock(): void
@@ -253,6 +282,7 @@ class CartWorkflowTest extends TestCase
         $this->assertSame([$product->id => 1], session('cart'));
     }
 
+<<<<<<< HEAD
     public function test_cart_displays_product_photo_and_quantity_edit_controls(): void
     {
         $product = Product::factory()->create([
@@ -275,6 +305,8 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Remove');
     }
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function test_guest_can_place_a_pending_order_from_the_cart(): void
     {
         $product = Product::factory()->create([
@@ -315,6 +347,7 @@ class CartWorkflowTest extends TestCase
         $this->assertSame([], session('cart', []));
     }
 
+<<<<<<< HEAD
     public function test_checkout_saves_payment_and_delivery_preferences(): void
     {
         $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 2]);
@@ -340,6 +373,8 @@ class CartWorkflowTest extends TestCase
         $this->assertSame(2, $product->fresh()->stock_quantity);
     }
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function test_customer_can_place_an_order_linked_to_their_account(): void
     {
         $customer = User::factory()->create();
@@ -442,7 +477,11 @@ class CartWorkflowTest extends TestCase
         ]);
 
         $this->actingAs($admin)->get(route('dashboard'))
+<<<<<<< HEAD
             ->assertSee('Customer Orders')
+=======
+            ->assertSee('Pending Customer Orders')
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             ->assertSee('Dashboard Buyer')
             ->assertSee('buyer@example.com')
             ->assertSee($product->name.' × 1');
@@ -450,7 +489,11 @@ class CartWorkflowTest extends TestCase
 
     public function test_admin_or_employee_can_accept_a_pending_order(): void
     {
+<<<<<<< HEAD
         $product = Product::factory()->create(['stock_quantity' => 2]);
+=======
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $order = StoreOrder::create([
             'customer_name' => 'Awaiting Approval',
             'customer_email' => 'awaiting@example.com',
@@ -471,6 +514,7 @@ class CartWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
             ->assertRedirect();
         $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted']);
+<<<<<<< HEAD
         $this->assertSame(1, $product->fresh()->stock_quantity);
 
         $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
@@ -478,10 +522,18 @@ class CartWorkflowTest extends TestCase
         $this->assertSame(1, $product->fresh()->stock_quantity);
 
         $order->refresh()->update(['status' => 'pending']);
+=======
+
+        $order->refresh();
+        $this->assertSame('accepted', $order->status);
+
+        $order->update(['status' => 'pending']);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         $this->actingAs($employee)->post(route('dashboard.orders.accept', $order))
             ->assertRedirect();
         $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted']);
+<<<<<<< HEAD
         $this->assertSame(0, $product->fresh()->stock_quantity);
     }
 
@@ -511,5 +563,7 @@ class CartWorkflowTest extends TestCase
 
         $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'pending']);
         $this->assertSame(1, $product->fresh()->stock_quantity);
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 }

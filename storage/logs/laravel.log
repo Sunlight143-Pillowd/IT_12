@@ -10082,6 +10082,7 @@ Did you mean one of these?
 #74 C:/Users/Cyrus/Downloads/IT12/vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php(23): require_once('C://Users//Cyrus//...')
 #75 {main}
 "} 
+<<<<<<< HEAD
 [2026-10-06 13:55:45] testing.ERROR: syntax error, unexpected token "class" (View: C:\Users\MYPC\Downloads\IT_12-main (2)\IT_12-main\resources\views\dashboard.blade.php) {"userId":1,"exception":"[object] (Illuminate\\View\\ViewException(code: 0): syntax error, unexpected token \"class\" (View: C:\\Users\\MYPC\\Downloads\\IT_12-main (2)\\IT_12-main\\resources\\views\\dashboard.blade.php) at C:/Users/MYPC/Downloads/IT_12-main (2)/IT_12-main/storage/framework/views/20704187563de85813cc2839dc8f260b.php:233)
 [stacktrace]
 #0 C:/Users/MYPC/Downloads/IT_12-main (2)/IT_12-main/vendor/laravel/framework/src/Illuminate/View/Engines/PhpEngine.php(59): Illuminate/View/Engines/CompilerEngine->handleViewException(Object(ParseError), 1)
@@ -12530,3 +12531,5 @@ Did you mean one of these?
 #66 C:/Users/MYPC/Downloads/IT_12-main (2)/IT_12-main/vendor/bin/phpunit(122): include('C://Users//MYPC//D...')
 #67 {main}
 "} 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce

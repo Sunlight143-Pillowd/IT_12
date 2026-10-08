@@ -11,6 +11,7 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+<<<<<<< HEAD
         <style>
             @media (min-width: 1024px) {
                 .app-desktop-navigation,
@@ -32,27 +33,43 @@
             }
         </style>
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
+<<<<<<< HEAD
         <div class="flex min-h-screen flex-col bg-gray-100">
+=======
+        <div class="min-h-screen bg-gray-100">
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             @include('layouts.navigation')
 
             <!-- Page Heading -->
             @isset($header)
                 <header class="bg-white shadow">
+<<<<<<< HEAD
                     <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
+=======
+                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                         {{ $header }}
                     </div>
                 </header>
             @endisset
 
             <!-- Page Content -->
+<<<<<<< HEAD
             <main class="flex-1">
                 {{ $slot }}
             </main>
             @include('layouts.footer')
+=======
+            <main>
+                {{ $slot }}
+            </main>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         </div>
     </body>
 </html>

@@ -2,15 +2,24 @@
 
 namespace App\Http\Controllers;
 
+<<<<<<< HEAD
 use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
+=======
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use App\Models\StockIn;
 use App\Models\StoreOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+<<<<<<< HEAD
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -24,11 +33,28 @@ class DashboardController extends Controller
         $todaySales = Sale::whereDate('created_at', today())->sum('total_amount');
         $todayOrders = Sale::whereDate('created_at', today())->count();
         $revenue = Sale::sum('total_amount');
+<<<<<<< HEAD
         $recentSales = Sale::withCount('items')->latest()->limit(10)->get();
         $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
         $storeOrders = $user?->canManageOrders()
             ? StoreOrder::with('items.product')
                 ->latest()
+=======
+        $topProducts = SaleItem::query()
+            ->select('product_id', 'product_name')
+            ->selectRaw('SUM(quantity) AS units_sold, SUM(subtotal) AS sales_total')
+            ->groupBy('product_id', 'product_name')
+            ->orderByDesc('units_sold')
+            ->limit(5)
+            ->get();
+        $recentSales = Sale::withCount('items')->latest()->limit(10)->get();
+        $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
+        $pendingStoreOrders = $user?->canManageOrders()
+            ? StoreOrder::with('items')
+                ->where('status', 'pending')
+                ->latest()
+                ->limit(10)
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                 ->get()
             : collect();
         $customerStoreOrders = $user && ! $user->canManageOrders()
@@ -40,6 +66,7 @@ class DashboardController extends Controller
                 ->latest()
                 ->get()
             : collect();
+<<<<<<< HEAD
         $customerBuilds = $user && ! $user->canManageOrders()
             ? PcBuild::with('items.product')
                 ->where('user_id', $user->id)
@@ -52,6 +79,8 @@ class DashboardController extends Controller
                 ->latest()
                 ->get()
             : collect();
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         $purchaseHistory = $user
             ? Sale::where(function ($query) use ($user) {
@@ -73,6 +102,7 @@ class DashboardController extends Controller
             'todaySales' => $todaySales,
             'todayOrders' => $todayOrders,
             'revenue' => $revenue,
+<<<<<<< HEAD
             'recentSales' => $recentSales,
             'recentStockIns' => $recentStockIns,
             'storeOrders' => $storeOrders,
@@ -89,6 +119,14 @@ class DashboardController extends Controller
                 'completed' => [],
                 'cancelled' => [],
             ],
+=======
+            'topProducts' => $topProducts,
+            'recentSales' => $recentSales,
+            'recentStockIns' => $recentStockIns,
+            'pendingStoreOrders' => $pendingStoreOrders,
+            'customerStoreOrders' => $customerStoreOrders,
+            'purchaseHistory' => $purchaseHistory,
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         ]);
     }
 
@@ -97,6 +135,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to accept orders.');
+<<<<<<< HEAD
         DB::transaction(function () use ($storeOrder): void {
             $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
 
@@ -133,6 +172,11 @@ class DashboardController extends Controller
 
             $order->update(['status' => 'accepted']);
         });
+=======
+        abort_if($storeOrder->status !== 'pending', 409, 'This order is no longer pending.');
+
+        $storeOrder->update(['status' => 'accepted']);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         return back()->with('status', 'Order #'.$storeOrder->id.' accepted successfully.');
     }

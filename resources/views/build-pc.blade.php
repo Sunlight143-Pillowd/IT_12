@@ -44,9 +44,21 @@
 
                 <form id="build-pc-form" method="POST" action="{{ route('buildpc.store') }}">
                     @csrf
+<<<<<<< HEAD
                     <div class="mb-6 max-w-xl">
                         <label for="customer_email" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Customer Email</label>
                         <input id="customer_email" name="customer_email" value="{{ old('customer_email') }}" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="customer@example.com" />
+=======
+                    <div class="mb-6 grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label for="customer_email" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Customer Email</label>
+                            <input id="customer_email" name="customer_email" value="{{ old('customer_email') }}" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="customer@example.com" />
+                        </div>
+                        <div>
+                            <label for="notes" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Build Notes</label>
+                            <input id="notes" name="notes" value="{{ old('notes') }}" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="Premium gaming setup" />
+                        </div>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     </div>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         @foreach ($componentGroups as $type => $label)
@@ -64,6 +76,13 @@
                                     @endforeach
                                 </select>
 
+<<<<<<< HEAD
+=======
+                                <div class="mt-3 flex items-center gap-2">
+                                    <label class="text-xs font-semibold uppercase tracking-wide text-gray-500">Qty</label>
+                                    <input type="number" name="items[{{ $type }}][quantity]" data-key="{{ $type }}" value="1" min="1" max="20" class="w-20 rounded border border-gray-300 px-2 py-1.5 text-sm" />
+                                </div>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                             </div>
                         @endforeach
                     </div>
@@ -79,13 +98,21 @@
                                 <thead class="bg-gray-100 text-gray-700">
                                     <tr>
                                         <th class="px-3 py-3 font-semibold">Product</th>
+<<<<<<< HEAD
+=======
+                                        <th class="px-3 py-3 font-semibold">Qty</th>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                                         <th class="px-3 py-3 font-semibold">Price</th>
                                         <th class="px-3 py-3 font-semibold">Subtotal</th>
                                     </tr>
                                 </thead>
                                 <tbody id="build-summary-body">
                                     <tr>
+<<<<<<< HEAD
                                         <td colspan="3" class="px-3 py-6 text-center text-gray-500">No components selected yet.</td>
+=======
+                                        <td colspan="4" class="px-3 py-6 text-center text-gray-500">No components selected yet.</td>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                                     </tr>
                                 </tbody>
                             </table>
@@ -117,6 +144,7 @@
                                 <p class="text-sm font-bold uppercase tracking-[0.2em] text-gray-500">{{ $build->build_number }}</p>
                                 <p class="mt-1 text-lg font-black text-gray-900">{{ $build->customer_name ?: 'Customer not recorded' }}</p>
                             </div>
+<<<<<<< HEAD
 
                             <div class="flex flex-wrap items-center gap-2 md:justify-end">
                                 <a href="{{ route('buildpc.show', $build) }}" class="inline-flex h-9 items-center justify-center rounded border border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-gray-400">View</a>
@@ -135,17 +163,46 @@
                         </div>
 
                         <div class="mt-4">
+=======
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">{{ $build->status }}</span>
+                                <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">₱{{ number_format($build->total_cost, 2) }}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 md:grid-cols-2">
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                             <ul class="space-y-2 text-sm text-gray-700">
                                 @foreach ($build->items as $item)
                                     <li class="flex items-center justify-between gap-3 border-b border-gray-200 pb-1 last:border-0">
                                         <span>{{ $item->product->name }}</span>
+<<<<<<< HEAD
+=======
+                                        <span class="font-semibold">x{{ $item->quantity }}</span>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                                     </li>
                                 @endforeach
                             </ul>
 
+<<<<<<< HEAD
                             <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-4">
                                 <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">{{ $build->status }}</span>
                                 <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">Reserved: ₱{{ number_format($build->total_cost, 2) }}</span>
+=======
+                            <div class="flex flex-wrap gap-2 md:justify-end">
+                                <a href="{{ route('buildpc.show', $build) }}" class="rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 hover:border-gray-400">View</a>
+                                <a href="{{ route('buildpc.print', $build) }}" class="rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 hover:border-gray-400">Print</a>
+                                @if (! in_array($build->status, ['sold', 'cancelled', 'expired'], true))
+                                    <form action="{{ route('buildpc.sell', $build) }}" method="POST" onsubmit="return confirm('Mark this build as sold?');">
+                                        @csrf
+                                        <button type="submit" class="rounded bg-emerald-600 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-emerald-700">Sell</button>
+                                    </form>
+                                    <form action="{{ route('buildpc.cancel', $build) }}" method="POST" onsubmit="return confirm('Cancel this build and release the stock hold?');">
+                                        @csrf
+                                        <button type="submit" class="rounded bg-red-600 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white hover:bg-red-700">Cancel</button>
+                                    </form>
+                                @endif
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                             </div>
                         </div>
                     </div>
@@ -176,12 +233,19 @@
             let total = 0;
 
             selects.forEach((select) => {
+<<<<<<< HEAD
                 const option = select.selectedOptions[0];
+=======
+                const key = select.dataset.key;
+                const option = select.selectedOptions[0];
+                const quantityInput = document.querySelector(`input[data-key="${key}"]`);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
                 if (!option || !option.value) {
                     return;
                 }
 
+<<<<<<< HEAD
                 const price = Number(option.dataset.price || 0);
 
                 total += price;
@@ -190,12 +254,29 @@
                         <td class="px-3 py-3 font-semibold text-gray-900">${option.dataset.name}</td>
                         <td class="px-3 py-3 text-gray-700">${formatMoney(price)}</td>
                         <td class="px-3 py-3 font-bold text-purple-700">${formatMoney(price)}</td>
+=======
+                const quantity = Number(quantityInput?.value || 1);
+                const price = Number(option.dataset.price || 0);
+                const subtotal = price * quantity;
+
+                total += subtotal;
+                rows.push(`
+                    <tr>
+                        <td class="px-3 py-3 font-semibold text-gray-900">${option.dataset.name}</td>
+                        <td class="px-3 py-3 text-gray-700">${quantity}</td>
+                        <td class="px-3 py-3 text-gray-700">${formatMoney(price)}</td>
+                        <td class="px-3 py-3 font-bold text-purple-700">${formatMoney(subtotal)}</td>
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     </tr>
                 `);
             });
 
             if (rows.length === 0) {
+<<<<<<< HEAD
                 summaryBody.innerHTML = '<tr><td colspan="3" class="px-3 py-6 text-center text-gray-500">No components selected yet.</td></tr>';
+=======
+                summaryBody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-gray-500">No components selected yet.</td></tr>';
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             } else {
                 summaryBody.innerHTML = rows.join('');
             }
@@ -207,6 +288,13 @@
             select.addEventListener('change', renderBuildSummary);
         });
 
+<<<<<<< HEAD
+=======
+        document.querySelectorAll('input[data-key]').forEach((input) => {
+            input.addEventListener('input', renderBuildSummary);
+        });
+
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         renderBuildSummary();
     </script>
 </x-app-layout>

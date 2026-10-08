@@ -3,14 +3,20 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+<<<<<<< HEAD
 use App\Models\HomepageImage;
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+<<<<<<< HEAD
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Tests\TestCase;
 
 class StorefrontCatalogTest extends TestCase
@@ -21,6 +27,7 @@ class StorefrontCatalogTest extends TestCase
     {
         $this->seed();
 
+<<<<<<< HEAD
         $this->get('/')
             ->assertSee('Boss Apex 4K')
             ->assertSee('COMPUTER BOSS DAVAO')
@@ -314,6 +321,12 @@ class StorefrontCatalogTest extends TestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
+=======
+        $this->get('/')->assertSee('Boss Apex 4K');
+        $this->assertDatabaseHas('categories', ['slug' => 'ready-to-ship']);
+    }
+
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function test_seeding_preserves_sales_and_does_not_duplicate_catalog_products(): void
     {
         $product = Product::create([

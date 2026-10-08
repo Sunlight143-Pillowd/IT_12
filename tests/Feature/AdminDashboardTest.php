@@ -30,6 +30,7 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Site Admin');
         $response->assertSee('Admin Dashboard');
         $response->assertSee('Log Out');
+<<<<<<< HEAD
         $response->assertDontSee('Control your store from one dashboard.');
         $response->assertSee('Customer Orders');
         $response->assertSee('Live');
@@ -39,6 +40,8 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Revenue');
         $response->assertSee('VIEW INVENTORY');
         $response->assertSee('OPEN POS');
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 
     public function test_regular_user_sees_purchase_history_and_back_button(): void
@@ -147,6 +150,10 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('lg:col-span-2');
         $response->assertDontSee('<dialog', false);
         $response->assertDontSee('Products');
+<<<<<<< HEAD
+=======
+        $response->assertDontSee('Cart');
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $response->assertDontSee('Complete Sale');
     }
 

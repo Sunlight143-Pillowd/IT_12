@@ -9,7 +9,10 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockReservation;
 use App\Models\User;
+<<<<<<< HEAD
 use Illuminate\Database\Eloquent\Collection;
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -27,11 +30,18 @@ class PcBuildService
             'power_supply' => 'PSU',
             'case' => 'PC Case',
             'cpu_cooler' => 'CPU Cooler',
+<<<<<<< HEAD
             'other' => 'Other Components',
         ];
     }
 
     public function availableProducts(): Collection
+=======
+        ];
+    }
+
+    public function availableProducts()
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     {
         return Product::query()
             ->where('is_active', true)
@@ -41,6 +51,7 @@ class PcBuildService
             ->get();
     }
 
+<<<<<<< HEAD
     public function componentGroupForProduct(Product $product): ?string
     {
         $type = strtolower(str_replace([' ', '-'], '_', (string) $product->type));
@@ -218,6 +229,8 @@ class PcBuildService
         });
     }
 
+=======
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function createBuild(User $user, array $payload): PcBuild
     {
         $items = $this->normalizeItems($payload['items'] ?? []);
@@ -448,7 +461,11 @@ class PcBuildService
             }
 
             $productId = (int) ($item['product_id'] ?? 0);
+<<<<<<< HEAD
             $quantity = 1;
+=======
+            $quantity = (int) ($item['quantity'] ?? 1);
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
             if ($productId <= 0 || $quantity <= 0) {
                 continue;
@@ -480,10 +497,15 @@ class PcBuildService
         $build->load('items.product');
 
         $description = $build->items
+<<<<<<< HEAD
             ->map(fn ($item) => $item->product->name.($item->quantity > 1 ? ' x'.$item->quantity : ''))
             ->implode(' • ');
 
         $description = $description !== '' ? $description : 'Custom-built desktop configuration.';
+=======
+            ->map(fn ($item) => "- {$item->product->name} x{$item->quantity} ({$item->product->category})")
+            ->implode("\n");
+>>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
         $productName = 'Custom PC Build '.$build->build_number;
 
