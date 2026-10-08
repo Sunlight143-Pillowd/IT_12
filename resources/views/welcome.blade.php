@@ -6,7 +6,6 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ config('app.name', 'Davao Boss Computer') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-<<<<<<< HEAD
         <style>
             @media (min-width: 1280px) {
                 .storefront-desktop-navigation {
@@ -30,35 +29,19 @@
         <div class="bg-[#1c1c1c] text-gray-300 text-xs">
             <div class="mx-auto flex h-8 max-w-7xl items-center justify-between px-4">
                 <div class="hidden items-center gap-4 md:flex">
-=======
-    </head>
-    <body class="bg-white text-gray-900 antialiased">
-        <div class="bg-[#1c1c1c] text-gray-300 text-xs">
-            <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-8">
-                <div class="flex items-center gap-4">
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     <span class="hover:text-white">CORSAIR</span>
                     <span class="hover:text-white">elgato <span class="text-[10px]">(R)</span></span>
                     <span class="hover:text-white">SCUF GAMING</span>
                     <span class="hover:text-white">GAMER SENSE</span>
                 </div>
-<<<<<<< HEAD
                 <div class="flex items-center gap-2 sm:gap-4">
                     <span class="hidden sm:inline">24/7 Lifetime Support</span>
                     <a href="tel:{{ config('store.phone') }}" class="hover:text-white">{{ config('store.phone') }} (PH)</a>
                     <span class="hidden sm:inline">Contact</span>
-=======
-                <div class="flex items-center gap-4">
-                    <span>24/7 Lifetime Support</span>
-                    <span>09123456789 (PH)</span>
-                    <span>Chat Offline</span>
-                    <span>Contact</span>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                 </div>
             </div>
         </div>
 
-<<<<<<< HEAD
         <header x-data="{ mobileMenuOpen: false }" class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
                 <a href="{{ url('/') }}" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
@@ -72,28 +55,11 @@
                     <a href="{{ route('store.top-selling') }}" class="hover:text-purple-700">TOP SELLING</a>
                     <a href="{{ route('buildpc.customer') }}" class="hover:text-purple-700">BUILD PC</a>
                     <a href="{{ route('store.special-offers') }}" class="text-purple-700 hover:text-purple-800">OFFERS</a>
-=======
-        <header class="bg-white border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-                <a href="{{ url('/') }}" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
-                    <span class="flex h-5 w-5 items-center justify-center rounded-full border-4 border-purple-600">
-                        <span class="h-1.5 w-1.5 rounded-full bg-purple-600"></span>
-                    </span>
-                    <span class="text-3xl font-black tracking-tight text-purple-600">COMPUTER BOSS DAVAO</span>
-                </a>
-
-                <nav class="hidden lg:flex items-center gap-10 text-sm font-semibold text-gray-800">
-                    <a href="{{ route('store.desktops') }}" class="hover:text-purple-600">DESKTOPS</a>
-                    <a href="{{ route('store.laptops') }}" class="hover:text-purple-600">LAPTOPS</a>
-                    <a href="{{ route('store.categories') }}" class="hover:text-purple-600">CATEGORIES</a>
-                    <a href="{{ route('store.special-offers') }}" class="text-purple-600 hover:text-purple-700">SPECIAL OFFERS</a>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     @auth
                         <a href="{{ route('dashboard') }}" class="hover:text-purple-600">{{ Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS' }}</a>
                     @endauth
                 </nav>
 
-<<<<<<< HEAD
                 <div class="flex items-center gap-3 text-gray-700 sm:gap-5">
                     @auth
                     <a href="{{ route('cart.index') }}" class="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold uppercase tracking-wide hover:bg-purple-50 hover:text-purple-700" aria-label="Shopping cart, {{ array_sum(session('cart', [])) }} items">
@@ -108,17 +74,6 @@
                         @if (Route::has('register'))
                             <a href="{{ route('register') }}" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>
                         @endif
-=======
-                <div class="flex items-center gap-6 text-gray-700">
-                    <a href="{{ route('cart.index') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">
-                        CART ({{ array_sum(session('cart', [])) }})
-                    </a>
-                    @guest
-                    <a href="{{ route('login') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
-                    @if (Route::has('register'))
-                    <a href="{{ route('register') }}" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
-                    @endif
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     @else
                     <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
                             <button type="button"
@@ -148,7 +103,6 @@
                             </div>
                         </div>
                     @endguest
-<<<<<<< HEAD
                     <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen.toString()" aria-label="Toggle navigation" class="storefront-menu-toggle inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 xl:hidden">
                         <svg x-show="!mobileMenuOpen" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         <svg x-show="mobileMenuOpen" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"></path></svg>
@@ -174,10 +128,6 @@
                     @endauth
                 </div>
             </nav>
-=======
-                </div>
-            </div>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         </header>
 
         <main>
@@ -191,17 +141,14 @@
                     {{ $errors->first('quantity') }}
                 </div>
             @endif
-<<<<<<< HEAD
             @if ($errors->has('image'))
                 <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-red-700" role="alert">
                     {{ $errors->first('image') }}
                 </div>
             @endif
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             <section class="relative bg-black overflow-hidden">
                 <div class="placeholder-img absolute inset-0 opacity-40"></div>
-                <div class="relative max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[520px]">
+                <div class="relative max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[420px]">
                     <div class="text-white z-10">
                         <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
                             It's as simple as 1, 2, 3!
@@ -217,10 +164,9 @@
 
                     <div class="relative z-10 flex items-center justify-center gap-4">
                         <div class="flex items-end gap-4">
-<<<<<<< HEAD
                             @foreach ([
-                                'hero-main' => ['width' => 'w-56 h-72 md:w-64 md:h-80', 'button' => 'Upload Photo'],
-                                'hero-secondary' => ['width' => 'w-32 h-40 md:w-36 md:h-48', 'button' => 'Upload'],
+                                'hero-main' => ['width' => 'w-44 h-56 md:w-64 md:h-80', 'button' => 'Upload Photo'],
+                                'hero-secondary' => ['width' => 'w-28 h-36 md:w-36 md:h-48', 'button' => 'Upload'],
                             ] as $imageKey => $heroImage)
                                 @php($heroImagePath = $heroImages->get($imageKey))
                                 <div class="group relative {{ $heroImage['width'] }}">
@@ -244,14 +190,6 @@
                                     @endif
                                 </div>
                             @endforeach
-=======
-                            <div class="placeholder-img w-56 h-72 md:w-64 md:h-80 flex items-center justify-center text-gray-400 text-xs text-center p-4 rounded">
-                                [ Image Placeholder<br>Gaming PC Case ]
-                            </div>
-                            <div class="placeholder-img w-32 h-40 md:w-36 md:h-48 flex items-center justify-center text-gray-400 text-xs text-center p-2 rounded">
-                                [ Image Placeholder<br>Speaker/Unit ]
-                            </div>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                         </div>
                     </div>
                 </div>
@@ -260,7 +198,6 @@
             <section class="bg-[#1c1c1c] py-12">
                 <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-5 gap-8">
                     @foreach($categoryCards as $category)
-<<<<<<< HEAD
                         <div class="group relative flex flex-col items-center gap-4 text-center">
                             <a href="{{ $category['route'] }}" class="flex w-full flex-col items-center gap-4">
                                 <div class="relative h-28 w-full overflow-hidden rounded md:h-32">
@@ -289,16 +226,6 @@
                                 </form>
                             @endif
                         </div>
-=======
-                        <a href="{{ $category['route'] }}" class="group flex flex-col items-center gap-4 text-center">
-                            <div class="placeholder-img w-full h-28 md:h-32 rounded flex items-center justify-center text-gray-400 text-[11px] text-center px-2">
-                                [ Image Placeholder ]
-                            </div>
-                            <span class="text-white text-xs md:text-sm font-bold tracking-wide group-hover:text-purple-500">
-                                {{ strtoupper($category['label']) }}
-                            </span>
-                        </a>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                     @endforeach
                 </div>
             </section>
@@ -315,7 +242,6 @@
 
                     <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                         @forelse ($featured as $product)
-<<<<<<< HEAD
                             @php($availableStock = $product->availableStock())
                             <article data-photo-card class="relative flex h-full flex-col border border-gray-200 bg-white p-4">
                                 <div class="relative mt-3 flex h-52 w-full items-center justify-center overflow-hidden bg-gray-100">
@@ -330,33 +256,6 @@
                                     </span>
                                 </div>
                                 <x-store.cart-controls :product="$product" :available-stock="$availableStock" />
-=======
-                            <article class="border border-gray-200 bg-white p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $product->category }}</p>
-                                <h3 class="mt-2 text-lg font-bold text-gray-900">{{ $product->name }}</h3>
-                                <p class="mt-2 min-h-10 text-sm text-gray-600">{{ $product->description ?? 'Available in store now.' }}</p>
-                                <div class="mt-4 flex items-center justify-between gap-3">
-                                    <span class="font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
-                                    <span class="text-xs font-semibold text-gray-500">{{ $product->stock_quantity }} in stock</span>
-                                </div>
-                                @if ($product->stock_quantity > 0)
-                                    <form method="POST" action="{{ route('cart.items.store', $product) }}" class="mt-4 flex items-end gap-2">
-                                        @csrf
-                                        <label class="text-xs font-medium text-gray-700">
-                                            Quantity
-                                            <input type="number" name="quantity" value="{{ old('quantity', 1) }}" min="1" max="{{ $product->stock_quantity }}" required
-                                                   class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                        </label>
-                                        <button type="submit" class="rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">
-                                            Add to cart
-                                        </button>
-                                    </form>
-                                @else
-                                    <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">
-                                        Out of stock
-                                    </button>
-                                @endif
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                             </article>
                         @empty
                             <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>
@@ -366,7 +265,6 @@
             </section>
         </main>
 
-<<<<<<< HEAD
         @include('layouts.footer')
         <script>
             function previewCategoryPhoto(input) {
@@ -386,20 +284,5 @@
                 submitButton.classList.remove('hidden');
             }
         </script>
-=======
-        <footer class="bg-[#111827] text-gray-300 py-10">
-            <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between gap-4 text-sm">
-                <div>
-                    <p class="font-semibold text-white">Davao Boss Computer</p>
-                    <p class="mt-2 max-w-md text-gray-400">Performance builds, workstations, and gaming gear for everyday power users.</p>
-                </div>
-                <div class="flex gap-6">
-                    <a href="#" class="hover:text-white">Support</a>
-                    <a href="#" class="hover:text-white">Shipping</a>
-                    <a href="#" class="hover:text-white">Privacy</a>
-                </div>
-            </div>
-        </footer>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     </body>
 </html>

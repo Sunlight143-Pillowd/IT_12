@@ -15,11 +15,7 @@ class DashboardTransactionsTest extends TestCase
 
     public function test_admin_dashboard_lists_sales_and_delivery_invoice_links_to_details(): void
     {
-<<<<<<< HEAD
         $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
-=======
-        $admin = User::factory()->create(['email' => 'admin@computerbossdavao.com']);
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $customer = User::factory()->create();
         $product = Product::factory()->create([
             'name' => 'Dashboard Receipt CPU',
@@ -48,10 +44,7 @@ class DashboardTransactionsTest extends TestCase
         $dashboard->assertSee('Recent Sales');
         $dashboard->assertSee('Stock-In Transactions');
         $dashboard->assertSee('Dashboard Customer');
-<<<<<<< HEAD
-=======
         $dashboard->assertSee('Dashboard Receipt CPU');
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $dashboard->assertSee('Dashboard Supplier');
         $dashboard->assertSee('SUP-INV-500');
         $dashboard->assertSee(route('pos.receipt', $sale), false);

@@ -2,12 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductUnit;
-<<<<<<< HEAD
-use App\Models\Category;
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use App\Models\Sale;
 use App\Models\StockIn;
 use App\Models\User;
@@ -20,7 +17,6 @@ class InventoryWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-<<<<<<< HEAD
     public function test_inventory_categories_use_an_editable_dropdown_and_save_custom_names(): void
     {
         $user = User::factory()->create();
@@ -95,8 +91,6 @@ class InventoryWorkflowTest extends TestCase
         ]);
     }
 
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function test_supplier_delivery_uploads_proof_records_units_and_increments_stock(): void
     {
         Storage::fake('public');

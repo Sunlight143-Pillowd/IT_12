@@ -4,35 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePcBuildRequest;
 use App\Models\PcBuild;
-<<<<<<< HEAD
 use App\Models\User;
 use App\Services\PcBuildService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-=======
-use App\Services\PcBuildService;
-use Illuminate\Http\RedirectResponse;
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Illuminate\View\View;
 
 class PcBuildController extends Controller
 {
-<<<<<<< HEAD
     public function __construct(protected PcBuildService $pcBuildService) {}
-=======
-    public function __construct(protected PcBuildService $pcBuildService)
-    {
-    }
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 
     public function index(): View
     {
         $builds = PcBuild::query()
-<<<<<<< HEAD
             ->whereNull('user_id')
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             ->with(['items.product', 'reservations.product'])
             ->orderByDesc('created_at')
             ->get();
@@ -51,7 +37,6 @@ class PcBuildController extends Controller
     {
         $build = $this->pcBuildService->createBuild(auth()->user(), $request->validated());
 
-<<<<<<< HEAD
         return redirect()->route('buildpc.index')->with('success', 'PC build #'.$build->build_number.' saved and reserved successfully.');
     }
 
@@ -126,17 +111,11 @@ class PcBuildController extends Controller
         }
 
         return back()->with('status', 'Build '.$pcBuild->build_number.' updated.');
-=======
-        return redirect()->route('buildpc.index')->with('success', 'PC build #' . $build->build_number . ' saved and reserved successfully.');
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     }
 
     public function show(PcBuild $pcBuild): View
     {
-<<<<<<< HEAD
         abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-show', compact('pcBuild'));
@@ -144,10 +123,7 @@ class PcBuildController extends Controller
 
     public function print(PcBuild $pcBuild): View
     {
-<<<<<<< HEAD
         abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-print', compact('pcBuild'));
@@ -155,10 +131,7 @@ class PcBuildController extends Controller
 
     public function cancel(PcBuild $pcBuild): RedirectResponse
     {
-<<<<<<< HEAD
         abort_if($pcBuild->user_id !== null, 404);
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $this->pcBuildService->cancel($pcBuild);
 
         return back()->with('success', 'PC build cancelled and stock has been released.');
@@ -166,10 +139,7 @@ class PcBuildController extends Controller
 
     public function sell(PcBuild $pcBuild): RedirectResponse
     {
-<<<<<<< HEAD
         abort_if($pcBuild->user_id !== null, 404);
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
         $this->pcBuildService->sell($pcBuild, auth()->user());
 
         return back()->with('success', 'PC build sold and stock deducted permanently.');
@@ -181,15 +151,11 @@ class PcBuildController extends Controller
 
         foreach ($this->pcBuildService->componentGroups() as $type => $label) {
             $groups[$type] = $products
-<<<<<<< HEAD
                 ->filter(function ($product) use ($type): bool {
                     $group = $this->pcBuildService->componentGroupForProduct($product);
 
                     return $type === 'other' ? $group === 'other' : $group === $type;
                 })
-=======
-                ->filter(fn ($product) => strtolower((string) $product->type) === strtolower((string) $type) || strtolower((string) $product->category) === strtolower((string) $label))
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
                 ->values();
         }
 

@@ -12,9 +12,6 @@ class Category extends Model
     protected $fillable = [
         'name',
         'slug',
-<<<<<<< HEAD
         'image_path',
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     ];
 }

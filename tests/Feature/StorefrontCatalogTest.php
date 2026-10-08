@@ -3,20 +3,14 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-<<<<<<< HEAD
 use App\Models\HomepageImage;
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-<<<<<<< HEAD
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-=======
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
 use Tests\TestCase;
 
 class StorefrontCatalogTest extends TestCase
@@ -27,7 +21,6 @@ class StorefrontCatalogTest extends TestCase
     {
         $this->seed();
 
-<<<<<<< HEAD
         $this->get('/')
             ->assertSee('Boss Apex 4K')
             ->assertSee('COMPUTER BOSS DAVAO')
@@ -42,6 +35,24 @@ class StorefrontCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('<a href="'.route('login').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Sign In</a>', false)
             ->assertSee('<a href="'.route('register').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>', false);
+    }
+
+    public function test_guest_catalog_keeps_page_content_inside_the_layout_container(): void
+    {
+        $response = $this->get(route('store.desktops'));
+        $document = new \DOMDocument;
+        $previousLibxmlErrorHandling = libxml_use_internal_errors(true);
+        $document->loadHTML((string) $response->getContent());
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousLibxmlErrorHandling);
+        $xpath = new \DOMXPath($document);
+        $layout = $xpath->query('//body/div[contains(concat(" ", normalize-space(@class), " "), " min-h-screen ")]')->item(0);
+
+        $response->assertOk();
+        $this->assertNotNull($layout);
+        $this->assertSame($layout, $xpath->query('//body/div[contains(concat(" ", normalize-space(@class), " "), " min-h-screen ")]/nav')->item(0)?->parentNode);
+        $this->assertSame($layout, $xpath->query('//body/div[contains(concat(" ", normalize-space(@class), " "), " min-h-screen ")]/header')->item(0)?->parentNode);
+        $this->assertSame($layout, $xpath->query('//body/div[contains(concat(" ", normalize-space(@class), " "), " min-h-screen ")]/main')->item(0)?->parentNode);
     }
 
     public function test_category_page_shows_full_category_photos_without_upload_buttons(): void
@@ -321,12 +332,6 @@ class StorefrontCatalogTest extends TestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
-=======
-        $this->get('/')->assertSee('Boss Apex 4K');
-        $this->assertDatabaseHas('categories', ['slug' => 'ready-to-ship']);
-    }
-
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
     public function test_seeding_preserves_sales_and_does_not_duplicate_catalog_products(): void
     {
         $product = Product::create([

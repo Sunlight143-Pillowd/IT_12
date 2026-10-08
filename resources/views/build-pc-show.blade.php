@@ -45,13 +45,10 @@
                     </table>
                 </div>
 
-<<<<<<< HEAD
-=======
                 <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Notes</p>
                     <p class="mt-2 text-sm text-gray-700">{{ $pcBuild->notes ?: 'No notes provided.' }}</p>
                 </div>
->>>>>>> 8ea77616480ea087a512cd1892f2c9623776d9ce
             </div>
         </div>
     </div>
