@@ -25,7 +25,7 @@ class PcBuildController extends Controller
 
         $products = $this->pcBuildService->availableProducts();
 
-        return view('build-pc', [
+        return view('store.build-pc', [
             'builds' => $builds,
             'products' => $products,
             'componentGroups' => $this->pcBuildService->componentGroups(),
@@ -52,7 +52,7 @@ class PcBuildController extends Controller
                 ->get()
             : collect();
 
-        return view('store.build-pc', [
+        return view('build-pc', [
             'builds' => $builds,
             'componentGroups' => $this->pcBuildService->componentGroups(),
             'groupedProducts' => $this->groupProductsByType($products),
@@ -62,6 +62,8 @@ class PcBuildController extends Controller
     public function storeCustomerBuild(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'customer_name' => ['nullable', 'string', 'max:150'],
+            'customer_email' => ['nullable', 'email', 'max:150'],
             'items' => ['required', 'array'],
             'items.*' => ['array'],
             'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
@@ -127,6 +129,83 @@ class PcBuildController extends Controller
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-print', compact('pcBuild'));
+    }
+
+    public function edit(PcBuild $pcBuild): View
+    {
+        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        $pcBuild->load('items.product');
+
+        $products = $this->pcBuildService->availableProducts();
+        $selectedProducts = [];
+
+        foreach ($pcBuild->items as $item) {
+            $group = $this->pcBuildService->componentGroupForProduct($item->product);
+            $selectedProducts[$group ?? 'other'] = $item->product_id;
+        }
+
+        return view('build-pc-edit', [
+            'pcBuild' => $pcBuild,
+            'selectedProducts' => $selectedProducts,
+            'products' => $products,
+            'componentGroups' => $this->pcBuildService->componentGroups(),
+            'groupedProducts' => $this->groupProductsByType($products),
+            'isCustomer' => false,
+        ]);
+    }
+
+    public function customerEdit(PcBuild $pcBuild): View
+    {
+        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        $pcBuild->load('items.product');
+
+        $products = $this->pcBuildService->availableProducts();
+        $selectedProducts = [];
+
+        foreach ($pcBuild->items as $item) {
+            $group = $this->pcBuildService->componentGroupForProduct($item->product);
+            $selectedProducts[$group ?? 'other'] = $item->product_id;
+        }
+
+        return view('store.build-pc-edit', [
+            'pcBuild' => $pcBuild,
+            'selectedProducts' => $selectedProducts,
+            'products' => $products,
+            'componentGroups' => $this->pcBuildService->componentGroups(),
+            'groupedProducts' => $this->groupProductsByType($products),
+            'isCustomer' => true,
+        ]);
+    }
+
+    public function update(Request $request, PcBuild $pcBuild): RedirectResponse
+    {
+        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+
+        $validated = $request->validate([
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
+        ]);
+
+        $this->pcBuildService->updateBuildItems($pcBuild, $validated);
+
+        $route = $pcBuild->user_id !== null ? 'buildpc.customer' : 'buildpc.index';
+
+        return redirect()->route($route)->with('success', 'Build '.$pcBuild->build_number.' updated successfully.');
+    }
+
+    public function destroy(PcBuild $pcBuild): RedirectResponse
+    {
+        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+
+        if ($pcBuild->product_id) {
+            $pcBuild->product()->delete();
+        }
+
+        $pcBuild->items()->delete();
+        $pcBuild->reservations()->delete();
+        $pcBuild->delete();
+
+        return back()->with('success', 'PC build deleted successfully.');
     }
 
     public function cancel(PcBuild $pcBuild): RedirectResponse

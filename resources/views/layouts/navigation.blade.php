@@ -18,6 +18,7 @@
                     <x-nav-link :href="route('store.top-selling')" :active="request()->routeIs('store.top-selling')">
                         {{ __('Top Selling') }}
                     </x-nav-link>
+                    
                     <x-nav-link :href="route('buildpc.customer')" :active="request()->routeIs('buildpc.customer')">
                         {{ __('Build PC') }}
                     </x-nav-link>

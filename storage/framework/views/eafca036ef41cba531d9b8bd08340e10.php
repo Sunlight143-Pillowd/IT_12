@@ -98,14 +98,14 @@
                             </div>
                             <?php if (isset($component)) { $__componentOriginal7eb846a9d6661322cec973b548c4c18b = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal7eb846a9d6661322cec973b548c4c18b = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.store.cart-controls','data' => ['product' => $product,'availableStock' => $availableStock,'showQuantityControls' => request()->routeIs('store.laptops', 'store.top-selling')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.store.cart-controls','data' => ['product' => $product,'availableStock' => $availableStock,'showQuantityControls' => request()->routeIs('store.laptops')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('store.cart-controls'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'available-stock' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($availableStock),'show-quantity-controls' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('store.laptops', 'store.top-selling'))]); ?>
+<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'available-stock' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($availableStock),'show-quantity-controls' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('store.laptops'))]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal7eb846a9d6661322cec973b548c4c18b)): ?>

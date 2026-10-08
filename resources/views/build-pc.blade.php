@@ -34,7 +34,7 @@
                     </div>
                     <div>
                         <label for="customer_name" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Customer</label>
-                        <input id="customer_name" name="customer_name" required value="{{ old('customer_name') }}" form="build-pc-form" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="John Doe" />
+                        <input id="customer_name" name="customer_name" required value="{{ old('customer_name', auth()->user()?->name ?? '') }}" form="build-pc-form" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="John Doe" />
                     </div>
                     <div>
                         <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Status</p>
@@ -46,7 +46,7 @@
                     @csrf
                     <div class="mb-6 max-w-xl">
                         <label for="customer_email" class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Customer Email</label>
-                        <input id="customer_email" name="customer_email" value="{{ old('customer_email') }}" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="customer@example.com" />
+                        <input id="customer_email" name="customer_email" value="{{ old('customer_email', auth()->user()?->email ?? '') }}" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="customer@example.com" />
                     </div>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         @foreach ($componentGroups as $type => $label)
@@ -120,15 +120,12 @@
 
                             <div class="flex flex-wrap items-center gap-2 md:justify-end">
                                 <a href="{{ route('buildpc.show', $build) }}" class="inline-flex h-9 items-center justify-center rounded border border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-gray-400">View</a>
+                                <a href="{{ route('buildpc.edit', $build) }}" class="inline-flex h-9 items-center justify-center rounded border border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-gray-400">Edit</a>
                                 <a href="{{ route('buildpc.print', $build) }}" class="inline-flex h-9 items-center justify-center rounded border border-gray-300 bg-white px-3 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-gray-400">Print</a>
                                 @if (! in_array($build->status, ['sold', 'cancelled', 'expired'], true))
-                                    <form action="{{ route('buildpc.sell', $build) }}" method="POST" onsubmit="return confirm('Mark this build as sold?');">
-                                        @csrf
-                                        <button type="submit" class="inline-flex h-9 items-center justify-center rounded bg-emerald-600 px-3 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-emerald-700">Sell</button>
-                                    </form>
                                     <form action="{{ route('buildpc.cancel', $build) }}" method="POST" onsubmit="return confirm('Cancel this build and release the stock hold?');">
                                         @csrf
-                                        <button type="submit" class="inline-flex h-9 items-center justify-center rounded bg-red-600 px-3 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-red-700">Cancel</button>
+                                        <button type="submit" class="inline-flex h-9 items-center justify-center rounded bg-red-600 px-3 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-red-700">Cancel Order</button>
                                     </form>
                                 @endif
                             </div>

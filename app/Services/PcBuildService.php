@@ -157,8 +157,8 @@ class PcBuildService
 
             $build = PcBuild::create([
                 'build_number' => $this->nextBuildNumber(),
-                'customer_name' => $user->name,
-                'customer_email' => $user->email,
+                'customer_name' => trim((string) ($payload['customer_name'] ?? $user->name)),
+                'customer_email' => trim((string) ($payload['customer_email'] ?? $user->email)) ?: $user->email,
                 'user_id' => $user->id,
                 'status' => 'pending',
                 'total_cost' => $total,
@@ -167,6 +167,8 @@ class PcBuildService
             foreach ($buildItems as $item) {
                 $build->items()->create($item);
             }
+
+            $this->createStorefrontProduct($build);
 
             return $build->fresh(['items.product']);
         });
@@ -296,6 +298,87 @@ class PcBuildService
                     'expires_at' => now()->addMinutes(30),
                 ]);
             }
+
+            $this->createStorefrontProduct($build);
+
+            return $build->fresh(['items.product', 'reservations.product']);
+        });
+    }
+
+    public function updateBuildItems(PcBuild $build, array $payload): PcBuild
+    {
+        $items = $this->normalizeItems($payload['items'] ?? []);
+
+        if ($items === []) {
+            throw ValidationException::withMessages([
+                'items' => ['Select at least one component to update the build.'],
+            ]);
+        }
+
+        return DB::transaction(function () use ($build, $items): PcBuild {
+            $products = Product::whereIn('id', array_column($items, 'product_id'))
+                ->get()
+                ->keyBy('id');
+
+            $total = 0;
+            $selected = [];
+
+            foreach ($items as $entry) {
+                $product = $products->get($entry['product_id']);
+
+                if (! $product || ! $product->is_active) {
+                    throw ValidationException::withMessages([
+                        'items' => ['One of the selected products is no longer available.'],
+                    ]);
+                }
+
+                $quantity = (int) $entry['quantity'];
+                if ($quantity <= 0) {
+                    throw ValidationException::withMessages([
+                        'items' => ['Each selected component must have a quantity greater than 0.'],
+                    ]);
+                }
+
+                $available = $this->availableQuantity($product);
+                if ($available < $quantity) {
+                    throw ValidationException::withMessages([
+                        'items' => ["{$product->name} only has {$available} unit(s) available."],
+                    ]);
+                }
+
+                $selected[] = [
+                    'product_id' => $product->id,
+                    'quantity' => $quantity,
+                    'unit_price' => (float) $product->price,
+                    'subtotal' => (float) $product->price * $quantity,
+                ];
+
+                $total += (float) $product->price * $quantity;
+            }
+
+            $build->items()->delete();
+            $build->reservations()->delete();
+
+            foreach ($selected as $entry) {
+                $build->items()->create([
+                    'product_id' => $entry['product_id'],
+                    'quantity' => $entry['quantity'],
+                    'unit_price' => $entry['unit_price'],
+                    'subtotal' => $entry['subtotal'],
+                ]);
+
+                $build->reservations()->create([
+                    'product_id' => $entry['product_id'],
+                    'quantity' => $entry['quantity'],
+                    'status' => 'active',
+                    'expires_at' => now()->addMinutes(30),
+                ]);
+            }
+
+            $build->update([
+                'total_cost' => $total,
+                'status' => $build->status === 'sold' || $build->status === 'cancelled' ? $build->status : 'reserved',
+            ]);
 
             $this->createStorefrontProduct($build);
 

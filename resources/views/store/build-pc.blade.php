@@ -29,6 +29,7 @@
             <div>
                 <form id="customer-build-form" method="POST" action="{{ route('buildpc.customer.store') }}" class="space-y-5">
                     @csrf
+
                     <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
                         <div class="mb-5">
                             <h2 class="text-lg font-black text-gray-900">Choose your components</h2>
@@ -89,7 +90,7 @@
             @auth
                 <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
                     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <h2 class="text-xl font-black text-gray-900">My PC builds</h2>
+                        <h2 class="text-xl font-black text-gray-900">PC builds</h2>
                         <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-800">{{ $builds->count() }} build(s)</span>
                     </div>
                     @forelse ($builds as $build)
@@ -101,6 +102,16 @@
                                     <p class="text-sm text-gray-500">{{ $build->created_at->format('M j, Y') }}</p>
                                 </div>
                                 <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">{{ ucfirst($build->status) }}</span>
+                            </div>
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <a href="{{ route('buildpc.show', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">View</a>
+                                <a href="{{ route('buildpc.print', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">Print</a>
+                                <a href="{{ route('buildpc.customer.edit', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">Edit</a>
+                                <form action="{{ route('buildpc.customer.destroy', $build) }}" method="POST" onsubmit="return confirm('Delete this build?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="inline-flex items-center justify-center rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-red-700 transition hover:border-red-300 hover:bg-red-100">Delete</button>
+                                </form>
                             </div>
                             <div class="mt-4 grid gap-4 md:grid-cols-2">
                                 <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">

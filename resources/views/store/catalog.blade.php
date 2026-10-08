@@ -82,7 +82,7 @@
                                 <span class="text-lg font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">{{ $availableStock }} in stock</span>
                             </div>
-                            <x-store.cart-controls :product="$product" :available-stock="$availableStock" :show-quantity-controls="request()->routeIs('store.laptops', 'store.top-selling')" />
+                            <x-store.cart-controls :product="$product" :available-stock="$availableStock" :show-quantity-controls="request()->routeIs('store.laptops')" />
                         </div>
                     </div>
                 @empty

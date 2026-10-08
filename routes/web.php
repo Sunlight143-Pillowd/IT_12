@@ -55,13 +55,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard/build-pc', [PcBuildController::class, 'index'])->name('buildpc.index');
     Route::post('/dashboard/build-pc', [PcBuildController::class, 'store'])->name('buildpc.store');
     Route::get('/dashboard/build-pc/{pcBuild}', [PcBuildController::class, 'show'])->name('buildpc.show');
+    Route::get('/dashboard/build-pc/{pcBuild}/edit', [PcBuildController::class, 'edit'])->name('buildpc.edit');
+    Route::patch('/dashboard/build-pc/{pcBuild}', [PcBuildController::class, 'update'])->name('buildpc.update');
     Route::get('/dashboard/build-pc/{pcBuild}/print', [PcBuildController::class, 'print'])->name('buildpc.print');
+    Route::delete('/dashboard/build-pc/{pcBuild}', [PcBuildController::class, 'destroy'])->name('buildpc.destroy');
     Route::post('/dashboard/build-pc/{pcBuild}/cancel', [PcBuildController::class, 'cancel'])->name('buildpc.cancel');
     Route::post('/dashboard/build-pc/{pcBuild}/sell', [PcBuildController::class, 'sell'])->name('buildpc.sell');
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/build-pc/{pcBuild}/edit', [PcBuildController::class, 'customerEdit'])->name('buildpc.customer.edit');
+    Route::patch('/build-pc/{pcBuild}', [PcBuildController::class, 'update'])->name('buildpc.customer.update');
     Route::post('/build-pc', [PcBuildController::class, 'storeCustomerBuild'])->name('buildpc.customer.store');
+    Route::delete('/build-pc/{pcBuild}', [PcBuildController::class, 'destroy'])->name('buildpc.customer.destroy');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
