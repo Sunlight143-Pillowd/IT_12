@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="<?php echo e(str_replace('_', '-', app()->getLocale())); ?>">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="<?php echo e(csrf_token()); ?>">
+        <title><?php echo e(config('app.name', 'Davao Boss Computer')); ?></title>
+        <?php echo app('Illuminate\Foundation\Vite')(['resources/css/app.css', 'resources/js/app.js']); ?>
+    </head>
+    <body class="bg-white text-gray-900 antialiased">
+        <div class="bg-[#1c1c1c] text-gray-300 text-xs">
+            <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-8">
+                <div class="flex items-center gap-4">
+                    <span class="hover:text-white">CORSAIR</span>
+                    <span class="hover:text-white">elgato <span class="text-[10px]">(R)</span></span>
+                    <span class="hover:text-white">SCUF GAMING</span>
+                    <span class="hover:text-white">GAMER SENSE</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span>24/7 Lifetime Support</span>
+                    <span>09123456789 (PH)</span>
+                    <span>Chat Offline</span>
+                    <span>Contact</span>
+                </div>
+            </div>
+        </div>
+
+        <header class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+                <a href="<?php echo e(url('/')); ?>" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
+                    <span class="flex h-5 w-5 items-center justify-center rounded-full border-4 border-purple-600">
+                        <span class="h-1.5 w-1.5 rounded-full bg-purple-600"></span>
+                    </span>
+                    <span class="text-3xl font-black tracking-tight text-purple-600">COMPUTER BOSS DAVAO</span>
+                </a>
+
+                <nav class="hidden lg:flex items-center gap-10 text-sm font-semibold text-gray-800">
+                    <a href="<?php echo e(route('store.desktops')); ?>" class="hover:text-purple-600">DESKTOPS</a>
+                    <a href="<?php echo e(route('store.laptops')); ?>" class="hover:text-purple-600">LAPTOPS</a>
+                    <a href="<?php echo e(route('store.categories')); ?>" class="hover:text-purple-600">CATEGORIES</a>
+                    <a href="<?php echo e(route('store.special-offers')); ?>" class="text-purple-600 hover:text-purple-700">SPECIAL OFFERS</a>
+                    <?php if(auth()->guard()->check()): ?>
+                        <a href="<?php echo e(route('dashboard')); ?>" class="hover:text-purple-600"><?php echo e(Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS'); ?></a>
+                    <?php endif; ?>
+                </nav>
+
+                <div class="flex items-center gap-6 text-gray-700">
+                    <a href="<?php echo e(route('cart.index')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">
+                        CART (<?php echo e(array_sum(session('cart', []))); ?>)
+                    </a>
+                    <?php if(auth()->guard()->guest()): ?>
+                    <a href="<?php echo e(route('login')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Sign In</a>
+                    <?php if(Route::has('register')): ?>
+                    <a href="<?php echo e(route('register')); ?>" class="text-xs font-semibold uppercase tracking-wide hover:text-purple-600">Register</a>
+                    <?php endif; ?>
+                    <?php else: ?>
+                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false">
+                            <button type="button"
+                                    @click="open = !open"
+                                    aria-haspopup="true"
+                                    :aria-expanded="open"
+                                    class="inline-flex cursor-pointer items-center gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 hover:text-purple-600">
+                                <span>Hi, <?php echo e(Auth::user()->name); ?></span>
+                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <div x-show="open"
+                                 x-transition
+                                 @click.outside="open = false"
+                                 class="absolute right-0 z-50 mt-2 w-52 rounded-md border border-gray-200 bg-white py-1 shadow-lg"
+                                 style="display: none;">
+                                <?php if(Auth::user()?->isAdmin()): ?>
+                                <a href="<?php echo e(route('dashboard')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
+                                <?php endif; ?>
+                                <a href="<?php echo e(route('profile.edit')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                <form method="POST" action="<?php echo e(route('logout')); ?>">
+                                    <?php echo csrf_field(); ?>
+                                    <button type="submit" class="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <?php if(session('status')): ?>
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-green-700" role="status">
+                    <?php echo e(session('status')); ?>
+
+                </div>
+            <?php endif; ?>
+            <?php if($errors->has('quantity')): ?>
+                <div class="mx-auto mt-4 max-w-7xl px-4 text-sm text-red-700" role="alert">
+                    <?php echo e($errors->first('quantity')); ?>
+
+                </div>
+            <?php endif; ?>
+            <section class="relative bg-black overflow-hidden">
+                <div class="placeholder-img absolute inset-0 opacity-40"></div>
+                <div class="relative max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[520px]">
+                    <div class="text-white z-10">
+                        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
+                            It's as simple as 1, 2, 3!
+                        </h1>
+                        <p class="text-gray-300 mb-6 max-w-md">
+                            With 3 easy steps, choose your next gaming PC with our new
+                            <span class="font-semibold text-white">Gaming Desktop Advisor</span>
+                        </p>
+                        <a href="<?php echo e(route('store.desktops')); ?>" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm tracking-wide px-6 py-3">
+                            START NOW
+                        </a>
+                    </div>
+
+                    <div class="relative z-10 flex items-center justify-center gap-4">
+                        <div class="flex items-end gap-4">
+                            <div class="placeholder-img w-56 h-72 md:w-64 md:h-80 flex items-center justify-center text-gray-400 text-xs text-center p-4 rounded">
+                                [ Image Placeholder<br>Gaming PC Case ]
+                            </div>
+                            <div class="placeholder-img w-32 h-40 md:w-36 md:h-48 flex items-center justify-center text-gray-400 text-xs text-center p-2 rounded">
+                                [ Image Placeholder<br>Speaker/Unit ]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bg-[#1c1c1c] py-12">
+                <div class="max-w-7xl mx-auto px-4 grid grid-cols-2 md:grid-cols-5 gap-8">
+                    <?php $__currentLoopData = $categoryCards; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <a href="<?php echo e($category['route']); ?>" class="group flex flex-col items-center gap-4 text-center">
+                            <div class="placeholder-img w-full h-28 md:h-32 rounded flex items-center justify-center text-gray-400 text-[11px] text-center px-2">
+                                [ Image Placeholder ]
+                            </div>
+                            <span class="text-white text-xs md:text-sm font-bold tracking-wide group-hover:text-purple-500">
+                                <?php echo e(strtoupper($category['label'])); ?>
+
+                            </span>
+                        </a>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+            </section>
+
+            <section class="py-12">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="mb-6 flex items-end justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">In stock now</p>
+                            <h2 class="mt-2 text-2xl font-black text-gray-900">Featured Products</h2>
+                        </div>
+                        <a href="<?php echo e(route('store.desktops')); ?>" class="text-sm font-semibold text-purple-600 hover:text-purple-700">Browse store</a>
+                    </div>
+
+                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                        <?php $__empty_1 = true; $__currentLoopData = $featured; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                            <article class="border border-gray-200 bg-white p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500"><?php echo e($product->category); ?></p>
+                                <h3 class="mt-2 text-lg font-bold text-gray-900"><?php echo e($product->name); ?></h3>
+                                <p class="mt-2 min-h-10 text-sm text-gray-600"><?php echo e($product->description ?? 'Available in store now.'); ?></p>
+                                <div class="mt-4 flex items-center justify-between gap-3">
+                                    <span class="font-black text-purple-600">₱<?php echo e(number_format($product->price, 0)); ?></span>
+                                    <span class="text-xs font-semibold text-gray-500"><?php echo e($product->stock_quantity); ?> in stock</span>
+                                </div>
+                                <?php if($product->stock_quantity > 0): ?>
+                                    <form method="POST" action="<?php echo e(route('cart.items.store', $product)); ?>" class="mt-4 flex items-end gap-2">
+                                        <?php echo csrf_field(); ?>
+                                        <label class="text-xs font-medium text-gray-700">
+                                            Quantity
+                                            <input type="number" name="quantity" value="<?php echo e(old('quantity', 1)); ?>" min="1" max="<?php echo e($product->stock_quantity); ?>" required
+                                                   class="mt-1 block w-20 rounded-md border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                        </label>
+                                        <button type="submit" class="rounded-md bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">
+                                            Add to cart
+                                        </button>
+                                    </form>
+                                <?php else: ?>
+                                    <button type="button" disabled class="mt-4 cursor-not-allowed rounded-md bg-gray-300 px-3 py-2 text-sm font-semibold text-gray-600">
+                                        Out of stock
+                                    </button>
+                                <?php endif; ?>
+                            </article>
+                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                            <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="bg-[#111827] text-gray-300 py-10">
+            <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between gap-4 text-sm">
+                <div>
+                    <p class="font-semibold text-white">Davao Boss Computer</p>
+                    <p class="mt-2 max-w-md text-gray-400">Performance builds, workstations, and gaming gear for everyday power users.</p>
+                </div>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-white">Support</a>
+                    <a href="#" class="hover:text-white">Shipping</a>
+                    <a href="#" class="hover:text-white">Privacy</a>
+                </div>
+            </div>
+        </footer>
+    </body>
+</html>
+<?php /**PATH C:\Users\Cyrus\Downloads\IT12\resources\views/welcome.blade.php ENDPATH**/ ?>
