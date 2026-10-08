@@ -47,16 +47,23 @@
                         <h4 class="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Manage Categories</h4>
                         <div class="flex flex-wrap gap-3">
                             <?php $__currentLoopData = $categoryRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <form method="POST" action="<?php echo e(route('inventory.categories.update', $category->id)); ?>" class="flex items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1.5">
-                                    <?php echo csrf_field(); ?>
-                                    <?php echo method_field('PATCH'); ?>
-                                    <select name="name" aria-label="Editable category name for <?php echo e($category->name); ?>" class="w-36 rounded border border-gray-300 px-2 py-1 text-sm">
-                                        <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $categoryOption): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <option value="<?php echo e($categoryOption); ?>" <?php if($category->name === $categoryOption): echo 'selected'; endif; ?>><?php echo e($categoryOption); ?></option>
-                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                    </select>
-                                    <button type="submit" class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
-                                </form>
+                                <div class="flex items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1.5">
+                                    <form method="POST" action="<?php echo e(route('inventory.categories.update', $category->id)); ?>" class="flex items-center gap-2">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('PATCH'); ?>
+                                        <select name="name" aria-label="Editable category name for <?php echo e($category->name); ?>" class="w-36 rounded border border-gray-300 px-2 py-1 text-sm">
+                                            <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $categoryOption): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                <option value="<?php echo e($categoryOption); ?>" <?php if($category->name === $categoryOption): echo 'selected'; endif; ?>><?php echo e($categoryOption); ?></option>
+                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                        </select>
+                                        <button type="submit" class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
+                                    </form>
+                                    <form method="POST" action="<?php echo e(route('inventory.categories.destroy', $category->id)); ?>" onsubmit="return confirm('Delete the <?php echo e($category->name); ?> category?')">
+                                        <?php echo csrf_field(); ?>
+                                        <?php echo method_field('DELETE'); ?>
+                                        <button type="submit" class="rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700" aria-label="Delete <?php echo e($category->name); ?> category">Delete</button>
+                                    </form>
+                                </div>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
                     </div>

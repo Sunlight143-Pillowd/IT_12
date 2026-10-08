@@ -30,7 +30,8 @@ class InventoryWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('<select name="name"', false)
             ->assertSee('<option value="Displays" selected>', false)
-            ->assertSee('<option value="GPU">', false);
+            ->assertSee('<option value="GPU">', false)
+            ->assertSee('Delete Displays category');
 
         $this->from(route('inventory.index'))
             ->patch(route('inventory.categories.update', $category), [
@@ -44,6 +45,29 @@ class InventoryWorkflowTest extends TestCase
             'name' => 'GPU',
             'slug' => 'gpu',
         ]);
+    }
+
+    public function test_category_can_be_deleted_without_deleting_products_in_that_category(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $imagePath = 'categories/displays.png';
+        Storage::disk('public')->put($imagePath, 'category image');
+        $category = Category::create([
+            'name' => 'Displays',
+            'slug' => 'displays',
+            'image_path' => $imagePath,
+        ]);
+        $product = Product::factory()->create(['category' => 'Displays']);
+
+        $this->actingAs($user)
+            ->delete(route('inventory.categories.destroy', $category))
+            ->assertRedirect(route('inventory.index'))
+            ->assertSessionHas('success', 'Category deleted successfully.');
+
+        $this->assertDatabaseMissing('categories', ['id' => $category->id]);
+        $this->assertModelExists($product);
+        $this->assertFalse(Storage::disk('public')->exists($imagePath));
     }
 
     public function test_editable_category_dropdown_rejects_duplicate_category_names(): void

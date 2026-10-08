@@ -47,14 +47,14 @@
                 <a href="<?php echo e(url('/')); ?>" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
                     <?php if (isset($component)) { $__componentOriginal8892e718f3d0d7a916180885c6f012e7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal8892e718f3d0d7a916180885c6f012e7 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.application-logo','data' => ['class' => 'h-8 w-8 shrink-0 text-purple-700']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.application-logo','data' => ['class' => 'shrink-0']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('application-logo'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['class' => 'h-8 w-8 shrink-0 text-purple-700']); ?>
+<?php $component->withAttributes(['class' => 'shrink-0']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal8892e718f3d0d7a916180885c6f012e7)): ?>
@@ -65,7 +65,6 @@
 <?php $component = $__componentOriginal8892e718f3d0d7a916180885c6f012e7; ?>
 <?php unset($__componentOriginal8892e718f3d0d7a916180885c6f012e7); ?>
 <?php endif; ?>
-                    <span class="text-lg font-black tracking-tight text-purple-700 sm:text-xl">DAVAO BOSS COMPUTER</span>
                 </a>
 
                 <nav class="storefront-desktop-navigation hidden items-center gap-5 text-xs font-bold tracking-wide text-gray-800 xl:flex">
@@ -222,7 +221,7 @@
                         <div class="group relative flex flex-col items-center gap-4 text-center">
                             <a href="<?php echo e($category['route']); ?>" class="flex w-full flex-col items-center gap-4">
                                 <div class="relative h-28 w-full overflow-hidden rounded md:h-32">
-                                    <img data-category-preview src="<?php echo e($category['image_path'] ? asset('storage/'.$category['image_path']) : ''); ?>" alt="<?php echo e($category['label']); ?>" class="<?php echo e($category['image_path'] ? '' : 'hidden'); ?> h-full w-full object-cover">
+                                    <img data-category-preview src="<?php echo e($category['image_path'] ? asset('storage/'.$category['image_path']) : ''); ?>" alt="<?php echo e($category['label']); ?>" class="<?php echo e($category['image_path'] ? '' : 'hidden'); ?> h-full w-full object-contain">
                                     <div data-category-placeholder class="placeholder-img flex h-full w-full flex-col items-center justify-center gap-2 px-2 text-center text-[11px] text-gray-300 <?php echo e($category['image_path'] ? 'hidden' : ''); ?>">
                                         <span class="text-3xl font-light leading-none text-white/80">＋</span>
                                         <?php if(! Auth::user()?->canManageOrders()): ?>
@@ -266,8 +265,8 @@
                         <?php $__empty_1 = true; $__currentLoopData = $featured; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                             <?php ($availableStock = $product->availableStock()); ?>
                             <article data-photo-card class="relative flex h-full flex-col border border-gray-200 bg-white p-4">
-                                <div class="relative mt-3 aspect-[4/3] w-full overflow-hidden bg-gray-100">
-                                    <img data-category-preview src="<?php echo e($product->featured_image_path ? asset('storage/'.$product->featured_image_path) : ''); ?>" alt="<?php echo e($product->name); ?>" class="<?php echo e($product->featured_image_path ? '' : 'hidden'); ?> h-full w-full object-cover">
+                                <div class="relative mt-3 flex h-52 w-full items-center justify-center overflow-hidden bg-gray-100">
+                                    <img data-category-preview src="<?php echo e($product->featured_image_path ? asset('storage/'.$product->featured_image_path) : ''); ?>" alt="<?php echo e($product->name); ?>" class="<?php echo e($product->featured_image_path ? '' : 'hidden'); ?> h-full w-full object-contain">
                                     <div data-category-placeholder class="h-full w-full <?php echo e($product->featured_image_path ? 'hidden' : ''); ?>"></div>
                                 </div>
                                 <h3 class="mt-3 min-h-14 text-lg font-bold text-gray-900"><?php echo e($product->name); ?></h3>

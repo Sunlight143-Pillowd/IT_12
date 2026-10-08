@@ -37,6 +37,13 @@
                 </div>
             <?php endif; ?>
 
+            <?php if($errors->has('image')): ?>
+                <div class="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+                    <?php echo e($errors->first('image')); ?>
+
+                </div>
+            <?php endif; ?>
+
             <div class="mb-8 flex flex-wrap gap-2">
                 <?php $__currentLoopData = $filters; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <?php
@@ -60,14 +67,26 @@
                 <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <?php ($availableStock = $product->availableStock()); ?>
                     <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                        <?php if($product->image_path): ?>
-                            <img src="<?php echo e(asset('storage/'.$product->image_path)); ?>" alt="<?php echo e($product->name); ?>" class="h-52 w-full bg-gray-100 object-cover">
-                        <?php else: ?>
-                            <div class="flex h-52 flex-col items-center justify-center gap-2 bg-gray-100 text-gray-400" aria-label="No product photo available">
-                                <span class="text-4xl font-light leading-none text-purple-500">＋</span>
-                                <span class="text-[10px] font-semibold uppercase tracking-[0.2em]">Image</span>
-                            </div>
-                        <?php endif; ?>
+                        <div data-photo-card class="relative h-52 bg-gray-100">
+                            <?php if($product->image_path): ?>
+                                <img src="<?php echo e(asset('storage/'.$product->image_path)); ?>" alt="<?php echo e($product->name); ?>" class="h-full w-full object-contain">
+                            <?php else: ?>
+                                <img data-product-photo-preview alt="<?php echo e($product->name); ?>" class="hidden h-full w-full object-contain">
+                                <div data-product-photo-placeholder class="flex h-full items-center justify-center text-sm text-gray-500" aria-label="No product photo available">
+                                    Photo unavailable
+                                </div>
+                                <?php if(Auth::user()?->isAdmin()): ?>
+                                    <form method="POST" action="<?php echo e(route('inventory.products.image', $product)); ?>" enctype="multipart/form-data" class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
+                                        <?php echo csrf_field(); ?>
+                                        <label class="inline-flex cursor-pointer items-center gap-2 rounded bg-white px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-gray-800 shadow transition hover:bg-purple-100 hover:text-purple-800">
+                                            <span>Upload Photo</span>
+                                            <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/bmp,image/webp" required class="sr-only" onchange="previewProductPhoto(this)">
+                                        </label>
+                                        <button type="submit" data-product-photo-submit class="hidden rounded bg-purple-700 px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white shadow transition hover:bg-purple-800">Save Photo</button>
+                                    </form>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </div>
                         <div class="p-4">
                             <h3 class="text-xl font-bold text-gray-900"><?php echo e($product->name); ?></h3>
                             <?php if(! empty(trim((string) $product->description))): ?>
@@ -107,6 +126,25 @@
             </div>
         </div>
     </div>
+
+<script>
+    function previewProductPhoto(input) {
+        const file = input.files?.[0];
+        const card = input.closest('[data-photo-card]');
+        const image = card?.querySelector('[data-product-photo-preview]');
+        const placeholder = card?.querySelector('[data-product-photo-placeholder]');
+        const submitButton = card?.querySelector('[data-product-photo-submit]');
+
+        if (!file || !image || !placeholder || !submitButton) {
+            return;
+        }
+
+        image.src = URL.createObjectURL(file);
+        image.classList.remove('hidden');
+        placeholder.classList.add('hidden');
+        submitButton.classList.remove('hidden');
+    }
+</script>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>

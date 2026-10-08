@@ -62,6 +62,19 @@ class CategoryController extends Controller
         return redirect()->route('inventory.index')->with('success', 'Category updated successfully.');
     }
 
+    public function destroy(Category $category): RedirectResponse
+    {
+        $imagePath = $category->image_path;
+
+        $category->delete();
+
+        if ($imagePath) {
+            Storage::disk('public')->delete($imagePath);
+        }
+
+        return redirect()->route('inventory.index')->with('success', 'Category deleted successfully.');
+    }
+
     public function uploadImage(Request $request, string $categorySlug): RedirectResponse
     {
         abort_unless($request->user()?->canManageOrders(), 403);

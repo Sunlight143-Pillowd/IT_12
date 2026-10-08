@@ -34,6 +34,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/dashboard/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::post('/dashboard/inventory/categories', [CategoryController::class, 'store'])->name('inventory.categories.store');
     Route::patch('/dashboard/inventory/categories/{category}', [CategoryController::class, 'update'])->name('inventory.categories.update');
+    Route::delete('/dashboard/inventory/categories/{category}', [CategoryController::class, 'destroy'])->name('inventory.categories.destroy');
     Route::post('/dashboard/inventory/categories/{categorySlug}/image', [CategoryController::class, 'uploadImage'])->name('inventory.categories.image');
     Route::post('/dashboard/homepage-images/{imageKey}', [CategoryController::class, 'uploadHomepageImage'])->name('homepage-images.upload');
     Route::get('/dashboard/inventory/products/{product}/edit', [InventoryController::class, 'edit'])->name('inventory.products.edit');

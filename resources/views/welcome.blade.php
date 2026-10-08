@@ -45,8 +45,7 @@
         <header x-data="{ mobileMenuOpen: false }" class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
                 <a href="{{ url('/') }}" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
-                    <x-application-logo class="h-8 w-8 shrink-0 text-purple-700" />
-                    <span class="text-lg font-black tracking-tight text-purple-700 sm:text-xl">DAVAO BOSS COMPUTER</span>
+                    <x-application-logo class="shrink-0" />
                 </a>
 
                 <nav class="storefront-desktop-navigation hidden items-center gap-5 text-xs font-bold tracking-wide text-gray-800 xl:flex">
@@ -200,7 +199,7 @@
                         <div class="group relative flex flex-col items-center gap-4 text-center">
                             <a href="{{ $category['route'] }}" class="flex w-full flex-col items-center gap-4">
                                 <div class="relative h-28 w-full overflow-hidden rounded md:h-32">
-                                    <img data-category-preview src="{{ $category['image_path'] ? asset('storage/'.$category['image_path']) : '' }}" alt="{{ $category['label'] }}" class="{{ $category['image_path'] ? '' : 'hidden' }} h-full w-full object-cover">
+                                    <img data-category-preview src="{{ $category['image_path'] ? asset('storage/'.$category['image_path']) : '' }}" alt="{{ $category['label'] }}" class="{{ $category['image_path'] ? '' : 'hidden' }} h-full w-full object-contain">
                                     <div data-category-placeholder class="placeholder-img flex h-full w-full flex-col items-center justify-center gap-2 px-2 text-center text-[11px] text-gray-300 {{ $category['image_path'] ? 'hidden' : '' }}">
                                         <span class="text-3xl font-light leading-none text-white/80">＋</span>
                                         @if (! Auth::user()?->canManageOrders())
@@ -243,8 +242,8 @@
                         @forelse ($featured as $product)
                             @php($availableStock = $product->availableStock())
                             <article data-photo-card class="relative flex h-full flex-col border border-gray-200 bg-white p-4">
-                                <div class="relative mt-3 aspect-[4/3] w-full overflow-hidden bg-gray-100">
-                                    <img data-category-preview src="{{ $product->featured_image_path ? asset('storage/'.$product->featured_image_path) : '' }}" alt="{{ $product->name }}" class="{{ $product->featured_image_path ? '' : 'hidden' }} h-full w-full object-cover">
+                                <div class="relative mt-3 flex h-52 w-full items-center justify-center overflow-hidden bg-gray-100">
+                                    <img data-category-preview src="{{ $product->featured_image_path ? asset('storage/'.$product->featured_image_path) : '' }}" alt="{{ $product->name }}" class="{{ $product->featured_image_path ? '' : 'hidden' }} h-full w-full object-contain">
                                     <div data-category-placeholder class="h-full w-full {{ $product->featured_image_path ? 'hidden' : '' }}"></div>
                                 </div>
                                 <h3 class="mt-3 min-h-14 text-lg font-bold text-gray-900">{{ $product->name }}</h3>

@@ -1,4 +1,3 @@
-<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" {{ $attributes }}>
-    <rect x="3" y="4" width="18" height="13" rx="2" />
-    <path stroke-linecap="round" stroke-linejoin="round" d="M8 21h8M12 17v4M7 9h10M7 13h6" />
-</svg>
+<span {{ $attributes->merge(['class' => 'inline-flex h-12 w-auto min-w-max items-center gap-2']) }}>
+    <span class="flex h-full items-center whitespace-nowrap text-sm font-black leading-none tracking-tight text-purple-700 sm:text-base">COMPUTER BOSS DAVAO</span>
+</span>

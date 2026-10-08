@@ -37,16 +37,23 @@
                         <h4 class="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Manage Categories</h4>
                         <div class="flex flex-wrap gap-3">
                             @foreach ($categoryRecords as $category)
-                                <form method="POST" action="{{ route('inventory.categories.update', $category->id) }}" class="flex items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1.5">
-                                    @csrf
-                                    @method('PATCH')
-                                    <select name="name" aria-label="Editable category name for {{ $category->name }}" class="w-36 rounded border border-gray-300 px-2 py-1 text-sm">
-                                        @foreach ($categories as $categoryOption)
-                                            <option value="{{ $categoryOption }}" @selected($category->name === $categoryOption)>{{ $categoryOption }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
-                                </form>
+                                <div class="flex items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1.5">
+                                    <form method="POST" action="{{ route('inventory.categories.update', $category->id) }}" class="flex items-center gap-2">
+                                        @csrf
+                                        @method('PATCH')
+                                        <select name="name" aria-label="Editable category name for {{ $category->name }}" class="w-36 rounded border border-gray-300 px-2 py-1 text-sm">
+                                            @foreach ($categories as $categoryOption)
+                                                <option value="{{ $categoryOption }}" @selected($category->name === $categoryOption)>{{ $categoryOption }}</option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit" class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
+                                    </form>
+                                    <form method="POST" action="{{ route('inventory.categories.destroy', $category->id) }}" onsubmit="return confirm('Delete the {{ $category->name }} category?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700" aria-label="Delete {{ $category->name }} category">Delete</button>
+                                    </form>
+                                </div>
                             @endforeach
                         </div>
                     </div>

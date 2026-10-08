@@ -53,6 +53,7 @@ class CartWorkflowTest extends TestCase
         $this->get(route('store.desktops'))
             ->assertSee('One Click Product')
             ->assertSee('Add to cart')
+            ->assertDontSee('Upload Photo')
             ->assertSee('name="quantity" value="1"', false)
             ->assertDontSee('Quantity')
             ->assertDontSee('Decrease quantity of One Click Product')
@@ -69,6 +70,46 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Remove One Click Product from cart')
             ->assertSee('name="_method" value="PUT"', false)
             ->assertSee('name="_method" value="DELETE"', false);
+    }
+
+    public function test_only_admin_can_upload_a_photo_for_catalog_products_without_one(): void
+    {
+        $employee = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        Product::factory()->create([
+            'name' => 'Desktop Awaiting Photo',
+            'type' => 'desktop',
+            'image_path' => null,
+        ]);
+        Product::factory()->create([
+            'name' => 'Accessory Awaiting Photo',
+            'type' => 'accessory',
+            'image_path' => null,
+        ]);
+
+        $this->actingAs($employee)
+            ->get(route('store.desktops'))
+            ->assertOk()
+            ->assertDontSee('Upload Photo')
+            ->assertDontSee('Save Photo');
+
+        $this->actingAs($admin)
+            ->get(route('store.desktops'))
+            ->assertOk()
+            ->assertSee('Upload Photo')
+            ->assertSee('Save Photo');
+
+        $this->actingAs($employee)
+            ->get(route('store.accessories'))
+            ->assertOk()
+            ->assertDontSee('Upload Photo')
+            ->assertDontSee('Save Photo');
+
+        $this->actingAs($admin)
+            ->get(route('store.accessories'))
+            ->assertOk()
+            ->assertSee('Upload Photo')
+            ->assertSee('Save Photo');
     }
 
     public function test_gaming_laptop_cards_always_show_plus_and_minus_controls(): void
@@ -123,9 +164,18 @@ class CartWorkflowTest extends TestCase
 
         $this->get(route('store.top-selling'))
             ->assertOk()
+            ->assertSee('object-contain')
             ->assertSee('Decrease quantity of Top Seller Quantity Test')
             ->assertSee('Increase quantity of Top Seller Quantity Test')
-            ->assertSee('Add to cart');
+            ->assertSee('Add to cart')
+            ->assertDontSee('Upload Photo');
+
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $this->actingAs($admin)
+            ->get(route('store.top-selling'))
+            ->assertOk()
+            ->assertSee('Upload Photo')
+            ->assertSee('Save Photo');
     }
 
     public function test_signed_in_customer_can_add_products_to_the_cart(): void

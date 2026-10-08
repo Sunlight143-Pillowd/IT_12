@@ -21,8 +21,61 @@ class StorefrontCatalogTest extends TestCase
     {
         $this->seed();
 
-        $this->get('/')->assertSee('Boss Apex 4K');
+        $this->get('/')
+            ->assertSee('Boss Apex 4K')
+            ->assertSee(asset('images/davao-boss-logo.png'), false)
+            ->assertSee('COMPUTER BOSS DAVAO')
+            ->assertSee('flex h-52 w-full items-center justify-center')
+            ->assertSee('h-full w-full object-contain');
         $this->assertDatabaseHas('categories', ['slug' => 'ready-to-ship']);
+    }
+
+    public function test_category_page_shows_full_category_photos_without_upload_buttons(): void
+    {
+        Storage::fake('public');
+        $categoryImagePath = 'categories/cpu.png';
+        Storage::disk('public')->put(
+            $categoryImagePath,
+            base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/MioAAAAASUVORK5CYII=')
+        );
+        Category::create([
+            'name' => 'CPU',
+            'slug' => 'cpu',
+            'image_path' => $categoryImagePath,
+        ]);
+        Product::create([
+            'name' => 'Test CPU',
+            'slug' => 'test-cpu',
+            'type' => 'cpu',
+            'category' => 'CPU',
+            'price' => 1000,
+            'stock_quantity' => 2,
+            'low_stock_threshold' => 1,
+            'stock_location' => 'warehouse',
+            'is_active' => true,
+        ]);
+
+        $this->get(route('store.categories'))
+            ->assertOk()
+            ->assertSee('CPU')
+            ->assertSee(asset('storage/'.$categoryImagePath), false)
+            ->assertSee('object-contain')
+            ->assertDontSee('Upload Photo')
+            ->assertDontSee('Save Photo');
+
+        $employee = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        $this->actingAs($employee)
+            ->get(route('store.categories'))
+            ->assertOk()
+            ->assertDontSee('Upload Photo')
+            ->assertDontSee('Save Photo');
+
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $this->actingAs($admin)
+            ->get(route('store.categories'))
+            ->assertOk()
+            ->assertDontSee('Upload Photo')
+            ->assertDontSee('Save Photo');
     }
 
     public function test_staff_can_upload_a_category_card_photo_and_it_is_shown_on_the_homepage(): void
@@ -58,6 +111,7 @@ class StorefrontCatalogTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee(asset('storage/'.$category->image_path), false)
+            ->assertSee('object-contain')
             ->assertDontSee('Change Photo')
             ->assertDontSee('inventory/categories/cpu/image');
     }

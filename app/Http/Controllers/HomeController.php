@@ -356,10 +356,19 @@ class HomeController extends Controller
                 ->toArray()
             : [];
 
-        $categoryLinks = array_map(function ($category) {
+        $categoryImages = Schema::hasTable('categories')
+            ? Category::query()->pluck('image_path', 'slug')
+            : collect();
+
+        $categoryLinks = array_map(function ($category) use ($categoryImages) {
+            $slug = Str::slug($category);
+
             return [
                 'label' => $this->categoryDisplayName($category),
                 'route' => $this->categoryRouteFor($category),
+                'name' => $category,
+                'slug' => $slug,
+                'image_path' => $categoryImages->get($slug),
             ];
         }, $categories);
 
