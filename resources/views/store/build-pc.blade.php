@@ -31,6 +31,16 @@
                     @csrf
 
                     <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                        <div class="mb-5 grid gap-4 md:grid-cols-2">
+                            <div>
+                                <label for="customer_name" class="mb-2 block text-sm font-bold text-gray-800">Your name</label>
+                                <input id="customer_name" name="customer_name" type="text" value="{{ old('customer_name', auth()->user()?->name ?? '') }}" required class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="John Doe">
+                            </div>
+                            <div>
+                                <label for="customer_email" class="mb-2 block text-sm font-bold text-gray-800">Email address</label>
+                                <input id="customer_email" name="customer_email" type="email" value="{{ old('customer_email', auth()->user()?->email ?? '') }}" required class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="you@example.com">
+                            </div>
+                        </div>
                         <div class="mb-5">
                             <h2 class="text-lg font-black text-gray-900">Choose your components</h2>
                             <p class="mt-1 text-sm text-gray-500">Choose available parts and see the estimated total before submitting.</p>
@@ -107,37 +117,15 @@
                                 <a href="{{ route('buildpc.show', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">View</a>
                                 <a href="{{ route('buildpc.print', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">Print</a>
                                 <a href="{{ route('buildpc.customer.edit', $build) }}" class="inline-flex items-center justify-center rounded border border-gray-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-700 transition hover:border-purple-600 hover:text-purple-700">Edit</a>
-                                <form action="{{ route('buildpc.customer.destroy', $build) }}" method="POST" onsubmit="return confirm('Delete this build?');">
+                                <form action="{{ route('buildpc.customer.destroy', $build) }}" method="POST" onsubmit="return confirm('Delete this build?');" class="inline-block">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-flex items-center justify-center rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-red-700 transition hover:border-red-300 hover:bg-red-100">Delete</button>
                                 </form>
                             </div>
-                            <div class="mt-4 grid gap-4 md:grid-cols-2">
-                                <dl class="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
-                                    @foreach ($build->items as $item)
-                                        <dt class="font-semibold text-gray-500">{{ $item->product->category }}</dt>
-                                        <dd class="text-gray-800">{{ $item->product->name }}</dd>
-                                    @endforeach
-                                    <dt class="font-bold text-gray-900">Total price</dt>
-                                    <dd class="font-black text-purple-800">₱{{ number_format($build->total_cost, 2) }}</dd>
-                                </dl>
-                                <div class="grid grid-cols-3 gap-2">
-                                    @foreach (['Product photo' => $build->product_photo_path, 'Before' => $build->before_photo_path, 'After' => $build->after_photo_path] as $label => $path)
-                                        <div>
-                                            <p class="mb-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">{{ $label }}</p>
-                                            @if ($path)
-                                                <a href="{{ asset('storage/'.$path) }}" target="_blank" rel="noopener"><img src="{{ asset('storage/'.$path) }}" alt="{{ $label }} for {{ $build->build_number }}" class="aspect-square w-full rounded-lg object-cover"></a>
-                                            @else
-                                                <div class="flex aspect-square items-center justify-center rounded-lg bg-gray-100 text-center text-[10px] text-gray-400">Photo pending</div>
-                                            @endif
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
                         </article>
                     @empty
-                        <p class="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-6 text-center text-sm text-gray-500">Your submitted builds will appear here.</p>
+                        <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">No builds yet. Start by building your first custom PC.</div>
                     @endforelse
                 </section>
             @endauth

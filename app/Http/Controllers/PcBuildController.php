@@ -22,11 +22,26 @@ class PcBuildController extends Controller
             ->with(['items.product', 'reservations.product'])
             ->orderByDesc('created_at')
             ->get();
+        $customerBuildManagement = PcBuild::query()
+            ->whereNotNull('user_id')
+            ->with('items.product')
+            ->latest()
+            ->get();
 
         $products = $this->pcBuildService->availableProducts();
 
-        return view('store.build-pc', [
+        return view('build-pc', [
             'builds' => $builds,
+            'customerBuildManagement' => $customerBuildManagement,
+            'buildStatusOptions' => [
+                'pending' => ['accepted', 'cancelled'],
+                'accepted' => ['building', 'cancelled'],
+                'building' => ['testing', 'cancelled'],
+                'testing' => ['ready', 'cancelled'],
+                'ready' => ['completed', 'cancelled'],
+                'completed' => [],
+                'cancelled' => [],
+            ],
             'products' => $products,
             'componentGroups' => $this->pcBuildService->componentGroups(),
             'groupedProducts' => $this->groupProductsByType($products),
@@ -52,7 +67,7 @@ class PcBuildController extends Controller
                 ->get()
             : collect();
 
-        return view('build-pc', [
+        return view('store.build-pc', [
             'builds' => $builds,
             'componentGroups' => $this->pcBuildService->componentGroups(),
             'groupedProducts' => $this->groupProductsByType($products),

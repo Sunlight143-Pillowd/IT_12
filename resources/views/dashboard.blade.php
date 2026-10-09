@@ -23,15 +23,15 @@
                 <section class="relative overflow-hidden rounded-2xl bg-black text-white shadow-xl">
                     <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.55),transparent_55%)]"></div>
                     <div class="relative p-8 lg:p-10">
-                        <div class="grid gap-8 lg:grid-cols-2">
-                            <div class="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                        <div class="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]">
+                            <div class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                                     <h1 class="text-xl font-black text-white">Customer Orders</h1>
                                     <span class="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-200">{{ $storeOrders->count() }} order(s)</span>
                                 </div>
-                                <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <div class="h-[22rem] overflow-auto rounded-lg border border-white/10">
                                     <table class="min-w-[760px] text-left text-sm text-gray-200">
-                                        <thead class="bg-white/10 text-xs uppercase text-gray-300">
+                                        <thead class="sticky top-0 z-10 bg-gray-900 text-xs uppercase text-gray-300">
                                             <tr><th class="px-4 py-3">Order</th><th class="px-4 py-3">Customer</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Date</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Payment / Fulfillment</th><th class="px-4 py-3">Status / Action</th></tr>
                                         </thead>
                                         <tbody>
@@ -75,27 +75,27 @@
                                 </div>
                             </div>
 
-                            <div class="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                            <div class="flex h-full flex-col rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                                 <div class="mb-4 flex items-center justify-between">
                                     <span class="text-sm font-bold uppercase tracking-wide text-purple-300">Today</span>
                                     <span class="rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase text-emerald-300">Live</span>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Revenue</p>
-                                        <p class="mt-2 text-2xl font-black text-white">₱{{ number_format($revenue, 0) }}</p>
+                                <div class="grid flex-1 auto-rows-fr grid-cols-2 gap-3">
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Revenue</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱{{ number_format($revenue, 0) }}</p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Orders</p>
-                                        <p class="mt-2 text-2xl font-black text-white">{{ $todayOrders }}</p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Orders</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">{{ $todayOrders }}</p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Low Stock</p>
-                                        <p class="mt-2 text-2xl font-black text-red-400">{{ $lowStock }}</p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-red-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Low Stock</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-red-400">{{ $lowStock }}</p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Sales Today</p>
-                                        <p class="mt-2 text-2xl font-black text-white">₱{{ number_format($todaySales, 0) }}</p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Sales Today</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱{{ number_format($todaySales, 0) }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -145,80 +145,6 @@
                                 @endforelse
                             </tbody>
                         </table>
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-5">
-                        <div>
-                            <h2 class="text-xl font-black text-gray-900">Customer Build / PC Build Management</h2>
-                            <p class="mt-1 text-sm text-gray-500">Review components, update the build workflow, and attach progress photos.</p>
-                        </div>
-                        <a href="{{ route('buildpc.customer') }}" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-500 hover:text-purple-700">Customer build page</a>
-                    </div>
-                    <div class="space-y-4 p-5">
-                        @forelse ($customerBuildManagement as $build)
-                            <article class="rounded-xl border border-gray-200 p-4">
-                                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-lg font-black text-gray-900">{{ $build->build_number }}</h3>
-                                            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-800">{{ ucfirst($build->status) }}</span>
-                                        </div>
-                                        <p class="mt-1 text-sm font-semibold text-gray-800">{{ $build->customer_name }}</p>
-                                        <p class="text-xs text-gray-500">Build date: {{ $build->created_at->format('M j, Y') }}</p>
-                                        <ul class="mt-3 grid gap-x-6 gap-y-1 text-sm text-gray-700 sm:grid-cols-2">
-                                            @foreach ($build->items as $item)
-                                                <li>{{ $item->product->category }}: {{ $item->product->name }} × {{ $item->quantity }}</li>
-                                            @endforeach
-                                        </ul>
-                                        <p class="mt-3 font-black text-gray-900">Total price: ₱{{ number_format($build->total_cost, 2) }}</p>
-                                    </div>
-
-                                    <form method="POST" action="{{ route('dashboard.customer-builds.update', $build) }}" enctype="multipart/form-data" class="w-full space-y-4 rounded-xl bg-gray-50 p-4 xl:max-w-2xl">
-                                        @csrf
-                                        @method('PATCH')
-                                        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                                            <label class="block text-sm font-semibold text-gray-700">
-                                                Build status
-                                                <select name="status" class="mt-1 block w-full rounded-lg border-gray-300 bg-white text-sm focus:border-purple-500 focus:ring-purple-500">
-                                                    <option value="{{ $build->status }}">{{ ucfirst($build->status) }} (current)</option>
-                                                    @foreach ($buildStatusOptions[$build->status] ?? [] as $nextStatus)
-                                                        <option value="{{ $nextStatus }}">{{ ucfirst($nextStatus) }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </label>
-                                            <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-purple-800">Save updates</button>
-                                        </div>
-                                        <div class="grid grid-cols-3 gap-3">
-                                            @foreach ([
-                                                'product_photo' => ['Product photo', $build->product_photo_path],
-                                                'before_photo' => ['Before photo', $build->before_photo_path],
-                                                'after_photo' => ['After photo', $build->after_photo_path],
-                                            ] as $field => [$label, $path])
-                                                @php
-                                                    $previewId = 'build-'.$build->id.'-'.$field;
-                                                @endphp
-                                                <div class="min-w-0">
-                                                    <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-500">{{ $label }}</p>
-                                                    @if ($path)
-                                                        <img id="{{ $previewId }}" src="{{ asset('storage/'.$path) }}" alt="{{ $label }} for {{ $build->build_number }}" class="mb-2 aspect-square w-full rounded-lg bg-white object-cover">
-                                                    @else
-                                                        <div id="{{ $previewId }}" class="mb-2 flex aspect-square items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-xs text-gray-400">No photo</div>
-                                                    @endif
-                                                    <label class="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-2 text-center text-xs font-bold text-gray-700 transition hover:border-purple-500 hover:text-purple-700">
-                                                        <span aria-hidden="true" class="text-base leading-none">+</span> Add Photo
-                                                        <input type="file" name="{{ $field }}" accept="image/jpeg,image/png,image/webp" class="build-photo-input sr-only" data-preview="{{ $previewId }}">
-                                                    </label>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    </form>
-                                </div>
-                            </article>
-                        @empty
-                            <p class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">No customer PC builds have been submitted.</p>
-                        @endforelse
                     </div>
                 </section>
 

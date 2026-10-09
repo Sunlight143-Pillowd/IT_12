@@ -17,7 +17,7 @@ class InventoryWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_inventory_categories_use_an_editable_dropdown_and_save_custom_names(): void
+    public function test_inventory_categories_use_editable_text_fields_and_save_custom_names(): void
     {
         $user = User::factory()->create();
         $category = Category::create([
@@ -28,22 +28,21 @@ class InventoryWorkflowTest extends TestCase
         $this->actingAs($user)
             ->get(route('inventory.index'))
             ->assertOk()
-            ->assertSee('<select name="name"', false)
-            ->assertSee('<option value="Displays" selected>', false)
-            ->assertSee('<option value="GPU">', false)
+            ->assertSee('<input type="text" name="name" value="Displays"', false)
+            ->assertDontSee('<select name="name"', false)
             ->assertSee('Delete Displays category');
 
         $this->from(route('inventory.index'))
             ->patch(route('inventory.categories.update', $category), [
-                'name' => 'GPU',
+                'name' => 'Workstation Parts',
             ])
             ->assertRedirect(route('inventory.index'))
             ->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('categories', [
             'id' => $category->id,
-            'name' => 'GPU',
-            'slug' => 'gpu',
+            'name' => 'Workstation Parts',
+            'slug' => 'workstation-parts',
         ]);
     }
 
@@ -70,7 +69,7 @@ class InventoryWorkflowTest extends TestCase
         $this->assertFalse(Storage::disk('public')->exists($imagePath));
     }
 
-    public function test_editable_category_dropdown_rejects_duplicate_category_names(): void
+    public function test_category_text_field_rejects_duplicate_category_names(): void
     {
         $user = User::factory()->create();
         $category = Category::create(['name' => 'Displays', 'slug' => 'displays']);

@@ -32,6 +32,7 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Log Out');
         $response->assertDontSee('Control your store from one dashboard.');
         $response->assertSee('Customer Orders');
+        $response->assertDontSee('Customer Build / PC Build Management');
         $response->assertSee('Live');
         $response->assertDontSee('Products');
         $response->assertSee('Low Stock');
@@ -376,7 +377,7 @@ class AdminDashboardTest extends TestCase
         $this->assertSame(1, PcBuild::count());
     }
 
-    public function test_custom_pc_build_product_appears_in_desktops_with_spec_summary_in_description(): void
+    public function test_admin_custom_pc_build_creates_a_storefront_product_for_desktops(): void
     {
         $user = User::factory()->create([
             'name' => 'Site Admin',

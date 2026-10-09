@@ -33,15 +33,15 @@
                 <section class="relative overflow-hidden rounded-2xl bg-black text-white shadow-xl">
                     <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.55),transparent_55%)]"></div>
                     <div class="relative p-8 lg:p-10">
-                        <div class="grid gap-8 lg:grid-cols-2">
-                            <div class="min-w-0 overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                        <div class="grid items-stretch gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(18rem,1fr)]">
+                            <div class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                                     <h1 class="text-xl font-black text-white">Customer Orders</h1>
                                     <span class="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-200"><?php echo e($storeOrders->count()); ?> order(s)</span>
                                 </div>
-                                <div class="overflow-x-auto rounded-lg border border-white/10">
+                                <div class="h-[22rem] overflow-auto rounded-lg border border-white/10">
                                     <table class="min-w-[760px] text-left text-sm text-gray-200">
-                                        <thead class="bg-white/10 text-xs uppercase text-gray-300">
+                                        <thead class="sticky top-0 z-10 bg-gray-900 text-xs uppercase text-gray-300">
                                             <tr><th class="px-4 py-3">Order</th><th class="px-4 py-3">Customer</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Date</th><th class="px-4 py-3 text-right">Total</th><th class="px-4 py-3">Payment / Fulfillment</th><th class="px-4 py-3">Status / Action</th></tr>
                                         </thead>
                                         <tbody>
@@ -85,27 +85,27 @@
                                 </div>
                             </div>
 
-                            <div class="rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
+                            <div class="flex h-full flex-col rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                                 <div class="mb-4 flex items-center justify-between">
                                     <span class="text-sm font-bold uppercase tracking-wide text-purple-300">Today</span>
                                     <span class="rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase text-emerald-300">Live</span>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Revenue</p>
-                                        <p class="mt-2 text-2xl font-black text-white">₱<?php echo e(number_format($revenue, 0)); ?></p>
+                                <div class="grid flex-1 auto-rows-fr grid-cols-2 gap-3">
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Revenue</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱<?php echo e(number_format($revenue, 0)); ?></p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Orders</p>
-                                        <p class="mt-2 text-2xl font-black text-white"><?php echo e($todayOrders); ?></p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Orders</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white"><?php echo e($todayOrders); ?></p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Low Stock</p>
-                                        <p class="mt-2 text-2xl font-black text-red-400"><?php echo e($lowStock); ?></p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-red-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Low Stock</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-red-400"><?php echo e($lowStock); ?></p>
                                     </div>
-                                    <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                                        <p class="text-[11px] uppercase tracking-wide text-gray-300">Sales Today</p>
-                                        <p class="mt-2 text-2xl font-black text-white">₱<?php echo e(number_format($todaySales, 0)); ?></p>
+                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Sales Today</p>
+                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱<?php echo e(number_format($todaySales, 0)); ?></p>
                                     </div>
                                 </div>
                             </div>
@@ -155,80 +155,6 @@
                                 <?php endif; ?>
                             </tbody>
                         </table>
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 p-5">
-                        <div>
-                            <h2 class="text-xl font-black text-gray-900">Customer Build / PC Build Management</h2>
-                            <p class="mt-1 text-sm text-gray-500">Review components, update the build workflow, and attach progress photos.</p>
-                        </div>
-                        <a href="<?php echo e(route('buildpc.customer')); ?>" class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-500 hover:text-purple-700">Customer build page</a>
-                    </div>
-                    <div class="space-y-4 p-5">
-                        <?php $__empty_1 = true; $__currentLoopData = $customerBuildManagement; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $build): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
-                            <article class="rounded-xl border border-gray-200 p-4">
-                                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-lg font-black text-gray-900"><?php echo e($build->build_number); ?></h3>
-                                            <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-800"><?php echo e(ucfirst($build->status)); ?></span>
-                                        </div>
-                                        <p class="mt-1 text-sm font-semibold text-gray-800"><?php echo e($build->customer_name); ?></p>
-                                        <p class="text-xs text-gray-500">Build date: <?php echo e($build->created_at->format('M j, Y')); ?></p>
-                                        <ul class="mt-3 grid gap-x-6 gap-y-1 text-sm text-gray-700 sm:grid-cols-2">
-                                            <?php $__currentLoopData = $build->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <li><?php echo e($item->product->category); ?>: <?php echo e($item->product->name); ?> × <?php echo e($item->quantity); ?></li>
-                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                        </ul>
-                                        <p class="mt-3 font-black text-gray-900">Total price: ₱<?php echo e(number_format($build->total_cost, 2)); ?></p>
-                                    </div>
-
-                                    <form method="POST" action="<?php echo e(route('dashboard.customer-builds.update', $build)); ?>" enctype="multipart/form-data" class="w-full space-y-4 rounded-xl bg-gray-50 p-4 xl:max-w-2xl">
-                                        <?php echo csrf_field(); ?>
-                                        <?php echo method_field('PATCH'); ?>
-                                        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-                                            <label class="block text-sm font-semibold text-gray-700">
-                                                Build status
-                                                <select name="status" class="mt-1 block w-full rounded-lg border-gray-300 bg-white text-sm focus:border-purple-500 focus:ring-purple-500">
-                                                    <option value="<?php echo e($build->status); ?>"><?php echo e(ucfirst($build->status)); ?> (current)</option>
-                                                    <?php $__currentLoopData = $buildStatusOptions[$build->status] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $nextStatus): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                        <option value="<?php echo e($nextStatus); ?>"><?php echo e(ucfirst($nextStatus)); ?></option>
-                                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                                </select>
-                                            </label>
-                                            <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-purple-800">Save updates</button>
-                                        </div>
-                                        <div class="grid grid-cols-3 gap-3">
-                                            <?php $__currentLoopData = [
-                                                'product_photo' => ['Product photo', $build->product_photo_path],
-                                                'before_photo' => ['Before photo', $build->before_photo_path],
-                                                'after_photo' => ['After photo', $build->after_photo_path],
-                                            ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $field => [$label, $path]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <?php
-                                                    $previewId = 'build-'.$build->id.'-'.$field;
-                                                ?>
-                                                <div class="min-w-0">
-                                                    <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-500"><?php echo e($label); ?></p>
-                                                    <?php if($path): ?>
-                                                        <img id="<?php echo e($previewId); ?>" src="<?php echo e(asset('storage/'.$path)); ?>" alt="<?php echo e($label); ?> for <?php echo e($build->build_number); ?>" class="mb-2 aspect-square w-full rounded-lg bg-white object-cover">
-                                                    <?php else: ?>
-                                                        <div id="<?php echo e($previewId); ?>" class="mb-2 flex aspect-square items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white text-xs text-gray-400">No photo</div>
-                                                    <?php endif; ?>
-                                                    <label class="flex cursor-pointer items-center justify-center gap-1 rounded-lg border border-gray-300 bg-white px-2 py-2 text-center text-xs font-bold text-gray-700 transition hover:border-purple-500 hover:text-purple-700">
-                                                        <span aria-hidden="true" class="text-base leading-none">+</span> Add Photo
-                                                        <input type="file" name="<?php echo e($field); ?>" accept="image/jpeg,image/png,image/webp" class="build-photo-input sr-only" data-preview="<?php echo e($previewId); ?>">
-                                                    </label>
-                                                </div>
-                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                        </div>
-                                    </form>
-                                </div>
-                            </article>
-                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                            <p class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">No customer PC builds have been submitted.</p>
-                        <?php endif; ?>
                     </div>
                 </section>
 

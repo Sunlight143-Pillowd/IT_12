@@ -46,13 +46,6 @@ class DashboardController extends Controller
                 ->latest()
                 ->get()
             : collect();
-        $customerBuildManagement = $user?->canManageOrders()
-            ? PcBuild::with('items.product')
-                ->whereNotNull('user_id')
-                ->latest()
-                ->get()
-            : collect();
-
         $purchaseHistory = $user
             ? Sale::where(function ($query) use ($user) {
                 $query->where('employee_id', $user->id)
@@ -78,17 +71,7 @@ class DashboardController extends Controller
             'storeOrders' => $storeOrders,
             'customerStoreOrders' => $customerStoreOrders,
             'customerBuilds' => $customerBuilds,
-            'customerBuildManagement' => $customerBuildManagement,
             'purchaseHistory' => $purchaseHistory,
-            'buildStatusOptions' => [
-                'pending' => ['accepted', 'cancelled'],
-                'accepted' => ['building', 'cancelled'],
-                'building' => ['testing', 'cancelled'],
-                'testing' => ['ready', 'cancelled'],
-                'ready' => ['completed', 'cancelled'],
-                'completed' => [],
-                'cancelled' => [],
-            ],
         ]);
     }
 

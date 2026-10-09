@@ -89,6 +89,8 @@ class PcBuildWorkflowTest extends TestCase
         $this->actingAs($user)
             ->get(route('buildpc.index'))
             ->assertOk()
+            ->assertSee('id="build-summary-body"', false)
+            ->assertSee("componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));", false)
             ->assertDontSee('name="items[cpu][quantity]"')
             ->assertDontSee('>Qty<', false);
 
@@ -130,8 +132,12 @@ class PcBuildWorkflowTest extends TestCase
             ->get(route('buildpc.customer'))
             ->assertOk()
             ->assertSee('Build your PC')
+            ->assertSee('Build Customer')
+            ->assertSee($customer->email)
             ->assertSee('Build CPU')
             ->assertSee('Estimated total')
+            ->assertSee('id="build-summary-body"', false)
+            ->assertSee("componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));", false)
             ->assertDontSee('name="items[cpu][quantity]"')
             ->assertDontSee('>Qty<', false);
 
@@ -149,6 +155,7 @@ class PcBuildWorkflowTest extends TestCase
             'status' => 'pending',
             'total_cost' => 15000,
         ]);
+        $this->assertDatabaseMissing('products', ['category' => 'Custom Build']);
         $this->assertSame([1, 1], $build->items()->orderBy('id')->pluck('quantity')->all());
         $this->assertSame(2, $cpu->fresh()->stock_quantity);
         $this->assertSame(4, $ram->fresh()->stock_quantity);
@@ -156,18 +163,22 @@ class PcBuildWorkflowTest extends TestCase
         $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
         $this->actingAs($admin)
             ->get(route('dashboard'))
+            ->assertDontSee('Customer Build / PC Build Management');
+
+        $this->actingAs($admin)
+            ->get(route('buildpc.index'))
             ->assertSee('Customer Build / PC Build Management')
             ->assertSee($build->build_number)
             ->assertSee('Build CPU');
 
         $this->actingAs($admin)
-            ->from(route('dashboard'))
+            ->from(route('buildpc.index'))
             ->patch(route('dashboard.customer-builds.update', $build), [
                 'status' => 'accepted',
                 'product_photo' => UploadedFile::fake()->create('build-product.png', 10, 'image/png'),
                 'before_photo' => UploadedFile::fake()->create('build-before.png', 10, 'image/png'),
             ])
-            ->assertRedirect(route('dashboard'));
+            ->assertRedirect(route('buildpc.index'));
 
         $build->refresh();
         $this->assertSame('accepted', $build->status);

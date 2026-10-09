@@ -168,8 +168,6 @@ class PcBuildService
                 $build->items()->create($item);
             }
 
-            $this->createStorefrontProduct($build);
-
             return $build->fresh(['items.product']);
         });
     }
@@ -299,7 +297,9 @@ class PcBuildService
                 ]);
             }
 
-            $this->createStorefrontProduct($build);
+            if ($build->user_id === null) {
+                $this->createStorefrontProduct($build);
+            }
 
             return $build->fresh(['items.product', 'reservations.product']);
         });
@@ -380,7 +380,9 @@ class PcBuildService
                 'status' => $build->status === 'sold' || $build->status === 'cancelled' ? $build->status : 'reserved',
             ]);
 
-            $this->createStorefrontProduct($build);
+            if ($build->user_id === null) {
+                $this->createStorefrontProduct($build);
+            }
 
             return $build->fresh(['items.product', 'reservations.product']);
         });
@@ -389,6 +391,10 @@ class PcBuildService
     public function cancel(PcBuild $build): void
     {
         DB::transaction(function () use ($build) {
+            if ($build->product_id) {
+                $build->update(['product_id' => null]);
+            }
+
             $build->reservations()->where('status', 'active')->update([
                 'status' => 'released',
                 'released_at' => now(),
@@ -560,6 +566,10 @@ class PcBuildService
 
     protected function createStorefrontProduct(PcBuild $build): void
     {
+        if ($build->user_id !== null) {
+            return;
+        }
+
         $build->load('items.product');
 
         $description = $build->items

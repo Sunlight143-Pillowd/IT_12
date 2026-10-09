@@ -27,47 +27,11 @@
                 </div>
             <?php endif; ?>
 
-            <div class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+            <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="mb-5">
                     <h3 class="text-lg font-bold text-gray-900">Add New Item</h3>
                     <p class="text-sm text-gray-500">Create and manage stock items below.</p>
                 </div>
-
-                <form method="POST" action="<?php echo e(route('inventory.categories.store')); ?>" class="mb-5 flex flex-col gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 md:flex-row md:items-end">
-                    <?php echo csrf_field(); ?>
-                    <div class="flex-1">
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Add Category</label>
-                        <input type="text" name="name" placeholder="e.g. GPU, Monitor, SSD" required class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <button type="submit" class="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700">Add Category</button>
-                </form>
-
-                <?php if($categoryRecords->isNotEmpty()): ?>
-                    <div class="mb-5 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                        <h4 class="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Manage Categories</h4>
-                        <div class="flex flex-wrap gap-3">
-                            <?php $__currentLoopData = $categoryRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                <div class="flex items-center gap-2 rounded border border-gray-300 bg-white px-2 py-1.5">
-                                    <form method="POST" action="<?php echo e(route('inventory.categories.update', $category->id)); ?>" class="flex items-center gap-2">
-                                        <?php echo csrf_field(); ?>
-                                        <?php echo method_field('PATCH'); ?>
-                                        <select name="name" aria-label="Editable category name for <?php echo e($category->name); ?>" class="w-36 rounded border border-gray-300 px-2 py-1 text-sm">
-                                            <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $categoryOption): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                                <option value="<?php echo e($categoryOption); ?>" <?php if($category->name === $categoryOption): echo 'selected'; endif; ?>><?php echo e($categoryOption); ?></option>
-                                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                        </select>
-                                        <button type="submit" class="rounded bg-purple-600 px-2 py-1 text-xs font-semibold text-white hover:bg-purple-700">Save</button>
-                                    </form>
-                                    <form method="POST" action="<?php echo e(route('inventory.categories.destroy', $category->id)); ?>" onsubmit="return confirm('Delete the <?php echo e($category->name); ?> category?')">
-                                        <?php echo csrf_field(); ?>
-                                        <?php echo method_field('DELETE'); ?>
-                                        <button type="submit" class="rounded bg-red-600 px-2 py-1 text-xs font-semibold text-white hover:bg-red-700" aria-label="Delete <?php echo e($category->name); ?> category">Delete</button>
-                                    </form>
-                                </div>
-                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                        </div>
-                    </div>
-                <?php endif; ?>
 
                 <?php
                     $productTypeOptions = \App\Http\Controllers\InventoryController::productTypeOptions();
@@ -138,7 +102,50 @@
                         <button type="submit" class="rounded bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">Add Item</button>
                     </div>
                 </form>
-            </div>
+
+                <div class="mt-6 border-t border-gray-200 pt-5">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900">Categories</h3>
+                            <p class="text-sm text-gray-500">Add and manage the categories used by inventory items.</p>
+                        </div>
+                        <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700"><?php echo e($categoryRecords->count()); ?> categories</span>
+                    </div>
+
+                    <div class="space-y-4">
+                        <form method="POST" action="<?php echo e(route('inventory.categories.store')); ?>" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                            <?php echo csrf_field(); ?>
+                            <div class="min-w-0 flex-1">
+                                <label for="new-category-name" class="mb-1 block text-xs font-semibold text-gray-700">Add Category</label>
+                                <input id="new-category-name" type="text" name="name" placeholder="e.g. GPU, Monitor, SSD" required class="w-full rounded-lg border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:ring-purple-500">
+                            </div>
+                            <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-800">Add Category</button>
+                        </form>
+
+                        <?php if($categoryRecords->isNotEmpty()): ?>
+                            <div class="flex flex-wrap gap-3 border-t border-gray-100 pt-4">
+                                <?php $__currentLoopData = $categoryRecords; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <div class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
+                                        <form method="POST" action="<?php echo e(route('inventory.categories.update', $category->id)); ?>" class="flex items-center gap-2">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('PATCH'); ?>
+                                            <input type="text" name="name" value="<?php echo e($category->name); ?>" aria-label="Editable category name for <?php echo e($category->name); ?>" required class="w-36 rounded-lg border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-purple-500">
+                                            <button type="submit" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-800">Save</button>
+                                        </form>
+                                        <form method="POST" action="<?php echo e(route('inventory.categories.destroy', $category->id)); ?>" onsubmit="return confirm('Delete the <?php echo e($category->name); ?> category?')">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('DELETE'); ?>
+                                            <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100" aria-label="Delete <?php echo e($category->name); ?> category">Delete</button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="border-t border-gray-100 pt-4 text-sm text-gray-500">No categories yet. Add one to get started.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </section>
 
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div class="overflow-x-auto">
