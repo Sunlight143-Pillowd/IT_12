@@ -272,6 +272,8 @@ class CartWorkflowTest extends TestCase
             ->assertSee('storage/products/cart-photo.webp')
             ->assertSee('Subtotal')
             ->assertSee('Total')
+            ->assertSee('Delivery or pickup')
+            ->assertSee('Mode of payment')
             ->assertSee('Decrease quantity of Cart Photo Product')
             ->assertSee('Increase quantity of Cart Photo Product')
             ->assertSee('name="quantity"', false)
