@@ -275,10 +275,13 @@ class CartWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Cart Photo Product')
             ->assertSee('storage/products/cart-photo.webp')
+            ->assertSee('Cart Totals')
+            ->assertSee('Davao City rider')
+            ->assertSee('Outside Davao City')
+            ->assertSee('Calculate shipping')
             ->assertSee('Subtotal')
             ->assertSee('Total')
-            ->assertSee('Delivery or pickup')
-            ->assertSee('Mode of payment')
+            ->assertSee('Pay As')
             ->assertSee('Decrease quantity of Cart Photo Product')
             ->assertSee('Increase quantity of Cart Photo Product')
             ->assertSee('name="quantity"', false)
@@ -337,6 +340,8 @@ class CartWorkflowTest extends TestCase
             'customer_phone' => '09170000000',
             'payment_method' => 'gcash',
             'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 3,
             'delivery_address' => 'Sandawa, Davao City',
         ])->assertRedirect(route('cart.index'));
 
@@ -345,10 +350,128 @@ class CartWorkflowTest extends TestCase
             'customer_phone' => '09170000000',
             'payment_method' => 'gcash',
             'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 3,
+            'shipping_fee' => 79,
+            'total_amount' => 579,
             'delivery_address' => 'Sandawa, Davao City',
             'status' => 'pending',
         ]);
         $this->assertSame(2, $product->fresh()->stock_quantity);
+    }
+
+    public function test_davao_city_shipping_uses_the_base_rate_then_charges_for_each_succeeding_kilometer(): void
+    {
+        $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 2]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->post(route('cart.order'), [
+            'customer_name' => 'Davao Delivery Customer',
+            'customer_email' => 'davao@example.com',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 6,
+            'delivery_address' => 'Davao City',
+        ])->assertRedirect(route('cart.index'));
+
+        $this->assertDatabaseHas('store_orders', [
+            'customer_email' => 'davao@example.com',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 6,
+            'shipping_fee' => 109,
+            'total_amount' => 609,
+        ]);
+    }
+
+    public function test_davao_city_delivery_requires_a_positive_distance(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->from(route('cart.index'))->post(route('cart.order'), [
+            'customer_name' => 'Invalid Distance Customer',
+            'customer_email' => 'invalid-distance@example.com',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 0,
+            'delivery_address' => 'Davao City',
+        ])->assertRedirect(route('cart.index'))
+            ->assertSessionHasErrors('shipping_distance_km');
+
+        $this->assertDatabaseCount('store_orders', 0);
+        $this->assertSame([$product->id => 1], session('cart'));
+    }
+
+    public function test_pickup_orders_cannot_include_a_delivery_shipping_zone(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->from(route('cart.index'))->post(route('cart.order'), [
+            'customer_name' => 'Pickup Customer',
+            'customer_email' => 'pickup@example.com',
+            'fulfillment_method' => 'pickup',
+            'shipping_zone' => 'outside_davao',
+        ])->assertRedirect(route('cart.index'))
+            ->assertSessionHasErrors('shipping_zone');
+
+        $this->assertDatabaseCount('store_orders', 0);
+        $this->assertSame([$product->id => 1], session('cart'));
+    }
+
+    public function test_outside_davao_order_requires_staff_to_confirm_shipping_before_acceptance(): void
+    {
+        $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 2]);
+        $this->post(route('cart.items.store', $product));
+        $this->post(route('cart.order'), [
+            'customer_name' => 'Outside Davao Customer',
+            'customer_email' => 'outside@example.com',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'outside_davao',
+            'delivery_address' => 'Tagum City',
+        ])->assertRedirect(route('cart.index'))
+            ->assertSessionHas('status', 'Order #1 placed successfully. It is pending staff confirmation. Staff will confirm the shipping fee before accepting your order.');
+
+        $order = StoreOrder::query()->firstOrFail();
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $customer = User::factory()->create();
+
+        $this->actingAs($customer)->post(route('dashboard.orders.shipping-fee', $order), [
+            'shipping_fee' => 150,
+        ])->assertForbidden();
+        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'shipping_fee' => null]);
+
+        $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
+            ->assertConflict();
+        $this->assertDatabaseHas('store_orders', [
+            'id' => $order->id,
+            'status' => 'pending',
+            'shipping_fee' => null,
+            'total_amount' => 500,
+        ]);
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+
+        $this->actingAs($admin)->from(route('dashboard'))->post(route('dashboard.orders.shipping-fee', $order), [
+            'shipping_fee' => -1,
+        ])->assertRedirect(route('dashboard'))
+            ->assertSessionHasErrors('shipping_fee');
+        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'shipping_fee' => null]);
+
+        $this->actingAs($admin)->post(route('dashboard.orders.shipping-fee', $order), [
+            'shipping_fee' => 150,
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('store_orders', [
+            'id' => $order->id,
+            'status' => 'pending',
+            'shipping_fee' => 150,
+            'total_amount' => 650,
+        ]);
+        $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted', 'total_amount' => 650]);
+        $this->assertSame(1, $product->fresh()->stock_quantity);
     }
 
     public function test_customer_can_place_an_order_linked_to_their_account(): void
@@ -369,11 +492,18 @@ class CartWorkflowTest extends TestCase
             'status' => 'pending',
         ]);
 
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $order = StoreOrder::query()->firstOrFail();
+        $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
+            ->assertRedirect();
+
         $this->actingAs($customer)->get(route('dashboard'))
             ->assertSee('My Store Orders')
             ->assertSee('Order #1')
             ->assertSee($product->name.' × 1')
-            ->assertSee('Pending');
+            ->assertSee('Accepted')
+            ->assertSee('View receipt #1')
+            ->assertSee('1 order(s)');
     }
 
     public function test_customer_can_see_guest_orders_placed_with_their_account_email(): void
@@ -461,12 +591,16 @@ class CartWorkflowTest extends TestCase
 
     public function test_admin_or_employee_can_accept_a_pending_order(): void
     {
-        $product = Product::factory()->create(['stock_quantity' => 2]);
+        $product = Product::factory()->create(['price' => 1000, 'stock_quantity' => 2]);
         $order = StoreOrder::create([
             'customer_name' => 'Awaiting Approval',
             'customer_email' => 'awaiting@example.com',
-            'total_amount' => 1000,
+            'total_amount' => 1079,
             'status' => 'pending',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 3,
+            'shipping_fee' => 79,
         ]);
         $order->items()->create([
             'product_id' => $product->id,
@@ -482,17 +616,56 @@ class CartWorkflowTest extends TestCase
         $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
             ->assertRedirect();
         $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted']);
+        $this->assertDatabaseHas('sales', [
+            'store_order_id' => $order->id,
+            'employee_id' => $admin->id,
+            'customer_name' => 'Awaiting Approval',
+            'total_amount' => 1079,
+            'shipping_fee' => 79,
+        ]);
+        $this->assertDatabaseHas('sale_items', [
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'subtotal' => 1000,
+        ]);
         $this->assertSame(1, $product->fresh()->stock_quantity);
+
+        $this->actingAs($admin)->get(route('pos.index'))
+            ->assertSee('Receipts (1)')
+            ->assertSee('Receipt #1')
+            ->assertSee('Customer order #'.$order->id);
+        $this->actingAs($admin)->get(route('pos.receipt', $order->sale))
+            ->assertSee('Shipping')
+            ->assertSee('₱79.00')
+            ->assertSee('₱1,079.00');
 
         $this->actingAs($admin)->post(route('dashboard.orders.accept', $order))
             ->assertConflict();
         $this->assertSame(1, $product->fresh()->stock_quantity);
+        $this->assertDatabaseCount('sales', 1);
 
-        $order->refresh()->update(['status' => 'pending']);
+        $employeeOrder = StoreOrder::create([
+            'customer_name' => 'Employee Acceptance',
+            'customer_email' => 'employee-acceptance@example.com',
+            'total_amount' => 1000,
+            'status' => 'pending',
+        ]);
+        $employeeOrder->items()->create([
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'subtotal' => 1000,
+        ]);
 
-        $this->actingAs($employee)->post(route('dashboard.orders.accept', $order))
+        $this->actingAs($employee)->post(route('dashboard.orders.accept', $employeeOrder))
             ->assertRedirect();
-        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted']);
+        $this->assertDatabaseHas('store_orders', ['id' => $employeeOrder->id, 'status' => 'accepted']);
+        $this->assertDatabaseHas('sales', [
+            'store_order_id' => $employeeOrder->id,
+            'employee_id' => $employee->id,
+        ]);
         $this->assertSame(0, $product->fresh()->stock_quantity);
     }
 

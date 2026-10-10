@@ -50,6 +50,9 @@
                                     aria-pressed="false">
                                 <span class="block truncate text-sm font-bold text-gray-900">Receipt #{{ $sale->id }}</span>
                                 <span class="mt-1 block truncate text-xs text-gray-600">{{ $sale->customer_name ?: 'Customer not recorded' }}</span>
+                                @if ($sale->store_order_id)
+                                    <span class="mt-1 block text-[11px] font-semibold text-purple-700">Customer order #{{ $sale->store_order_id }}</span>
+                                @endif
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱{{ number_format($sale->total_amount, 2) }}</span>
                                 <span class="mt-1 block text-[11px] text-gray-500">{{ $sale->items->count() }} item(s) · {{ $sale->created_at->format('M j, Y') }}</span>
                             </button>
@@ -115,6 +118,9 @@
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">Receipt #{{ $sale->id }}</p>
+                                @if ($sale->store_order_id)
+                                    <p class="mt-1 text-xs font-semibold text-purple-700">Customer order #{{ $sale->store_order_id }}</p>
+                                @endif
                                 <p class="mt-1 text-sm text-gray-600">{{ $sale->customer_name ?: 'Customer not recorded' }}</p>
                                 <p class="mt-1 text-xs text-gray-500">{{ $sale->created_at->format('M j, Y g:i A') }}</p>
                             </div>
@@ -135,10 +141,17 @@
                                     </div>
                                 @endforeach
                             </div>
+                            @if ($sale->shipping_fee > 0)
+                                <div class="flex items-center justify-between border-t border-gray-200 py-3 text-sm">
+                                    <span class="font-semibold text-gray-700">Shipping</span>
+                                    <span class="font-semibold text-gray-900">₱{{ number_format($sale->shipping_fee, 2) }}</span>
+                                </div>
+                            @endif
                             <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
                                 <span>Total</span>
                                 <span>₱{{ number_format($sale->total_amount, 2) }}</span>
                             </div>
+                            <a href="{{ route('pos.receipt', $sale) }}" class="mt-4 inline-flex rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">Open printable receipt</a>
                         </div>
                     </template>
                 @endforeach

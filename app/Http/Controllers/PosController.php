@@ -19,7 +19,7 @@ class PosController extends Controller
 {
     public function index(): View
     {
-        $recentSales = Sale::with('items.units', 'items.product')
+        $recentSales = Sale::with('items.units', 'items.product', 'storeOrder')
             ->latest()
             ->limit(10)
             ->get();

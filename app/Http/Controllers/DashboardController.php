@@ -27,12 +27,13 @@ class DashboardController extends Controller
         $recentSales = Sale::with('items')->withCount('items')->latest()->limit(10)->get();
         $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
         $storeOrders = $user?->canManageOrders()
-            ? StoreOrder::with('items.product')
+            ? StoreOrder::with('items.product', 'sale')
                 ->latest()
                 ->get()
             : collect();
         $customerStoreOrders = $user && ! $user->canManageOrders()
             ? StoreOrder::with('items')
+                ->with('sale')
                 ->where(function ($query) use ($user) {
                     $query->whereBelongsTo($user)
                         ->orWhereRaw('LOWER(customer_email) = ?', [strtolower($user->email)]);
@@ -52,6 +53,7 @@ class DashboardController extends Controller
                     ->orWhere('customer_name', $user->name)
                     ->orWhere('customer_name', $user->email);
             })
+                ->whereNull('store_order_id')
                 ->with('items')
                 ->orderByDesc('created_at')
                 ->get()
@@ -80,10 +82,15 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to accept orders.');
-        DB::transaction(function () use ($storeOrder): void {
+        DB::transaction(function () use ($storeOrder, $user): void {
             $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
 
             abort_if($order->status !== 'pending', 409, 'This order is no longer pending.');
+            abort_if(
+                $order->shipping_zone === 'outside_davao' && $order->shipping_fee === null,
+                409,
+                'Confirm the shipping fee before accepting this order.'
+            );
 
             $order->load('items');
             foreach ($order->items as $item) {
@@ -114,9 +121,55 @@ class DashboardController extends Controller
                 Product::query()->whereKey((int) $productId)->decrement('stock_quantity', $quantity);
             }
 
+            $sale = Sale::create([
+                'employee_id' => $user->id,
+                'store_order_id' => $order->id,
+                'customer_name' => $order->customer_name,
+                'total_amount' => $order->total_amount,
+                'shipping_fee' => $order->shipping_fee ?? 0,
+            ]);
+
+            foreach ($order->items as $item) {
+                $sale->items()->create([
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product_name,
+                    'unit_price' => $item->unit_price,
+                    'quantity' => $item->quantity,
+                    'subtotal' => $item->subtotal,
+                ]);
+            }
+
             $order->update(['status' => 'accepted']);
         });
 
         return back()->with('status', 'Order #'.$storeOrder->id.' accepted successfully.');
+    }
+
+    public function updateShippingFee(Request $request, StoreOrder $storeOrder): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to update order shipping.');
+
+        $validated = $request->validate([
+            'shipping_fee' => ['required', 'numeric', 'min:0', 'max:100000'],
+        ]);
+
+        DB::transaction(function () use ($storeOrder, $validated): void {
+            $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
+
+            abort_if($order->status !== 'pending', 409, 'Shipping can only be updated on pending orders.');
+            abort_unless($order->shipping_zone === 'outside_davao', 409, 'Only outside-Davao orders need a confirmed shipping fee.');
+
+            $subtotal = $order->items()->sum('subtotal');
+            $shippingFee = round((float) $validated['shipping_fee'], 2);
+
+            $order->update([
+                'shipping_fee' => $shippingFee,
+                'total_amount' => $subtotal + $shippingFee,
+            ]);
+        });
+
+        return back()->with('status', 'Shipping fee confirmed for order #'.$storeOrder->id.'.');
     }
 }

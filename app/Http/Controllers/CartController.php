@@ -101,6 +101,13 @@ class CartController extends Controller
             'payment_method' => ['sometimes', 'required', 'in:cash,gcash,bank_transfer,other'],
             'fulfillment_method' => ['sometimes', 'required', 'in:pickup,delivery'],
             'delivery_address' => ['required_if:fulfillment_method,delivery', 'nullable', 'string', 'max:2000'],
+            'shipping_zone' => [
+                'required_if:fulfillment_method,delivery',
+                'prohibited_unless:fulfillment_method,delivery',
+                'nullable',
+                'in:davao_city,outside_davao',
+            ],
+            'shipping_distance_km' => ['required_if:shipping_zone,davao_city', 'nullable', 'numeric', 'gt:0', 'max:1000'],
         ]);
 
         $cart = session()->get('cart', []);
@@ -139,18 +146,31 @@ class CartController extends Controller
                 $total += $product->price * $quantity;
             }
 
+            $shippingZone = $validated['shipping_zone'] ?? null;
+            $shippingDistance = $shippingZone === 'davao_city'
+                ? (float) $validated['shipping_distance_km']
+                : null;
+            $shippingFee = match ($shippingZone) {
+                'davao_city' => 79 + (ceil(max(0, $shippingDistance - 4)) * 15),
+                'outside_davao' => null,
+                default => 0,
+            };
+
             $order = StoreOrder::create([
                 'user_id' => $request->user()?->id,
                 'customer_name' => trim($validated['customer_name']),
                 'customer_email' => trim($validated['customer_email']),
                 'customer_phone' => isset($validated['customer_phone']) ? trim($validated['customer_phone']) : null,
-                'total_amount' => $total,
+                'total_amount' => $total + ($shippingFee ?? 0),
                 'status' => 'pending',
                 'payment_method' => $validated['payment_method'] ?? 'cash',
                 'fulfillment_method' => $validated['fulfillment_method'] ?? 'pickup',
                 'delivery_address' => ($validated['fulfillment_method'] ?? 'pickup') === 'delivery'
                     ? trim($validated['delivery_address'])
                     : null,
+                'shipping_zone' => $shippingZone,
+                'shipping_distance_km' => $shippingDistance,
+                'shipping_fee' => $shippingFee,
             ]);
 
             foreach ($cart as $productId => $quantity) {
@@ -172,7 +192,12 @@ class CartController extends Controller
 
         session()->forget('cart');
 
-        return redirect()->route('cart.index')
-            ->with('status', 'Order #'.$order->id.' placed successfully. It is pending staff confirmation.');
+        $status = 'Order #'.$order->id.' placed successfully. It is pending staff confirmation.';
+
+        if ($order->shipping_zone === 'outside_davao') {
+            $status .= ' Staff will confirm the shipping fee before accepting your order.';
+        }
+
+        return redirect()->route('cart.index')->with('status', $status);
     }
 }

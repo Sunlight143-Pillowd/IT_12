@@ -29,6 +29,7 @@ Route::delete('/cart/{product}', [CartController::class, 'destroy'])->name('cart
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/orders/{storeOrder}/accept', [DashboardController::class, 'acceptOrder'])->name('dashboard.orders.accept');
+    Route::post('/dashboard/orders/{storeOrder}/shipping-fee', [DashboardController::class, 'updateShippingFee'])->name('dashboard.orders.shipping-fee');
     Route::patch('/dashboard/customer-builds/{pcBuild}', [PcBuildController::class, 'updateCustomerBuild'])->name('dashboard.customer-builds.update');
     Route::get('/dashboard/inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::post('/dashboard/inventory', [InventoryController::class, 'store'])->name('inventory.store');

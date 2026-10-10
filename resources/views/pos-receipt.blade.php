@@ -14,6 +14,9 @@
             <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none">
                 <div class="border-b border-gray-200 pb-4">
                     <p class="text-xs font-bold uppercase text-gray-500">Sales receipt #{{ $sale->id }}</p>
+                    @if ($sale->store_order_id)
+                        <p class="mt-1 text-xs font-semibold text-purple-700">Customer order #{{ $sale->store_order_id }}</p>
+                    @endif
                     <p class="mt-2 text-xl font-bold text-gray-900">{{ $sale->customer_name ?: 'Customer not recorded' }}</p>
                     <p class="mt-1 text-sm text-gray-600">{{ $sale->created_at->format('M j, Y g:i A') }}</p>
                 </div>
@@ -36,6 +39,12 @@
                     @endforeach
                 </div>
 
+                @if ($sale->shipping_fee > 0)
+                    <div class="flex items-center justify-between border-t border-gray-200 py-4 text-sm">
+                        <span class="font-semibold text-gray-700">Shipping</span>
+                        <span class="font-semibold text-gray-900">₱{{ number_format($sale->shipping_fee, 2) }}</span>
+                    </div>
+                @endif
                 <div class="flex items-center justify-between border-t border-gray-200 pt-4 text-lg font-bold text-gray-900">
                     <span>Total</span>
                     <span>₱{{ number_format($sale->total_amount, 2) }}</span>

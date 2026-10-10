@@ -47,22 +47,53 @@
                                                         </ul>
                                                     </td>
                                                     <td class="px-4 py-3 text-gray-300">{{ $order->created_at->format('M j, Y') }}</td>
-                                                    <td class="px-4 py-3 text-right font-semibold text-white">₱{{ number_format($order->total_amount, 2) }}</td>
+                                                    <td class="px-4 py-3 text-right font-semibold text-white">
+                                                        @if ($order->shipping_zone === 'outside_davao' && $order->shipping_fee === null)
+                                                            Subtotal<br>₱{{ number_format($order->total_amount, 2) }}
+                                                        @else
+                                                            ₱{{ number_format($order->total_amount, 2) }}
+                                                        @endif
+                                                    </td>
                                                     <td class="px-4 py-3">
                                                         <p class="font-semibold">{{ ucwords(str_replace('_', ' ', $order->payment_method)) }}</p>
                                                         <p class="text-xs text-gray-400">{{ ucfirst($order->fulfillment_method) }}</p>
+                                                        @if ($order->shipping_zone === 'outside_davao')
+                                                            <p class="mt-1 text-xs text-gray-400">
+                                                                Shipping: {{ $order->shipping_fee === null ? 'Fee needs confirmation' : '₱'.number_format($order->shipping_fee, 2) }}
+                                                            </p>
+                                                        @elseif ($order->shipping_fee !== null && $order->shipping_fee > 0)
+                                                            <p class="mt-1 text-xs text-gray-400">Shipping: ₱{{ number_format($order->shipping_fee, 2) }}</p>
+                                                        @endif
+                                                        @if ($order->shipping_zone === 'davao_city')
+                                                            <p class="mt-1 text-xs text-gray-400">Distance: {{ number_format($order->shipping_distance_km, 1) }} km</p>
+                                                        @endif
                                                         @if ($order->delivery_address)<p class="mt-1 max-w-48 text-xs text-gray-400">{{ $order->delivery_address }}</p>@endif
                                                     </td>
                                                     <td class="px-4 py-3">
-                                                        <div class="flex items-center gap-2">
+                                                        <div class="flex flex-col items-start gap-2">
                                                             <span class="rounded-full px-2.5 py-1 text-xs font-semibold text-black {{ $order->status === 'accepted' ? 'bg-emerald-100' : 'bg-amber-100' }}">{{ ucfirst($order->status) }}</span>
-                                                            @if ($order->status === 'pending' && Auth::user()?->canManageOrders())
+                                                            @if ($order->status === 'pending' && $order->shipping_zone === 'outside_davao' && $order->shipping_fee === null && Auth::user()?->canManageOrders())
+                                                                <form method="POST" action="{{ route('dashboard.orders.shipping-fee', $order) }}" class="flex items-end gap-2">
+                                                                    @csrf
+                                                                    <label class="text-xs text-gray-300">
+                                                                        Shipping fee
+                                                                        <input type="number" name="shipping_fee" min="0" max="100000" step="0.01" required
+                                                                               class="mt-1 block w-28 rounded-md border-gray-300 text-sm text-gray-900 shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                                                    </label>
+                                                                    <button type="submit" class="rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">Save fee</button>
+                                                                </form>
+                                                            @elseif ($order->status === 'pending' && Auth::user()?->canManageOrders())
                                                                 <form method="POST" action="{{ route('dashboard.orders.accept', $order) }}" class="inline-block">
                                                                     @csrf
                                                                     <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">Accept order</button>
                                                                 </form>
                                                             @elseif ($order->status === 'accepted')
-                                                                <span class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-black" aria-disabled="true">Order accepted</span>
+                                                                <div class="flex flex-wrap items-center gap-2">
+                                                                    <span class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-black" aria-disabled="true">Order accepted</span>
+                                                                    @if ($order->sale)
+                                                                        <a href="{{ route('pos.receipt', $order->sale) }}" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:border-purple-600 hover:text-purple-700">View receipt</a>
+                                                                    @endif
+                                                                </div>
                                                             @endif
                                                         </div>
                                                     </td>
@@ -224,8 +255,22 @@
                                     <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase text-black {{ $order->status === 'accepted' ? 'bg-emerald-100' : 'bg-amber-100' }}">{{ ucfirst($order->status) }}</span>
                                     <p class="mt-2 text-xs text-gray-500">Payment: {{ ucwords(str_replace('_', ' ', $order->payment_method)) }} · {{ ucfirst($order->fulfillment_method) }}</p>
                                     @if ($order->delivery_address)<p class="mt-1 text-xs text-gray-500">Delivery to: {{ $order->delivery_address }}</p>@endif
+                                    @if ($order->shipping_zone === 'outside_davao' && $order->shipping_fee === null)
+                                        <p class="mt-1 text-xs text-amber-700">Shipping fee will be confirmed by staff before acceptance.</p>
+                                    @elseif ($order->shipping_fee !== null && $order->shipping_fee > 0)
+                                        <p class="mt-1 text-xs text-gray-500">Shipping: ₱{{ number_format($order->shipping_fee, 2) }}</p>
+                                    @endif
+                                    @if ($order->sale)
+                                        <a href="{{ route('pos.receipt', $order->sale) }}" class="mt-2 inline-flex text-xs font-semibold text-purple-700 hover:underline">View receipt #{{ $order->sale->id }}</a>
+                                    @endif
                                 @endif
-                                <p class="mt-1 text-xl font-black text-gray-900">₱{{ number_format($order->total_amount, 2) }}</p>
+                                <p class="mt-1 text-xl font-black text-gray-900">
+                                    @if (isset($order->status) && $order->shipping_zone === 'outside_davao' && $order->shipping_fee === null)
+                                        Subtotal ₱{{ number_format($order->total_amount, 2) }}
+                                    @else
+                                        ₱{{ number_format($order->total_amount, 2) }}
+                                    @endif
+                                </p>
                             </div>
                         </div>
 
