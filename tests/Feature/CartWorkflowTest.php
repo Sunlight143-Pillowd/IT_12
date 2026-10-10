@@ -36,7 +36,11 @@ class CartWorkflowTest extends TestCase
         $this->from(route('store.desktops'))->post(route('cart.items.store', $product), [
             'quantity' => 2,
             'price' => 1,
+<<<<<<< HEAD
         ])->assertRedirect(route('cart.index'));
+=======
+        ])->assertRedirect(route('store.desktops'));
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
 
         $this->assertSame([$product->id => 2], session('cart'));
 
@@ -49,10 +53,14 @@ class CartWorkflowTest extends TestCase
             ->assertDontSee('CART (2)')
             ->assertSee('Sign In')
             ->assertSee('Register')
+<<<<<<< HEAD
             ->assertSee('Add to cart')
             ->assertDontSee('Decrease quantity of Guest Cart Product')
             ->assertDontSee('Increase quantity of Guest Cart Product')
             ->assertDontSee('Remove Guest Cart Product from cart');
+=======
+            ->assertSee('Add to cart');
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     }
 
     public function test_product_cards_add_one_item_and_show_cart_controls_for_existing_items(): void
@@ -78,10 +86,18 @@ class CartWorkflowTest extends TestCase
 
         $this->get(route('store.desktops'))
             ->assertSee('One Click Product')
+<<<<<<< HEAD
             ->assertDontSee('Decrease quantity of One Click Product')
             ->assertDontSee('Increase quantity of One Click Product')
             ->assertDontSee('name="_method" value="PUT"', false)
             ->assertDontSee('name="_method" value="DELETE"', false);
+=======
+            ->assertSee('Decrease quantity of One Click Product')
+            ->assertSee('Increase quantity of One Click Product')
+            ->assertSee('Remove One Click Product from cart')
+            ->assertSee('name="_method" value="PUT"', false)
+            ->assertSee('name="_method" value="DELETE"', false);
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     }
 
     public function test_only_admin_can_upload_a_photo_for_catalog_products_without_one(): void
@@ -124,7 +140,11 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Save Photo');
     }
 
+<<<<<<< HEAD
     public function test_gaming_laptop_cards_always_show_plus_controls(): void
+=======
+    public function test_gaming_laptop_cards_always_show_plus_and_minus_controls(): void
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     {
         $product = Product::factory()->create([
             'name' => 'Gaming Laptop Quantity Test',
@@ -134,8 +154,13 @@ class CartWorkflowTest extends TestCase
 
         $this->get(route('store.laptops'))
             ->assertOk()
+<<<<<<< HEAD
             ->assertDontSee('Decrease quantity of Gaming Laptop Quantity Test')
             ->assertDontSee('Increase quantity of Gaming Laptop Quantity Test')
+=======
+            ->assertSee('Decrease quantity of Gaming Laptop Quantity Test')
+            ->assertSee('Increase quantity of Gaming Laptop Quantity Test')
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             ->assertSee('Add to cart');
 
         $this->post(route('cart.items.store', $product))
@@ -148,11 +173,19 @@ class CartWorkflowTest extends TestCase
         $this->assertSame([$product->id => 3], session('cart'));
 
         $this->get(route('store.laptops'))
+<<<<<<< HEAD
             ->assertDontSee('Increase quantity of Gaming Laptop Quantity Test')
             ->assertDontSee('Remove Gaming Laptop Quantity Test from cart');
     }
 
     public function test_top_selling_cards_always_show_plus_controls(): void
+=======
+            ->assertSee('3')
+            ->assertSee('Remove Gaming Laptop Quantity Test from cart');
+    }
+
+    public function test_top_selling_cards_always_show_plus_and_minus_controls(): void
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     {
         $product = Product::factory()->create([
             'name' => 'Top Seller Quantity Test',
@@ -177,8 +210,13 @@ class CartWorkflowTest extends TestCase
         $this->get(route('store.top-selling'))
             ->assertOk()
             ->assertSee('object-contain')
+<<<<<<< HEAD
             ->assertDontSee('Decrease quantity of Top Seller Quantity Test')
             ->assertDontSee('Increase quantity of Top Seller Quantity Test')
+=======
+            ->assertSee('Decrease quantity of Top Seller Quantity Test')
+            ->assertSee('Increase quantity of Top Seller Quantity Test')
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             ->assertSee('Add to cart')
             ->assertDontSee('Upload Photo');
 
@@ -272,13 +310,20 @@ class CartWorkflowTest extends TestCase
             ->assertSee('storage/products/cart-photo.webp')
             ->assertSee('Subtotal')
             ->assertSee('Total')
+<<<<<<< HEAD
             ->assertSee('Delivery or pickup')
             ->assertSee('Mode of payment')
+=======
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             ->assertSee('Decrease quantity of Cart Photo Product')
             ->assertSee('Increase quantity of Cart Photo Product')
             ->assertSee('name="quantity"', false)
             ->assertSee('name="_method" value="PUT"', false)
+<<<<<<< HEAD
             ->assertSee('Remove Cart Photo Product from cart');
+=======
+            ->assertSee('Remove');
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     }
 
     public function test_guest_can_place_a_pending_order_from_the_cart(): void
@@ -291,7 +336,11 @@ class CartWorkflowTest extends TestCase
         $this->post(route('cart.items.store', $product), ['quantity' => 2]);
 
         $this->get(route('cart.index'))
+<<<<<<< HEAD
             ->assertSee('Proceed to checkout')
+=======
+            ->assertSee('Place order')
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             ->assertSee('customer_name')
             ->assertSee('customer_email');
 

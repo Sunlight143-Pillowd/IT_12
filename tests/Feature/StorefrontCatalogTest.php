@@ -33,10 +33,13 @@ class StorefrontCatalogTest extends TestCase
     {
         $this->get(route('home'))
             ->assertOk()
+<<<<<<< HEAD
             ->assertSee('Computer Boss Davao: your go-to shop for gaming PCs, parts, and accessories.')
             ->assertSee('Use our Gaming Desktop Advisor to find your perfect build in 3 easy steps.')
             ->assertDontSee('your trusted source for gaming desktops')
             ->assertDontSee("It's as simple as 1, 2, 3!", false)
+=======
+>>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             ->assertSee('<a href="'.route('login').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Sign In</a>', false)
             ->assertSee('<a href="'.route('register').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>', false);
     }
