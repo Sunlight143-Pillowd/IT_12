@@ -14,7 +14,7 @@ class QuotationController extends Controller
 {
     public function index(): View
     {
-        $products = Product::where('is_active', true)->orderBy('name')->get();
+        $products = Product::query()->where('is_active', true)->inStock()->orderBy('name')->get();
         $quotations = Quotation::with('items')->latest()->limit(10)->get();
 
         return view('quotations', compact('products', 'quotations'));

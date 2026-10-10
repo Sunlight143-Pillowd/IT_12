@@ -52,11 +52,7 @@
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 @forelse ($products as $product)
                     @php($availableStock = $product->availableStock())
-<<<<<<< HEAD
                     <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-=======
-                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
                         <div data-photo-card class="relative h-52 bg-gray-100">
                             @if ($product->image_path)
                                 <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-contain">
@@ -77,28 +73,16 @@
                                 @endif
                             @endif
                         </div>
-<<<<<<< HEAD
                         <div class="flex flex-1 flex-col p-4">
-=======
-                        <div class="p-4">
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
                             <h3 class="text-xl font-bold text-gray-900">{{ $product->name }}</h3>
                             @if (! empty(trim((string) $product->description)))
                                 <p class="mt-2 text-sm leading-6 text-gray-600">{{ $product->description }}</p>
                             @endif
-<<<<<<< HEAD
                             <div class="mt-auto flex items-center justify-between pt-4">
                                 <span class="text-lg font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">{{ $availableStock }} in stock</span>
                             </div>
                             <x-store.cart-controls :product="$product" :available-stock="$availableStock" />
-=======
-                            <div class="mt-4 flex items-center justify-between">
-                                <span class="text-lg font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
-                                <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">{{ $availableStock }} in stock</span>
-                            </div>
-                            <x-store.cart-controls :product="$product" :available-stock="$availableStock" :show-quantity-controls="request()->routeIs('store.laptops')" />
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
                         </div>
                     </div>
                 @empty

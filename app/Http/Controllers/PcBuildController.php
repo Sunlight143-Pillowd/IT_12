@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePcBuildRequest;
 use App\Models\PcBuild;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\PcBuildService;
 use Illuminate\Http\RedirectResponse;
@@ -151,7 +152,11 @@ class PcBuildController extends Controller
         abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
-        $products = $this->pcBuildService->availableProducts();
+        $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
+        $availableQuantities = $this->pcBuildService->availableQuantities($products, (int) $pcBuild->getKey());
+        $products->each(function (Product $product) use ($availableQuantities): void {
+            $product->setAttribute('available_for_build', $availableQuantities[$product->id] ?? 0);
+        });
         $selectedProducts = [];
 
         foreach ($pcBuild->items as $item) {
@@ -174,7 +179,11 @@ class PcBuildController extends Controller
         abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
-        $products = $this->pcBuildService->availableProducts();
+        $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
+        $availableQuantities = $this->pcBuildService->availableQuantities($products, (int) $pcBuild->getKey());
+        $products->each(function (Product $product) use ($availableQuantities): void {
+            $product->setAttribute('available_for_build', $availableQuantities[$product->id] ?? 0);
+        });
         $selectedProducts = [];
 
         foreach ($pcBuild->items as $item) {
@@ -211,14 +220,7 @@ class PcBuildController extends Controller
     public function destroy(PcBuild $pcBuild): RedirectResponse
     {
         abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
-
-        if ($pcBuild->product_id) {
-            $pcBuild->product()->delete();
-        }
-
-        $pcBuild->items()->delete();
-        $pcBuild->reservations()->delete();
-        $pcBuild->delete();
+        $this->pcBuildService->deleteBuild($pcBuild);
 
         return back()->with('success', 'PC build deleted successfully.');
     }

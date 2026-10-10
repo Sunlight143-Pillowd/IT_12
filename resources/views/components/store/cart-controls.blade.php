@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 @props(['product', 'availableStock'])
-=======
-@props(['product', 'availableStock', 'showQuantityControls' => false])
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
 
 @php
     $cartQuantity = (int) (session('cart', [])[$product->id] ?? 0);
@@ -14,7 +10,6 @@
             @csrf
             <input type="hidden" name="quantity" value="1">
             <button type="submit"
-<<<<<<< HEAD
                     aria-label="Add {{ $product->name }} to cart"
                     title="Add to cart"
                     @disabled($cartQuantity >= $availableStock)
@@ -25,11 +20,6 @@
                     <circle cx="17" cy="17.5" r="1.25"/>
                 </svg>
                 <span>Add to cart</span>
-=======
-                    @disabled($cartQuantity >= $availableStock)
-                    class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300">
-                Add to cart
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             </button>
         </form>
     @else
@@ -38,52 +28,4 @@
         </button>
     @endif
 
-<<<<<<< HEAD
-=======
-    @if ($cartQuantity > 0 || $showQuantityControls)
-        @if ($cartQuantity > 0)
-            <form method="POST" action="{{ route('cart.items.update', $product) }}">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="quantity" value="{{ max(1, min($availableStock, $cartQuantity - 1)) }}">
-                <button type="submit"
-                        aria-label="Decrease quantity of {{ $product->name }}"
-                        @disabled($cartQuantity <= 1 || $availableStock < 1)
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">−</button>
-            </form>
-        @else
-            <button type="button" aria-label="Decrease quantity of {{ $product->name }}" disabled class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 opacity-40">−</button>
-        @endif
-        <span class="min-w-6 text-center text-sm font-semibold text-gray-900" aria-label="Quantity in cart">{{ $cartQuantity }}</span>
-        @if ($cartQuantity > 0)
-            <form method="POST" action="{{ route('cart.items.update', $product) }}">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="quantity" value="{{ min($availableStock, $cartQuantity + 1) }}">
-                <button type="submit"
-                        aria-label="Increase quantity of {{ $product->name }}"
-                        @disabled($cartQuantity >= $availableStock)
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">+</button>
-            </form>
-            <form method="POST" action="{{ route('cart.items.destroy', $product) }}">
-                @csrf
-                @method('DELETE')
-                <button type="submit"
-                        aria-label="Remove {{ $product->name }} from cart"
-                        class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
-                    Remove
-                </button>
-            </form>
-        @else
-            <form method="POST" action="{{ route('cart.items.store', $product) }}">
-                @csrf
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit"
-                        aria-label="Increase quantity of {{ $product->name }}"
-                        @disabled($availableStock < 1)
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">+</button>
-            </form>
-        @endif
-    @endif
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
 </div>

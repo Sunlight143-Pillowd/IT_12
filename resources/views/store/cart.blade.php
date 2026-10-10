@@ -153,11 +153,7 @@
                             </fieldset>
 
                             <button type="submit" class="w-full rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-<<<<<<< HEAD
-                                Proceed to checkout
-=======
                                 Place order
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
                             </button>
                             <p class="text-center text-xs leading-relaxed text-gray-500">Your order will be saved as pending until staff confirms it. Stock is deducted after acceptance.</p>
                         </form>

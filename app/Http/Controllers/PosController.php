@@ -7,6 +7,8 @@ use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\StockIn;
+use App\Models\StockInItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +29,66 @@ class PosController extends Controller
             ->limit(10)
             ->get();
 
-        return view('pos', compact('recentSales', 'recentBuilds'));
+        $recentStockIns = StockIn::with('items.product')
+            ->latest()
+            ->limit(10)
+            ->get();
+        $recentStockIns->each(static function (StockIn $stockIn): void {
+            $stockIn->setAttribute(
+                'invoice_total',
+                $stockIn->items->sum(fn (StockInItem $item): float => (float) $item->unit_cost * $item->quantity),
+            );
+        });
+        $reportStart = today()->subDays(29);
+        $reportEnd = now();
+        $dailySales = Sale::query()
+            ->select([])
+            ->selectRaw('DATE(created_at) as report_date, SUM(total_amount) as amount')
+            ->whereBetween('created_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(created_at)')
+            ->pluck('amount', 'report_date');
+        $dailyBuildReceipts = PcBuild::query()
+            ->select([])
+            ->selectRaw('DATE(stock_deducted_at) as report_date, SUM(total_cost) as amount')
+            ->whereNotNull('user_id')
+            ->whereNotNull('stock_deducted_at')
+            ->whereBetween('stock_deducted_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(stock_deducted_at)')
+            ->pluck('amount', 'report_date');
+        $dailyInvoices = StockIn::query()
+            ->join('stock_in_items', 'stock_ins.id', '=', 'stock_in_items.stock_in_id')
+            ->select([])
+            ->selectRaw('DATE(stock_ins.received_at) as report_date, SUM(stock_in_items.quantity * stock_in_items.unit_cost) as amount')
+            ->whereBetween('stock_ins.received_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(stock_ins.received_at)')
+            ->pluck('amount', 'report_date');
+        $posChartData = collect(range(0, 29))
+            ->map(function (int $dayOffset) use ($reportStart, $dailySales, $dailyBuildReceipts, $dailyInvoices): array {
+                $date = $reportStart->copy()->addDays($dayOffset);
+                $dateKey = $date->toDateString();
+
+                return [
+                    'label' => $date->format('M j'),
+                    'receipts' => (float) $dailySales->get($dateKey, 0) + (float) $dailyBuildReceipts->get($dateKey, 0),
+                    'invoices' => (float) $dailyInvoices->get($dateKey, 0),
+                ];
+            })
+            ->values();
+        $receiptTotal = (float) $posChartData->sum('receipts');
+        $invoiceTotal = (float) $posChartData->sum('invoices');
+        $chartTotal = $receiptTotal + $invoiceTotal;
+        $receiptSharePercent = $chartTotal > 0 ? round($receiptTotal / $chartTotal * 100, 2) : 0;
+
+        return view('pos', compact(
+            'recentSales',
+            'recentBuilds',
+            'recentStockIns',
+            'posChartData',
+            'receiptTotal',
+            'invoiceTotal',
+            'chartTotal',
+            'receiptSharePercent',
+        ));
     }
 
     public function receipt(Sale $sale): View

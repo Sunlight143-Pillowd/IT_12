@@ -120,11 +120,7 @@
                                             @csrf
                                             @method('PATCH')
                                             <input type="text" name="name" value="{{ $category->name }}" aria-label="Editable category name for {{ $category->name }}" required class="w-36 rounded-lg border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-purple-500">
-<<<<<<< HEAD
-                                            <button type="submit" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-800">Edit</button>
-=======
                                             <button type="submit" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-800">Save</button>
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
                                         </form>
                                         <form method="POST" action="{{ route('inventory.categories.destroy', $category->id) }}" onsubmit="return confirm('Delete the {{ $category->name }} category?')">
                                             @csrf

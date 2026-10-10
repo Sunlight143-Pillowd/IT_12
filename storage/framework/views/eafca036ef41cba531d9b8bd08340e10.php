@@ -66,7 +66,7 @@
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <?php ($availableStock = $product->availableStock()); ?>
-                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                         <div data-photo-card class="relative h-52 bg-gray-100">
                             <?php if($product->image_path): ?>
                                 <img src="<?php echo e(asset('storage/'.$product->image_path)); ?>" alt="<?php echo e($product->name); ?>" class="h-full w-full object-contain">
@@ -87,25 +87,25 @@
                                 <?php endif; ?>
                             <?php endif; ?>
                         </div>
-                        <div class="p-4">
+                        <div class="flex flex-1 flex-col p-4">
                             <h3 class="text-xl font-bold text-gray-900"><?php echo e($product->name); ?></h3>
                             <?php if(! empty(trim((string) $product->description))): ?>
                                 <p class="mt-2 text-sm leading-6 text-gray-600"><?php echo e($product->description); ?></p>
                             <?php endif; ?>
-                            <div class="mt-4 flex items-center justify-between">
+                            <div class="mt-auto flex items-center justify-between pt-4">
                                 <span class="text-lg font-black text-purple-600">₱<?php echo e(number_format($product->price, 0)); ?></span>
                                 <span class="rounded-full px-2.5 py-1 text-xs font-semibold <?php echo e($availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'); ?>"><?php echo e($availableStock); ?> in stock</span>
                             </div>
                             <?php if (isset($component)) { $__componentOriginal7eb846a9d6661322cec973b548c4c18b = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal7eb846a9d6661322cec973b548c4c18b = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.store.cart-controls','data' => ['product' => $product,'availableStock' => $availableStock,'showQuantityControls' => request()->routeIs('store.laptops')]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.store.cart-controls','data' => ['product' => $product,'availableStock' => $availableStock]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
 <?php $component->withName('store.cart-controls'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag): ?>
 <?php $attributes = $attributes->except(\Illuminate\View\AnonymousComponent::ignoredParameterNames()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'available-stock' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($availableStock),'show-quantity-controls' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(request()->routeIs('store.laptops'))]); ?>
+<?php $component->withAttributes(['product' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($product),'available-stock' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($availableStock)]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal7eb846a9d6661322cec973b548c4c18b)): ?>

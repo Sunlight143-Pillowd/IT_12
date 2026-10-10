@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\StockReservation;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -31,11 +32,19 @@ class PcBuildService
         ];
     }
 
-    public function availableProducts(): Collection
+    public function availableProducts(?int $pcBuildId = null): Collection
     {
         return Product::query()
             ->where('is_active', true)
-            ->where('stock_quantity', '>', 0)
+            ->where(function (Builder $query) use ($pcBuildId): void {
+                $query->inStock();
+
+                if ($pcBuildId !== null) {
+                    $query->orWhereHas('reservations', fn (Builder $reservations) => $reservations
+                        ->where('pc_build_id', $pcBuildId)
+                        ->where('status', 'active'));
+                }
+            })
             ->orderBy('category')
             ->orderBy('name')
             ->get();
@@ -190,25 +199,35 @@ class PcBuildService
             abort_unless(in_array($status, $transitions[$lockedBuild->status] ?? [], true), 409, 'This build cannot move to that status.');
 
             $lockedBuild->load('items');
-            if ($status === 'accepted') {
-                foreach ($lockedBuild->items as $item) {
-                    $product = Product::query()->whereKey($item->product_id)->lockForUpdate()->firstOrFail();
-                    if (! $product->is_active || $this->availableQuantity($product) < $item->quantity) {
+            $quantities = $lockedBuild->items->groupBy('product_id')->map(
+                fn ($items): int => (int) $items->sum('quantity')
+            );
+            $products = Product::query()
+                ->whereIn('id', $quantities->keys())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            if ($status === 'accepted' && $lockedBuild->stock_deducted_at === null) {
+                foreach ($quantities as $productId => $quantity) {
+                    $product = $products->get($productId);
+                    if (! $product || ! $product->is_active || $this->availableQuantity($product) < $quantity) {
                         throw ValidationException::withMessages([
-                            'status' => ["Unable to accept the build: {$product->name} no longer has enough stock."],
+                            'status' => ['Unable to accept the build: '.($product?->name ?? 'A selected product').' no longer has enough stock.'],
                         ]);
                     }
                 }
 
-                foreach ($lockedBuild->items as $item) {
-                    Product::query()->whereKey($item->product_id)->decrement('stock_quantity', $item->quantity);
+                foreach ($quantities as $productId => $quantity) {
+                    Product::query()->whereKey($productId)->decrement('stock_quantity', $quantity);
                 }
                 $lockedBuild->stock_deducted_at = now();
             }
 
             if ($status === 'cancelled' && $lockedBuild->stock_deducted_at !== null) {
-                foreach ($lockedBuild->items as $item) {
-                    Product::query()->whereKey($item->product_id)->lockForUpdate()->increment('stock_quantity', $item->quantity);
+                foreach ($quantities as $productId => $quantity) {
+                    Product::query()->whereKey($productId)->increment('stock_quantity', $quantity);
                 }
                 $lockedBuild->stock_deducted_at = null;
             }
@@ -229,7 +248,10 @@ class PcBuildService
         }
 
         return DB::transaction(function () use ($user, $payload, $items) {
-            $products = Product::whereIn('id', array_column($items, 'product_id'))
+            $products = Product::query()
+                ->whereIn('id', array_column($items, 'product_id'))
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
@@ -239,7 +261,7 @@ class PcBuildService
             foreach ($items as $entry) {
                 $product = $products->get($entry['product_id']);
 
-                if (! $product) {
+                if (! $product || ! $product->is_active) {
                     throw ValidationException::withMessages([
                         'items' => ['One of the selected products is no longer available.'],
                     ]);
@@ -316,7 +338,18 @@ class PcBuildService
         }
 
         return DB::transaction(function () use ($build, $items): PcBuild {
-            $products = Product::whereIn('id', array_column($items, 'product_id'))
+            $lockedBuild = PcBuild::query()->whereKey($build->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($lockedBuild->status, ['draft', 'reserved', 'pending'], true)
+                || $lockedBuild->stock_deducted_at !== null) {
+                throw ValidationException::withMessages([
+                    'items' => ['This PC build can no longer be edited after stock has been committed.'],
+                ]);
+            }
+
+            $products = Product::query()
+                ->whereIn('id', array_column($items, 'product_id'))
+                ->orderBy('id')
+                ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
@@ -339,7 +372,10 @@ class PcBuildService
                     ]);
                 }
 
-                $available = $this->availableQuantity($product);
+                $available = $this->availableQuantity(
+                    $product,
+                    $lockedBuild->user_id === null ? $lockedBuild->id : null,
+                );
                 if ($available < $quantity) {
                     throw ValidationException::withMessages([
                         'items' => ["{$product->name} only has {$available} unit(s) available."],
@@ -356,35 +392,37 @@ class PcBuildService
                 $total += (float) $product->price * $quantity;
             }
 
-            $build->items()->delete();
-            $build->reservations()->delete();
+            $lockedBuild->items()->delete();
+            $lockedBuild->reservations()->delete();
 
             foreach ($selected as $entry) {
-                $build->items()->create([
+                $lockedBuild->items()->create([
                     'product_id' => $entry['product_id'],
                     'quantity' => $entry['quantity'],
                     'unit_price' => $entry['unit_price'],
                     'subtotal' => $entry['subtotal'],
                 ]);
 
-                $build->reservations()->create([
-                    'product_id' => $entry['product_id'],
-                    'quantity' => $entry['quantity'],
-                    'status' => 'active',
-                    'expires_at' => now()->addMinutes(30),
-                ]);
+                if ($lockedBuild->user_id === null) {
+                    $lockedBuild->reservations()->create([
+                        'product_id' => $entry['product_id'],
+                        'quantity' => $entry['quantity'],
+                        'status' => 'active',
+                        'expires_at' => now()->addMinutes(30),
+                    ]);
+                }
             }
 
-            $build->update([
+            $lockedBuild->update([
                 'total_cost' => $total,
-                'status' => $build->status === 'sold' || $build->status === 'cancelled' ? $build->status : 'reserved',
+                'status' => $lockedBuild->user_id !== null ? 'pending' : 'reserved',
             ]);
 
-            if ($build->user_id === null) {
-                $this->createStorefrontProduct($build);
+            if ($lockedBuild->user_id === null) {
+                $this->createStorefrontProduct($lockedBuild);
             }
 
-            return $build->fresh(['items.product', 'reservations.product']);
+            return $lockedBuild->fresh(['items.product', 'reservations.product']);
         });
     }
 
@@ -425,41 +463,63 @@ class PcBuildService
     public function sell(PcBuild $build, User $user): Sale
     {
         return DB::transaction(function () use ($build, $user) {
-            if (! in_array($build->status, ['draft', 'reserved'], true)) {
+            $lockedBuild = PcBuild::query()->whereKey($build->id)->lockForUpdate()->firstOrFail();
+            if (! in_array($lockedBuild->status, ['draft', 'reserved'], true)) {
                 throw ValidationException::withMessages([
                     'status' => ['This PC build cannot be sold in its current status.'],
                 ]);
             }
 
-            $build->load('items.product', 'reservations');
+            $lockedBuild->load('items.product', 'reservations');
+            $quantities = $lockedBuild->items->groupBy('product_id')->map(
+                fn ($items): int => (int) $items->sum('quantity')
+            );
+            $products = Product::query()
+                ->whereIn('id', $quantities->keys())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
 
-            foreach ($build->reservations as $reservation) {
-                if ($reservation->status !== 'active') {
-                    continue;
+            foreach ($quantities as $productId => $quantity) {
+                $product = $products->get($productId);
+                if (! $product || ! $product->is_active) {
+                    throw ValidationException::withMessages([
+                        'items' => ['One of the selected products is no longer available.'],
+                    ]);
                 }
 
-                $product = Product::whereKey($reservation->product_id)->lockForUpdate()->firstOrFail();
                 $reservedForOtherBuilds = StockReservation::query()
                     ->where('product_id', $product->id)
                     ->where('status', 'active')
-                    ->where('pc_build_id', '!=', $build->id)
+                    ->where('pc_build_id', '!=', $lockedBuild->id)
                     ->sum('quantity');
 
-                if ($product->stock_quantity - $reservedForOtherBuilds < $reservation->quantity) {
+                if ($product->stock_quantity - $reservedForOtherBuilds < $quantity) {
                     throw ValidationException::withMessages([
                         'items' => ["Unable to sell {$product->name}: not enough stock is currently available."],
                     ]);
                 }
             }
 
+            $bundleProduct = null;
+            if ($lockedBuild->product_id !== null) {
+                $bundleProduct = Product::query()->lockForUpdate()->findOrFail($lockedBuild->product_id);
+                if (! $bundleProduct->is_active || $bundleProduct->stock_quantity < 1) {
+                    throw ValidationException::withMessages([
+                        'status' => ['This custom PC build is no longer available to sell.'],
+                    ]);
+                }
+            }
+
             $sale = Sale::create([
                 'employee_id' => $user->id,
-                'customer_name' => $build->customer_name,
-                'total_amount' => (float) $build->total_cost,
+                'customer_name' => $lockedBuild->customer_name,
+                'total_amount' => (float) $lockedBuild->total_cost,
             ]);
 
-            foreach ($build->items as $item) {
-                $product = Product::query()->whereKey($item->product_id)->lockForUpdate()->firstOrFail();
+            foreach ($lockedBuild->items as $item) {
+                $product = $products->get($item->product_id);
 
                 if ($product->requires_serial) {
                     $units = ProductUnit::query()
@@ -499,7 +559,7 @@ class PcBuildService
                 }
             }
 
-            foreach ($build->reservations as $reservation) {
+            foreach ($lockedBuild->reservations as $reservation) {
                 if ($reservation->status === 'active') {
                     $reservation->update([
                         'status' => 'consumed',
@@ -508,7 +568,8 @@ class PcBuildService
                 }
             }
 
-            $build->update([
+            $bundleProduct?->decrement('stock_quantity');
+            $lockedBuild->update([
                 'status' => 'sold',
                 'sold_at' => now(),
             ]);
@@ -517,14 +578,81 @@ class PcBuildService
         });
     }
 
-    public function availableQuantity(Product $product): int
+    public function deleteBuild(PcBuild $build): void
     {
-        $held = StockReservation::query()
+        DB::transaction(function () use ($build): void {
+            $lockedBuild = PcBuild::query()->whereKey($build->id)->lockForUpdate()->firstOrFail();
+            $lockedBuild->load('items');
+
+            if ($lockedBuild->stock_deducted_at !== null) {
+                $quantities = $lockedBuild->items->groupBy('product_id')->map(
+                    fn ($items): int => (int) $items->sum('quantity')
+                );
+                $products = Product::query()
+                    ->whereIn('id', $quantities->keys())
+                    ->orderBy('id')
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
+
+                foreach ($quantities as $productId => $quantity) {
+                    $product = $products->get($productId)
+                        ?? Product::query()->whereKey($productId)->firstOrFail();
+                    $product->increment('stock_quantity', $quantity);
+                }
+            }
+
+            $lockedBuild->reservations()->where('status', 'active')->update([
+                'status' => 'released',
+                'released_at' => now(),
+            ]);
+
+            if ($lockedBuild->product_id) {
+                $lockedBuild->product()->delete();
+            }
+
+            $lockedBuild->items()->delete();
+            $lockedBuild->reservations()->delete();
+            $lockedBuild->delete();
+        });
+    }
+
+    public function availableQuantity(Product $product, ?int $exceptBuildId = null): int
+    {
+        $reservations = StockReservation::query()
             ->where('product_id', $product->id)
-            ->where('status', 'active')
-            ->sum('quantity');
+            ->where('status', 'active');
+
+        if ($exceptBuildId !== null) {
+            $reservations->where('pc_build_id', '!=', $exceptBuildId);
+        }
+
+        $held = $reservations->sum('quantity');
 
         return max(0, (int) $product->stock_quantity - (int) $held);
+    }
+
+    public function availableQuantities(Collection $products, ?int $exceptBuildId = null): array
+    {
+        if ($products->isEmpty()) {
+            return [];
+        }
+
+        $reservations = StockReservation::query()
+            ->selectRaw('product_id, SUM(quantity) as reserved_quantity')
+            ->whereIn('product_id', $products->modelKeys())
+            ->where('status', 'active')
+            ->groupBy('product_id');
+
+        if ($exceptBuildId !== null) {
+            $reservations->where('pc_build_id', '!=', $exceptBuildId);
+        }
+
+        $reservedQuantities = $reservations->pluck('reserved_quantity', 'product_id');
+
+        return $products->mapWithKeys(static fn (Product $product): array => [
+            $product->id => max(0, (int) $product->stock_quantity - (int) $reservedQuantities->get($product->id, 0)),
+        ])->all();
     }
 
     protected function normalizeItems(array $items): array
@@ -547,6 +675,13 @@ class PcBuildService
                 'product_id' => $productId,
                 'quantity' => $quantity,
             ];
+        }
+
+        $productIds = array_column($normalized, 'product_id');
+        if (count($productIds) !== count(array_unique($productIds))) {
+            throw ValidationException::withMessages([
+                'items' => ['Select each product only once per build.'],
+            ]);
         }
 
         return $normalized;

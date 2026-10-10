@@ -64,11 +64,7 @@ class CartController extends Controller
         $cart[$product->id] = (int) ($cart[$product->id] ?? 0) + $quantity;
         session()->put('cart', $cart);
 
-<<<<<<< HEAD
-        return redirect()->route('cart.index')->with('status', 'Product added to your cart.');
-=======
         return back()->with('status', 'Product added to your cart.');
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
     }
 
     public function update(Request $request, Product $product): RedirectResponse

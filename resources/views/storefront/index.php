@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Davao Boss Computer — Build Your Gaming PC';
 $activeNav = 'home';
-include __DIR__ . '/header.php';
+include __DIR__.'/header.php';
 
 $categoryLinks = [
     ['label' => 'CPU CASE', 'href' => 'accessories.php?filter=components'],
@@ -40,17 +40,12 @@ $categoryLinks = [
     <div class="relative max-w-7xl mx-auto px-4 py-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[520px]">
         <div class="text-white z-10">
             <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
-<<<<<<< HEAD
-                Computer Boss Davao: your go-to shop for gaming PCs, parts, and accessories. Use our Gaming Desktop Advisor to find your perfect build in 3 easy steps.
-            </h1>
-=======
                 It's as simple as 1, 2, 3!
             </h1>
             <p class="text-gray-300 mb-6 max-w-md">
                 With 3 easy steps, choose your next gaming PC with our new
                 <span class="font-semibold text-white">Gaming Desktop Advisor</span>
             </p>
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
             <a href="/advisor.php" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm tracking-wide px-6 py-3">
                 START NOW
             </a>
@@ -100,13 +95,13 @@ $categoryLinks = [
                 <span class="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400">Shop</span>
             </div>
             <ul class="space-y-1.5 text-sm font-medium text-gray-700">
-                <?php foreach ($categoryLinks as $category): ?>
+                <?php foreach ($categoryLinks as $category) { ?>
                     <li>
                         <a href="<?= htmlspecialchars($category['href']) ?>" class="block rounded px-2 py-1.5 hover:bg-purple-50 hover:text-purple-700 transition-colors">
                             <?= htmlspecialchars($category['label']) ?>
                         </a>
                     </li>
-                <?php endforeach; ?>
+                <?php } ?>
             </ul>
         </div>
 
@@ -133,4 +128,4 @@ $categoryLinks = [
     </div>
 </section>
 
-<?php include __DIR__ . '/footer.php'; ?>
+<?php include __DIR__.'/footer.php'; ?>

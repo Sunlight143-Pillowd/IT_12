@@ -42,9 +42,9 @@
                                         <option value="<?php echo e($product->id); ?>"
                                             data-name="<?php echo e($product->name); ?>"
                                             data-price="<?php echo e($product->price); ?>"
-                                            data-available="<?php echo e(max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity'))); ?>"
+                                            data-available="<?php echo e($product->available_for_build); ?>"
                                             <?php echo e(($selectedProducts[$type] ?? null) == $product->id ? 'selected' : ''); ?>>
-                                            <?php echo e($product->name); ?> (Avail: <?php echo e(max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity'))); ?>)
+                                            <?php echo e($product->name); ?> (Avail: <?php echo e($product->available_for_build); ?>)
                                         </option>
                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                 </select>

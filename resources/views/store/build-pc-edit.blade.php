@@ -28,8 +28,8 @@
                                 <select id="component-{{ $type }}" name="items[{{ $type }}][product_id]" data-key="{{ $type }}" class="component-select w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
                                     <option value="">Remove / keep empty</option>
                                     @foreach ($groupedProducts[$type] ?? [] as $product)
-                                        <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" data-available="{{ $product->availableStock() }}" {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
-                                            {{ $product->name }} — ₱{{ number_format($product->price, 2) }} ({{ $product->availableStock() }} available)
+                                        <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" data-available="{{ $product->available_for_build }}" {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
+                                            {{ $product->name }} — ₱{{ number_format($product->price, 2) }} ({{ $product->available_for_build }} available)
                                         </option>
                                     @endforeach
                                 </select>

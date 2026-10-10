@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\HomepageImage;
+use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
@@ -22,26 +23,178 @@ class StorefrontCatalogTest extends TestCase
         $this->seed();
 
         $this->get('/')
-            ->assertSee('Boss Apex 4K')
+            ->assertSee('Boss Wireless Mouse')
+            ->assertSee('Special offer')
             ->assertSee('COMPUTER BOSS DAVAO')
-            ->assertSee('flex h-52 w-full items-center justify-center')
-            ->assertSee('h-full w-full object-contain');
+            ->assertSee('data-product-carousel', false)
+            ->assertSee('aria-roledescription="carousel"', false);
         $this->assertDatabaseHas('categories', ['slug' => 'ready-to-ship']);
     }
 
     public function test_guest_sign_in_and_register_links_are_visible_in_homepage_header(): void
     {
-        $this->get(route('home'))
+        $response = $this->get(route('home'));
+
+        $response
             ->assertOk()
-<<<<<<< HEAD
-            ->assertSee('Computer Boss Davao: your go-to shop for gaming PCs, parts, and accessories.')
-            ->assertSee('Use our Gaming Desktop Advisor to find your perfect build in 3 easy steps.')
-            ->assertDontSee('your trusted source for gaming desktops')
-            ->assertDontSee("It's as simple as 1, 2, 3!", false)
-=======
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
+            ->assertSee('data-product-carousel', false)
+            ->assertSee('aria-roledescription="carousel"', false)
+            ->assertSee('aria-label="Product carousel"', false)
+            ->assertSee('aria-label="Toggle product navigation"', false)
+            ->assertSee('aria-label="Product navigation"', false)
+            ->assertSee('START NOW')
+            ->assertDontSee('Computer Boss Davao: your go-to shop for gaming PCs, parts, and accessories.')
+            ->assertDontSee('Add to cart')
+            ->assertDontSee('Featured Products')
+            ->assertDontSee('Featured product')
+            ->assertDontSee('<<<<<<< HEAD')
+            ->assertDontSee('=======')
+            ->assertDontSee('>>>>>>>')
             ->assertSee('<a href="'.route('login').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Sign In</a>', false)
             ->assertSee('<a href="'.route('register').'" class="inline-flex items-center whitespace-nowrap text-xs font-bold uppercase tracking-wide hover:text-purple-700">Register</a>', false);
+
+        $matchedProductNavigation = preg_match('/<nav id="product-navigation"[^>]*>(.*?)<\/nav>/s', $response->getContent(), $productNavigation);
+
+        $this->assertSame(1, $matchedProductNavigation);
+        $this->assertArrayHasKey(1, $productNavigation);
+        $this->assertStringContainsString('Desktops', $productNavigation[1]);
+        $this->assertStringContainsString('Special offers', $productNavigation[1]);
+        $this->assertStringNotContainsString('Sign in', $productNavigation[1]);
+        $this->assertStringNotContainsString('Register', $productNavigation[1]);
+        $this->assertStringNotContainsString('Dashboard', $productNavigation[1]);
+        $this->assertStringNotContainsString('Cart', $productNavigation[1]);
+    }
+
+    public function test_catalog_does_not_render_merge_conflict_markers(): void
+    {
+        Product::factory()->create([
+            'name' => 'Conflict-free Gaming Desktop',
+            'type' => 'desktop',
+            'stock_quantity' => 2,
+        ]);
+
+        $this->get(route('store.desktops'))
+            ->assertSee('Conflict-free Gaming Desktop')
+            ->assertDontSee('<<<<<<< HEAD')
+            ->assertDontSee('=======')
+            ->assertDontSee('>>>>>>>');
+    }
+
+    public function test_homepage_hero_carousel_shows_in_stock_special_offers_with_navigation(): void
+    {
+        Product::factory()->create([
+            'name' => 'Carousel Gaming PC',
+            'description' => 'A complete gaming setup for smooth play.',
+            'price' => 25000,
+            'stock_quantity' => 3,
+            'is_active' => true,
+        ]);
+        Product::factory()->create([
+            'name' => 'Carousel Graphics Card',
+            'description' => 'Fast graphics for high-resolution gaming.',
+            'price' => 15000,
+            'stock_quantity' => 2,
+            'is_active' => true,
+        ]);
+
+        $this->get(route('home'))
+            ->assertOk()
+            ->assertSee('data-product-carousel', false)
+            ->assertSee('Carousel Gaming PC')
+            ->assertSee('A complete gaming setup for smooth play.')
+            ->assertSee('Carousel Graphics Card')
+            ->assertSee('Fast graphics for high-resolution gaming.')
+            ->assertSee('Previous special offer')
+            ->assertSee('Next special offer')
+            ->assertSee('Show Carousel Gaming PC')
+            ->assertSee('Show Carousel Graphics Card')
+            ->assertSee('slides[activeSlide]?.name', false)
+            ->assertSee('slides[activeSlide]?.description', false)
+            ->assertSee('Special offer')
+            ->assertDontSee('Add to cart')
+            ->assertDontSee('Featured product');
+    }
+
+    public function test_products_with_no_available_stock_are_hidden_from_storefront_and_build_selection(): void
+    {
+        $outOfStockDesktop = Product::factory()->create([
+            'name' => 'Out of Stock Gaming Tower',
+            'type' => 'desktop',
+            'category' => 'Sold Out Gaming',
+            'stock_quantity' => 0,
+        ]);
+        Product::factory()->create([
+            'name' => 'Out of Stock Notebook',
+            'type' => 'laptop',
+            'category' => 'Sold Out Notebooks',
+            'stock_quantity' => 0,
+        ]);
+        Product::factory()->create([
+            'name' => 'Out of Stock Mouse',
+            'type' => 'mouse',
+            'category' => 'Sold Out Peripherals',
+            'stock_quantity' => 0,
+        ]);
+        $employee = User::factory()->create();
+        $sale = Sale::create([
+            'employee_id' => $employee->id,
+            'customer_name' => 'Stock Visibility Customer',
+            'total_amount' => 1000,
+        ]);
+        SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_id' => $outOfStockDesktop->id,
+            'product_name' => $outOfStockDesktop->name,
+            'unit_price' => 1000,
+            'quantity' => 1,
+            'subtotal' => 1000,
+        ]);
+        $reservedProduct = Product::factory()->create([
+            'name' => 'Reserved Out of Stock Graphics Card',
+            'type' => 'gpu',
+            'category' => 'Sold Out Components',
+            'stock_quantity' => 1,
+        ]);
+        $build = PcBuild::create([
+            'build_number' => 'PC-STOCK-HIDE-1',
+            'customer_name' => 'Stock Visibility Test',
+        ]);
+        $reservedProduct->reservations()->create([
+            'pc_build_id' => $build->id,
+            'quantity' => 1,
+            'status' => 'active',
+        ]);
+        Product::factory()->create([
+            'name' => 'Available Gaming Tower',
+            'type' => 'desktop',
+            'category' => 'Gaming',
+            'stock_quantity' => 2,
+        ]);
+
+        $this->get(route('home'))
+            ->assertSee('Available Gaming Tower')
+            ->assertDontSee('Out of Stock Gaming Tower')
+            ->assertDontSee('Out of Stock Notebook')
+            ->assertDontSee('Out of Stock Mouse')
+            ->assertDontSee('Reserved Out of Stock Graphics Card');
+        $this->get(route('store.desktops'))
+            ->assertSee('Available Gaming Tower')
+            ->assertDontSee('Out of Stock Gaming Tower');
+        $this->get(route('store.laptops'))->assertDontSee('Out of Stock Notebook');
+        $this->get(route('store.accessories'))->assertDontSee('Out of Stock Mouse');
+        $this->get(route('store.categories'))
+            ->assertDontSee('Sold Out Gaming')
+            ->assertDontSee('Sold Out Notebooks')
+            ->assertDontSee('Sold Out Peripherals')
+            ->assertDontSee('Sold Out Components');
+        $this->get(route('store.special-offers'))
+            ->assertSee('Available Gaming Tower')
+            ->assertDontSee('Out of Stock Gaming Tower');
+        $this->get(route('store.top-selling'))->assertDontSee('Out of Stock Gaming Tower');
+        $this->get(route('buildpc.customer'))
+            ->assertDontSee('Reserved Out of Stock Graphics Card');
+
+        $this->assertModelExists($outOfStockDesktop);
     }
 
     public function test_guest_catalog_keeps_page_content_inside_the_layout_container(): void
@@ -204,10 +357,15 @@ class StorefrontCatalogTest extends TestCase
             ]);
     }
 
-    public function test_staff_can_upload_and_preview_a_homepage_hero_photo(): void
+    public function test_legacy_homepage_photo_upload_does_not_replace_the_product_carousel(): void
     {
         Storage::fake('public');
         $staff = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        Product::factory()->create([
+            'name' => 'Carousel PC',
+            'stock_quantity' => 1,
+            'is_active' => true,
+        ]);
         $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/MioAAAAASUVORK5CYII=');
 
         $this->actingAs($staff)
@@ -222,9 +380,9 @@ class StorefrontCatalogTest extends TestCase
 
         $this->get('/')
             ->assertOk()
-            ->assertSee(asset('storage/'.$homepageImage->image_path), false)
-            ->assertSee('Save Photo')
-            ->assertDontSee('Change Photo');
+            ->assertSee('data-product-carousel', false)
+            ->assertSee('Carousel PC')
+            ->assertDontSee(asset('storage/'.$homepageImage->image_path), false);
     }
 
     public function test_customers_cannot_upload_homepage_hero_photos(): void

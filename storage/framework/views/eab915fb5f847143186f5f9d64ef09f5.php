@@ -1,7 +1,7 @@
 <?php $attributes ??= new \Illuminate\View\ComponentAttributeBag;
 
 $__newAttributes = [];
-$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['product', 'availableStock', 'showQuantityControls' => false]));
+$__propNames = \Illuminate\View\ComponentAttributeBag::extractPropNames((['product', 'availableStock']));
 
 foreach ($attributes->all() as $__key => $__value) {
     if (in_array($__key, $__propNames)) {
@@ -16,7 +16,7 @@ $attributes = new \Illuminate\View\ComponentAttributeBag($__newAttributes);
 unset($__propNames);
 unset($__newAttributes);
 
-foreach (array_filter((['product', 'availableStock', 'showQuantityControls' => false]), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
+foreach (array_filter((['product', 'availableStock']), 'is_string', ARRAY_FILTER_USE_KEY) as $__key => $__value) {
     $$__key = $$__key ?? $__value;
 }
 
@@ -38,9 +38,16 @@ unset($__defined_vars, $__key, $__value); ?>
             <?php echo csrf_field(); ?>
             <input type="hidden" name="quantity" value="1">
             <button type="submit"
+                    aria-label="Add <?php echo e($product->name); ?> to cart"
+                    title="Add to cart"
                     <?php if($cartQuantity >= $availableStock): echo 'disabled'; endif; ?>
-                    class="rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300">
-                Add to cart
+                    class="inline-flex items-center justify-center gap-2 rounded-md bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-gray-300">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+                    <path d="M3 4h2l2.1 9.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.76L18.9 7H6.1" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="10" cy="17.5" r="1.25"/>
+                    <circle cx="17" cy="17.5" r="1.25"/>
+                </svg>
+                <span>Add to cart</span>
             </button>
         </form>
     <?php else: ?>
@@ -49,50 +56,5 @@ unset($__defined_vars, $__key, $__value); ?>
         </button>
     <?php endif; ?>
 
-    <?php if($cartQuantity > 0 || $showQuantityControls): ?>
-        <?php if($cartQuantity > 0): ?>
-            <form method="POST" action="<?php echo e(route('cart.items.update', $product)); ?>">
-                <?php echo csrf_field(); ?>
-                <?php echo method_field('PUT'); ?>
-                <input type="hidden" name="quantity" value="<?php echo e(max(1, min($availableStock, $cartQuantity - 1))); ?>">
-                <button type="submit"
-                        aria-label="Decrease quantity of <?php echo e($product->name); ?>"
-                        <?php if($cartQuantity <= 1 || $availableStock < 1): echo 'disabled'; endif; ?>
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">−</button>
-            </form>
-        <?php else: ?>
-            <button type="button" aria-label="Decrease quantity of <?php echo e($product->name); ?>" disabled class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 opacity-40">−</button>
-        <?php endif; ?>
-        <span class="min-w-6 text-center text-sm font-semibold text-gray-900" aria-label="Quantity in cart"><?php echo e($cartQuantity); ?></span>
-        <?php if($cartQuantity > 0): ?>
-            <form method="POST" action="<?php echo e(route('cart.items.update', $product)); ?>">
-                <?php echo csrf_field(); ?>
-                <?php echo method_field('PUT'); ?>
-                <input type="hidden" name="quantity" value="<?php echo e(min($availableStock, $cartQuantity + 1)); ?>">
-                <button type="submit"
-                        aria-label="Increase quantity of <?php echo e($product->name); ?>"
-                        <?php if($cartQuantity >= $availableStock): echo 'disabled'; endif; ?>
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">+</button>
-            </form>
-            <form method="POST" action="<?php echo e(route('cart.items.destroy', $product)); ?>">
-                <?php echo csrf_field(); ?>
-                <?php echo method_field('DELETE'); ?>
-                <button type="submit"
-                        aria-label="Remove <?php echo e($product->name); ?> from cart"
-                        class="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700">
-                    Remove
-                </button>
-            </form>
-        <?php else: ?>
-            <form method="POST" action="<?php echo e(route('cart.items.store', $product)); ?>">
-                <?php echo csrf_field(); ?>
-                <input type="hidden" name="quantity" value="1">
-                <button type="submit"
-                        aria-label="Increase quantity of <?php echo e($product->name); ?>"
-                        <?php if($availableStock < 1): echo 'disabled'; endif; ?>
-                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40">+</button>
-            </form>
-        <?php endif; ?>
-    <?php endif; ?>
 </div>
 <?php /**PATH C:\Users\Cyrus\Downloads\IT12\resources\views/components/store/cart-controls.blade.php ENDPATH**/ ?>

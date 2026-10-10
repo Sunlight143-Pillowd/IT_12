@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
-use App\Models\HomepageImage;
 use App\Models\Product;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
@@ -177,6 +176,7 @@ class HomeController extends Controller
         $categoryCards = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
+                ->inStock()
                 ->whereNotNull('category')
                 ->select('category')
                 ->distinct()
@@ -192,10 +192,11 @@ class HomeController extends Controller
                 ->all()
             : [];
 
-        $featured = Schema::hasTable('products')
+        $specialOffers = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
-                ->orderBy('price', 'desc')
+                ->inStock()
+                ->orderBy('price')
                 ->limit(4)
                 ->get()
                 ->each(function (Product $product) use ($categoryImages): void {
@@ -206,11 +207,17 @@ class HomeController extends Controller
                 })
             : collect();
 
-        $heroImages = Schema::hasTable('homepage_images')
-            ? HomepageImage::query()->pluck('image_path', 'key')
-            : collect();
+        $carouselSlides = $specialOffers
+            ->map(static fn (Product $product): array => [
+                'name' => $product->name,
+                'description' => filled($product->description)
+                    ? $product->description
+                    : 'Special offer: explore '.$product->name.' at Davao Boss Computer.',
+            ])
+            ->values()
+            ->all();
 
-        return view('welcome', compact('categoryCards', 'featured', 'heroImages'));
+        return view('welcome', compact('categoryCards', 'specialOffers', 'carouselSlides'));
     }
 
     public function desktops(Request $request): View
@@ -222,6 +229,7 @@ class HomeController extends Controller
         $products = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
+                ->inStock()
                 ->where('type', 'desktop')
                 ->when($filter !== 'all', function ($query) use ($filter) {
                     $query->where('category', $this->categoryValueFromFilter($filter));
@@ -254,6 +262,7 @@ class HomeController extends Controller
         $products = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
+                ->inStock()
                 ->where('type', 'laptop')
                 ->when($filter !== 'all', function ($query) use ($filter) {
                     $query->where('category', $this->categoryValueFromFilter($filter));
@@ -285,6 +294,7 @@ class HomeController extends Controller
         $products = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
+                ->inStock()
                 ->whereNotIn('type', ['desktop', 'laptop'])
                 ->when($filter === 'components', function ($query) {
                     $query->where(function ($query) {
@@ -348,6 +358,7 @@ class HomeController extends Controller
         $categories = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
+                ->inStock()
                 ->select('category')
                 ->whereNotNull('category')
                 ->distinct()
@@ -378,7 +389,7 @@ class HomeController extends Controller
     public function specialOffers(): View
     {
         $products = Schema::hasTable('products')
-            ? Product::query()->where('is_active', true)->orderBy('price', 'asc')->limit(12)->get()
+            ? Product::query()->where('is_active', true)->inStock()->orderBy('price')->limit(12)->get()
             : collect();
 
         return view('store.catalog', [
@@ -406,6 +417,7 @@ class HomeController extends Controller
             : Product::query()
                 ->whereIn('id', $productOrder)
                 ->where('is_active', true)
+                ->inStock()
                 ->get()
                 ->sortBy(fn (Product $product): int => array_search($product->id, $productOrder, true))
                 ->values();

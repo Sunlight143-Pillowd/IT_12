@@ -33,9 +33,9 @@
                                         <option value="{{ $product->id }}"
                                             data-name="{{ $product->name }}"
                                             data-price="{{ $product->price }}"
-                                            data-available="{{ max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity')) }}"
+                                            data-available="{{ $product->available_for_build }}"
                                             {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
-                                            {{ $product->name }} (Avail: {{ max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity')) }})
+                                            {{ $product->name }} (Avail: {{ $product->available_for_build }})
                                         </option>
                                     @endforeach
                                 </select>

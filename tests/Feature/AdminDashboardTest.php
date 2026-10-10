@@ -42,6 +42,73 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('OPEN POS');
     }
 
+    public function test_dashboard_navigation_is_available_in_hamburger_at_every_screen_size(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'admin@davaobosscomputer.com',
+        ]);
+
+        $content = $this->actingAs($admin)->get(route('dashboard'))->assertOk()->getContent();
+        $this->assertStringNotContainsString('app-desktop-navigation', $content);
+        $this->assertStringContainsString('aria-label="Toggle navigation"', $content);
+        $this->assertStringContainsString('class="ms-auto flex items-center gap-1"', $content);
+        $this->assertStringContainsString('id="app-responsive-navigation" x-show="open" x-cloak', $content);
+
+        $mobileStart = strpos($content, 'class="app-responsive-navigation');
+        $mobileEnd = strpos($content, '</nav>', $mobileStart);
+
+        $this->assertNotFalse($mobileStart);
+        $this->assertNotFalse($mobileEnd);
+
+        $navigation = substr($content, $mobileStart, $mobileEnd - $mobileStart);
+        $expectedLinks = [
+            'Store',
+            'Desktops',
+            'Laptops',
+            'Categories',
+            'Top Selling',
+            'Build PC',
+            'Special offers',
+            'Dashboard',
+            'Inventory',
+            'Stock In',
+            'POS',
+            'Quotations',
+            'Build PC Orders',
+        ];
+        $previousPosition = -1;
+
+        foreach ($expectedLinks as $label) {
+            $position = strpos($navigation, $label);
+
+            $this->assertNotFalse($position, "{$label} should be in the dashboard hamburger.");
+            $this->assertGreaterThan($previousPosition, $position, "{$label} should appear in the requested navigation order.");
+            $previousPosition = $position;
+        }
+    }
+
+    public function test_customer_navigation_includes_my_orders_inside_the_hamburger(): void
+    {
+        $customer = User::factory()->create([
+            'email' => 'customer@example.com',
+        ]);
+
+        $content = $this->actingAs($customer)->get(route('dashboard'))->assertOk()->getContent();
+        $mobileStart = strpos($content, 'class="app-responsive-navigation');
+        $mobileEnd = strpos($content, '</nav>', $mobileStart);
+
+        $this->assertNotFalse($mobileStart);
+        $this->assertNotFalse($mobileEnd);
+
+        $navigation = substr($content, $mobileStart, $mobileEnd - $mobileStart);
+
+        $this->assertStringContainsString('My Orders', $navigation);
+        $this->assertStringContainsString('href="'.route('dashboard').'"', $navigation);
+        $this->assertStringContainsString('Cart', $navigation);
+        $this->assertStringNotContainsString('Stock In', $navigation);
+        $this->assertStringNotContainsString('Quotations', $navigation);
+    }
+
     public function test_regular_user_sees_purchase_history_and_back_button(): void
     {
         $user = User::factory()->create([

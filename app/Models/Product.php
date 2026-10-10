@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -51,6 +53,17 @@ class Product extends Model
     public function stockInItems(): HasMany
     {
         return $this->hasMany(StockInItem::class);
+    }
+
+    #[Scope]
+    protected function inStock(Builder $query): void
+    {
+        $query
+            ->where('products.stock_quantity', '>', 0)
+            ->whereRaw(
+                'products.stock_quantity > (SELECT COALESCE(SUM(stock_reservations.quantity), 0) FROM stock_reservations WHERE stock_reservations.product_id = products.id AND stock_reservations.status = ?)',
+                ['active'],
+            );
     }
 
     public function availableStock(): int

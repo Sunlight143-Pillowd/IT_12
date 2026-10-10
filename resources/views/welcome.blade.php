@@ -7,6 +7,10 @@
         <title>{{ config('app.name', 'Davao Boss Computer') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <style>
+            [x-cloak] {
+                display: none !important;
+            }
+
             @media (min-width: 1280px) {
                 .storefront-desktop-navigation {
                     display: flex !important;
@@ -44,8 +48,8 @@
 
         <header x-data="{ mobileMenuOpen: false }" class="border-b border-gray-200 bg-white">
             <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
-                <a href="{{ url('/') }}" class="flex items-center gap-2" aria-label="Davao Boss Computer home">
-                    <x-application-logo class="shrink-0" />
+                <a href="{{ url('/') }}" class="flex min-w-0 items-center gap-2" aria-label="Davao Boss Computer home">
+                    <x-application-logo />
                 </a>
 
                 <nav class="storefront-desktop-navigation hidden items-center gap-5 text-xs font-bold tracking-wide text-gray-800 xl:flex">
@@ -60,7 +64,7 @@
                     @endauth
                 </nav>
 
-                <div class="flex items-center gap-3 text-gray-700 sm:gap-5">
+                <div class="flex shrink-0 items-center gap-2 text-gray-700 sm:gap-5">
                     @auth
                     <a href="{{ route('cart.index') }}" class="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-xs font-bold uppercase tracking-wide hover:bg-purple-50 hover:text-purple-700" aria-label="Shopping cart, {{ array_sum(session('cart', [])) }} items">
                         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
@@ -103,14 +107,14 @@
                             </div>
                         </div>
                     @endguest
-                    <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen.toString()" aria-label="Toggle navigation" class="storefront-menu-toggle inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 xl:hidden">
+                    <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen.toString()" aria-controls="product-navigation" aria-label="Toggle product navigation" class="storefront-menu-toggle inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 xl:hidden">
                         <svg x-show="!mobileMenuOpen" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                         <svg x-show="mobileMenuOpen" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"></path></svg>
                     </button>
                 </div>
             </div>
 
-            <nav x-show="mobileMenuOpen" x-cloak class="storefront-responsive-navigation border-t border-gray-100 bg-white px-4 py-3 xl:hidden">
+            <nav id="product-navigation" x-show="mobileMenuOpen" x-cloak aria-label="Product navigation" class="storefront-responsive-navigation border-t border-gray-100 bg-white px-4 py-3 xl:hidden">
                 <div class="mx-auto grid max-w-7xl gap-1 sm:grid-cols-2">
                     <a href="{{ route('store.desktops') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Desktops</a>
                     <a href="{{ route('store.laptops') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Laptops</a>
@@ -118,14 +122,6 @@
                     <a href="{{ route('store.top-selling') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Top Selling</a>
                     <a href="{{ route('buildpc.customer') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Build PC</a>
                     <a href="{{ route('store.special-offers') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Special offers</a>
-                    @auth
-                        <a href="{{ route('dashboard') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">{{ Auth::user()->isAdmin() ? 'Dashboard' : 'My orders' }}</a>
-                    @else
-                        <a href="{{ route('login') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Sign in</a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Register</a>
-                        @endif
-                    @endauth
                 </div>
             </nav>
         </header>
@@ -146,55 +142,72 @@
                     {{ $errors->first('image') }}
                 </div>
             @endif
-            <section class="relative bg-black overflow-hidden">
+            <section class="relative overflow-hidden bg-black">
                 <div class="placeholder-img absolute inset-0 opacity-40"></div>
-                <div class="relative max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center min-h-[420px]">
-                    <div class="text-white z-10">
-                        <h1 class="text-4xl md:text-5xl font-extrabold leading-tight mb-4">
-<<<<<<< HEAD
-                            Computer Boss Davao: your go-to shop for gaming PCs, parts, and accessories. Use our Gaming Desktop Advisor to find your perfect build in 3 easy steps.
+                <div class="relative mx-auto grid min-h-[420px] max-w-7xl grid-cols-1 items-center gap-8 px-4 py-12 lg:grid-cols-2"
+                     data-product-carousel
+                     x-data="{ activeSlide: 0, slides: @js($carouselSlides), next() { this.activeSlide = (this.activeSlide + 1) % this.slides.length; }, previous() { this.activeSlide = (this.activeSlide - 1 + this.slides.length) % this.slides.length; } }"
+                     role="region"
+                     aria-roledescription="carousel"
+                     aria-label="Product carousel"
+                     @keydown.right.prevent="next()"
+                     @keydown.left.prevent="previous()"
+                     tabindex="0">
+                    <div class="z-10 min-w-0 text-white">
+                        <h1 x-text="slides[activeSlide]?.name ?? ''" class="mb-4 break-words text-3xl font-extrabold leading-snug sm:text-4xl md:text-5xl">
+                            {{ $carouselSlides[0]['name'] ?? 'Browse our products' }}
                         </h1>
-=======
-                            It's as simple as 1, 2, 3!
-                        </h1>
-                        <p class="text-gray-300 mb-6 max-w-md">
-                            With 3 easy steps, choose your next gaming PC with our new
-                            <span class="font-semibold text-white">Gaming Desktop Advisor</span>
+                        <p x-text="slides[activeSlide]?.description ?? ''" class="mb-6 max-w-md whitespace-pre-line break-words text-gray-300">
+                            {{ $carouselSlides[0]['description'] ?? 'Browse computers, parts, and accessories at Davao Boss Computer.' }}
                         </p>
->>>>>>> f3ac0bb2f8c156e46e87a9aef60a47e16a08f462
-                        <a href="{{ route('store.desktops') }}" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm tracking-wide px-6 py-3">
+                        <a href="{{ route('store.special-offers') }}" class="inline-block bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm tracking-wide px-6 py-3">
                             START NOW
                         </a>
                     </div>
 
-                    <div class="relative z-10 flex items-center justify-center gap-4">
-                        <div class="flex items-end gap-4">
-                            @foreach ([
-                                'hero-main' => ['width' => 'w-44 h-56 md:w-64 md:h-80', 'button' => 'Upload Photo'],
-                                'hero-secondary' => ['width' => 'w-28 h-36 md:w-36 md:h-48', 'button' => 'Upload'],
-                            ] as $imageKey => $heroImage)
-                                @php($heroImagePath = $heroImages->get($imageKey))
-                                <div class="group relative {{ $heroImage['width'] }}">
-                                    <img data-category-preview src="{{ $heroImagePath ? asset('storage/'.$heroImagePath) : '' }}" alt="Homepage feature" class="{{ $heroImagePath ? '' : 'hidden' }} h-full w-full rounded object-cover">
-                                    <div data-category-placeholder class="placeholder-img flex h-full w-full flex-col items-center justify-center gap-2 rounded p-4 text-center text-gray-300 {{ $heroImagePath ? 'hidden' : '' }}">
-                                        <span class="text-4xl font-light leading-none text-white/80">＋</span>
-                                        @if (! Auth::user()?->canManageOrders())
-                                            <span class="text-[10px] font-semibold uppercase tracking-[0.22em] text-white/80">Image</span>
-                                        @endif
-                                    </div>
-                                    @if (Auth::user()?->canManageOrders() && ! $heroImagePath)
-                                        <form method="POST" action="{{ route('homepage-images.upload', $imageKey) }}" enctype="multipart/form-data" class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-2">
-                                            @csrf
-                                            <label class="inline-flex cursor-pointer items-center gap-2 rounded bg-white/95 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-800 shadow transition hover:bg-purple-100 hover:text-purple-800">
-                                                <span aria-hidden="true" class="text-xl leading-none">＋</span>
-                                                <span>{{ $heroImage['button'] }}</span>
-                                                <input type="file" name="image" accept="image/jpeg,image/png,image/gif,image/bmp,image/webp" required class="sr-only" onchange="previewCategoryPhoto(this)">
-                                            </label>
-                                            <button type="submit" data-category-submit class="hidden rounded bg-purple-700 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-white shadow transition hover:bg-purple-800">Save Photo</button>
-                                        </form>
+                    <div class="relative z-10 min-w-0">
+                        @forelse ($specialOffers as $index => $product)
+                            @php($availableStock = $product->availableStock())
+                            <article x-show="activeSlide === {{ $index }}" x-cloak class="rounded-2xl border border-white/10 bg-white p-4 text-gray-900 shadow-2xl sm:p-5" role="group" aria-roledescription="slide" aria-label="{{ $index + 1 }} of {{ $specialOffers->count() }}">
+                                <div class="relative flex h-48 items-center justify-center overflow-hidden rounded-xl bg-gray-100 sm:h-56 md:h-64">
+                                    @if ($product->featured_image_path)
+                                        <img src="{{ asset('storage/'.$product->featured_image_path) }}" alt="{{ $product->name }}" class="h-full w-full object-contain">
+                                    @else
+                                        <div class="placeholder-img flex h-full w-full items-center justify-center text-sm font-semibold uppercase tracking-widest text-white/70">Product image coming soon</div>
+                                    @endif
+                                    @if ($specialOffers->count() > 1)
+                                        <button type="button" @click="previous()" aria-label="Previous special offer" class="absolute left-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/70 text-xl text-white transition hover:bg-black">
+                                            <span aria-hidden="true">‹</span>
+                                        </button>
+                                        <button type="button" @click="next()" aria-label="Next special offer" class="absolute right-3 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/70 text-xl text-white transition hover:bg-black">
+                                            <span aria-hidden="true">›</span>
+                                        </button>
                                     @endif
                                 </div>
-                            @endforeach
+                                <div class="flex flex-wrap items-start justify-between gap-3 pt-4">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-bold uppercase tracking-[0.18em] text-purple-700">Special offer</p>
+                                        <h2 class="break-words text-lg font-black text-gray-900 sm:text-xl">{{ $product->name }}</h2>
+                                        <p class="mt-1 text-xl font-black text-purple-700">₱{{ number_format($product->price, 0) }}</p>
+                                    </div>
+                                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
+                                        {{ $availableStock }} in stock
+                                    </span>
+                                </div>
+                            </article>
+                        @empty
+                            <div class="flex min-h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/10 p-6 text-center text-sm text-gray-300">
+                                Products will appear here when added to inventory.
+                            </div>
+                        @endforelse
+
+                        @if ($specialOffers->count() > 1)
+                            <div class="mt-4 flex justify-center gap-2" aria-label="Choose a special offer">
+                                @foreach ($specialOffers as $index => $product)
+                                    <button type="button" @click="activeSlide = {{ $index }}" :aria-current="activeSlide === {{ $index }} ? 'true' : 'false'" aria-label="Show {{ $product->name }}" class="h-2.5 w-2.5 rounded-full bg-white/40 transition hover:bg-white" :class="activeSlide === {{ $index }} ? 'bg-purple-400' : 'bg-white/40'"></button>
+                                @endforeach
+                            </div>
+                        @endif
                         </div>
                     </div>
                 </div>
@@ -232,40 +245,6 @@
                             @endif
                         </div>
                     @endforeach
-                </div>
-            </section>
-
-            <section class="py-12">
-                <div class="max-w-7xl mx-auto px-4">
-                    <div class="mb-6 flex items-end justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-600">In stock now</p>
-                            <h2 class="mt-2 text-2xl font-black text-gray-900">Featured Products</h2>
-                        </div>
-                        <a href="{{ route('store.desktops') }}" class="text-sm font-semibold text-purple-600 hover:text-purple-700">Browse store</a>
-                    </div>
-
-                    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                        @forelse ($featured as $product)
-                            @php($availableStock = $product->availableStock())
-                            <article data-photo-card class="relative flex h-full flex-col border border-gray-200 bg-white p-4">
-                                <div class="relative mt-3 flex h-52 w-full items-center justify-center overflow-hidden bg-gray-100">
-                                    <img data-category-preview src="{{ $product->featured_image_path ? asset('storage/'.$product->featured_image_path) : '' }}" alt="{{ $product->name }}" class="{{ $product->featured_image_path ? '' : 'hidden' }} h-full w-full object-contain">
-                                    <div data-category-placeholder class="h-full w-full {{ $product->featured_image_path ? 'hidden' : '' }}"></div>
-                                </div>
-                                <h3 class="mt-3 min-h-14 text-lg font-bold text-gray-900">{{ $product->name }}</h3>
-                                <div class="mt-auto flex items-center justify-between gap-3 pt-4">
-                                    <span class="font-black text-purple-600">₱{{ number_format($product->price, 0) }}</span>
-                                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
-                                        {{ $availableStock }} in stock
-                                    </span>
-                                </div>
-                                <x-store.cart-controls :product="$product" :available-stock="$availableStock" />
-                            </article>
-                        @empty
-                            <p class="col-span-full text-sm text-gray-500">Products will appear here when they are added to inventory.</p>
-                        @endforelse
-                    </div>
                 </div>
             </section>
         </main>

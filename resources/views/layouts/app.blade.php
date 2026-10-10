@@ -12,23 +12,8 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         <style>
-            @media (min-width: 1024px) {
-                .app-desktop-navigation,
-                .app-settings-navigation {
-                    display: flex !important;
-                }
-
-                .app-mobile-navigation-toggle,
-                .app-responsive-navigation {
-                    display: none !important;
-                }
-            }
-
-            @media (max-width: 1023px) {
-                .app-desktop-navigation,
-                .app-settings-navigation {
-                    display: none !important;
-                }
+            [x-cloak] {
+                display: none !important;
             }
         </style>
 

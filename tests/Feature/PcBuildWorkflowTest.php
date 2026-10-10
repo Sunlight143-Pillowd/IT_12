@@ -8,6 +8,7 @@ use App\Models\ProductUnit;
 use App\Models\Sale;
 use App\Models\StockIn;
 use App\Models\User;
+use App\Services\PcBuildService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -61,6 +62,67 @@ class PcBuildWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('CPU-BUILD-001')
             ->assertSee('36 months');
+    }
+
+    public function test_reserved_build_can_be_edited_and_sold_once_with_component_and_bundle_stock_decremented(): void
+    {
+        $employee = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $product = Product::factory()->create([
+            'type' => 'cpu',
+            'category' => 'CPU',
+            'price' => 12000,
+            'stock_quantity' => 1,
+        ]);
+
+        $this->actingAs($employee)->post(route('buildpc.store'), [
+            'customer_name' => 'Build Sale Customer',
+            'items' => [['product_id' => $product->id, 'quantity' => 1]],
+        ])->assertRedirect(route('buildpc.index'));
+
+        $build = PcBuild::firstOrFail();
+        $this->assertNull($build->user_id);
+        $this->assertDatabaseHas('stock_reservations', [
+            'pc_build_id' => $build->id,
+            'product_id' => $product->id,
+            'status' => 'active',
+        ]);
+        $this->assertSame(1, app(PcBuildService::class)->availableQuantity($product, $build->id));
+
+        $this->actingAs($employee)
+            ->get(route('buildpc.edit', $build))
+            ->assertOk()
+            ->assertSee('(Avail: 1)');
+
+        $this->actingAs($employee)
+            ->patch(route('buildpc.update', $build), [
+                'items' => ['cpu' => ['product_id' => $product->id]],
+            ])
+            ->assertRedirect(route('buildpc.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $product->fresh()->stock_quantity);
+        $this->assertDatabaseHas('stock_reservations', [
+            'pc_build_id' => $build->id,
+            'product_id' => $product->id,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($employee)->post(route('buildpc.sell', $build))->assertRedirect();
+
+        $bundle = Product::query()->whereKey($build->fresh()->product_id)->firstOrFail();
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->assertSame(0, $bundle->fresh()->stock_quantity);
+        $this->assertDatabaseHas('pc_builds', ['id' => $build->id, 'status' => 'sold']);
+        $this->assertDatabaseCount('sales', 1);
+
+        $this->actingAs($employee)
+            ->from(route('buildpc.index'))
+            ->post(route('buildpc.sell', $build))
+            ->assertRedirect(route('buildpc.index'))
+            ->assertSessionHasErrors('status');
+
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+        $this->assertDatabaseCount('sales', 1);
     }
 
     public function test_pc_build_requires_a_customer_name(): void
@@ -255,6 +317,43 @@ class PcBuildWorkflowTest extends TestCase
         $this->actingAs($admin)->patch(route('dashboard.customer-builds.update', $build), ['status' => 'cancelled']);
 
         $this->assertDatabaseHas('pc_builds', ['id' => $build->id, 'status' => 'cancelled']);
+        $this->assertSame(1, $product->fresh()->stock_quantity);
+    }
+
+    public function test_deleting_an_accepted_customer_build_restores_its_committed_stock(): void
+    {
+        $customer = User::factory()->create();
+        $product = Product::factory()->create([
+            'type' => 'cpu',
+            'category' => 'CPU',
+            'stock_quantity' => 1,
+        ]);
+        $build = PcBuild::create([
+            'build_number' => 'PC-DELETE-0001',
+            'customer_name' => $customer->name,
+            'customer_email' => $customer->email,
+            'user_id' => $customer->id,
+            'status' => 'pending',
+            'total_cost' => 1000,
+        ]);
+        $build->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_price' => 1000,
+            'subtotal' => 1000,
+        ]);
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+
+        $this->actingAs($admin)
+            ->patch(route('dashboard.customer-builds.update', $build), ['status' => 'accepted'])
+            ->assertRedirect();
+        $this->assertSame(0, $product->fresh()->stock_quantity);
+
+        $this->actingAs($customer)
+            ->delete(route('buildpc.customer.destroy', $build))
+            ->assertRedirect();
+
+        $this->assertDatabaseMissing('pc_builds', ['id' => $build->id]);
         $this->assertSame(1, $product->fresh()->stock_quantity);
     }
 }
