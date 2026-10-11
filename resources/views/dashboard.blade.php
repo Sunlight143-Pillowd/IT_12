@@ -67,7 +67,7 @@
                                                         @if ($order->shipping_zone === 'davao_city')
                                                             <p class="mt-1 text-xs text-gray-400">Distance: {{ number_format($order->shipping_distance_km, 1) }} km</p>
                                                         @endif
-                                                        @if ($order->delivery_address)<p class="mt-1 max-w-48 text-xs text-gray-400">{{ $order->delivery_address }}</p>@endif
+                                                        @if ($order->delivery_address)<p class="mt-1 max-w-48 text-xs text-gray-400">{{ $order->fulfillment_method === 'pickup' ? 'Pickup at: ' : '' }}{{ $order->delivery_address }}</p>@endif
                                                     </td>
                                                     <td class="px-4 py-3">
                                                         <div class="flex flex-col items-start gap-2">
@@ -254,7 +254,7 @@
                                 @if (isset($order->status))
                                     <span class="inline-flex rounded-full px-3 py-1 text-xs font-bold uppercase text-black {{ $order->status === 'accepted' ? 'bg-emerald-100' : 'bg-amber-100' }}">{{ ucfirst($order->status) }}</span>
                                     <p class="mt-2 text-xs text-gray-500">Payment: {{ ucwords(str_replace('_', ' ', $order->payment_method)) }} · {{ ucfirst($order->fulfillment_method) }}</p>
-                                    @if ($order->delivery_address)<p class="mt-1 text-xs text-gray-500">Delivery to: {{ $order->delivery_address }}</p>@endif
+                                    @if ($order->delivery_address)<p class="mt-1 text-xs text-gray-500">{{ $order->fulfillment_method === 'pickup' ? 'Pickup at: ' : 'Delivery to: ' }}{{ $order->delivery_address }}</p>@endif
                                     @if ($order->shipping_zone === 'outside_davao' && $order->shipping_fee === null)
                                         <p class="mt-1 text-xs text-amber-700">Shipping fee will be confirmed by staff before acceptance.</p>
                                     @elseif ($order->shipping_fee !== null && $order->shipping_fee > 0)

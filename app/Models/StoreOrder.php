@@ -14,6 +14,8 @@ class StoreOrder extends Model
         'customer_name',
         'customer_email',
         'customer_phone',
+        'customer_company',
+        'billing_address',
         'total_amount',
         'status',
         'payment_method',

@@ -62,6 +62,9 @@
                                     aria-pressed="false">
                                 <span class="block truncate text-sm font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></span>
                                 <span class="mt-1 block truncate text-xs text-gray-600"><?php echo e($sale->customer_name ?: 'Customer not recorded'); ?></span>
+                                <?php if($sale->store_order_id): ?>
+                                    <span class="mt-1 block text-[11px] font-semibold text-purple-700">Customer order #<?php echo e($sale->store_order_id); ?></span>
+                                <?php endif; ?>
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
                                 <span class="mt-1 block text-[11px] text-gray-500"><?php echo e($sale->items->count()); ?> item(s) · <?php echo e($sale->created_at->format('M j, Y')); ?></span>
                             </button>
@@ -128,6 +131,9 @@
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></p>
+                                <?php if($sale->store_order_id): ?>
+                                    <p class="mt-1 text-xs font-semibold text-purple-700">Customer order #<?php echo e($sale->store_order_id); ?></p>
+                                <?php endif; ?>
                                 <p class="mt-1 text-sm text-gray-600"><?php echo e($sale->customer_name ?: 'Customer not recorded'); ?></p>
                                 <p class="mt-1 text-xs text-gray-500"><?php echo e($sale->created_at->format('M j, Y g:i A')); ?></p>
                             </div>
@@ -148,10 +154,17 @@
                                     </div>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </div>
+                            <?php if($sale->shipping_fee > 0): ?>
+                                <div class="flex items-center justify-between border-t border-gray-200 py-3 text-sm">
+                                    <span class="font-semibold text-gray-700">Shipping</span>
+                                    <span class="font-semibold text-gray-900">₱<?php echo e(number_format($sale->shipping_fee, 2)); ?></span>
+                                </div>
+                            <?php endif; ?>
                             <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
                                 <span>Total</span>
                                 <span>₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
                             </div>
+                            <a href="<?php echo e(route('pos.receipt', $sale)); ?>" class="mt-4 inline-flex rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">Open printable receipt</a>
                         </div>
                     </template>
                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

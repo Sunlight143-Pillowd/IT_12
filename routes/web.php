@@ -21,6 +21,8 @@ Route::get('/special-offers', [HomeController::class, 'specialOffers'])->name('s
 Route::get('/top-selling', [HomeController::class, 'topSelling'])->name('store.top-selling');
 Route::get('/build-pc', [PcBuildController::class, 'customerIndex'])->name('buildpc.customer');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout.index');
+Route::post('/checkout', [CartController::class, 'placeOrder'])->name('checkout.place-order');
 Route::post('/cart/order', [CartController::class, 'placeOrder'])->name('cart.order');
 Route::post('/cart/{product}', [CartController::class, 'store'])->name('cart.items.store');
 Route::put('/cart/{product}', [CartController::class, 'update'])->name('cart.items.update');

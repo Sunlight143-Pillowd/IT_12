@@ -6,13 +6,44 @@ use App\Models\Product;
 use App\Models\StoreOrder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CartController extends Controller
 {
     public function index(): View
+    {
+        $items = $this->cartItems();
+
+        return view('store.cart', [
+            'items' => $items,
+            'subtotal' => $items->sum('line_total'),
+        ]);
+    }
+
+    public function checkout(): View|RedirectResponse
+    {
+        $items = $this->cartItems();
+
+        if ($items->isEmpty()) {
+            return redirect()->route('cart.index')->withErrors([
+                'order' => 'Add a product to your cart before checking out.',
+            ]);
+        }
+
+        return view('store.checkout', [
+            'items' => $items,
+            'subtotal' => $items->sum('line_total'),
+        ]);
+    }
+
+    /**
+     * @return Collection<int, array{product: Product, quantity: int, available_stock: int, line_total: int}>
+     */
+    private function cartItems(): Collection
     {
         $cart = session()->get('cart', []);
         $products = Product::query()
@@ -37,10 +68,7 @@ class CartController extends Controller
                 ];
             });
 
-        return view('store.cart', [
-            'items' => $items,
-            'subtotal' => $items->sum('line_total'),
-        ]);
+        return $items;
     }
 
     public function store(Request $request, Product $product): RedirectResponse
@@ -94,13 +122,32 @@ class CartController extends Controller
 
     public function placeOrder(Request $request): RedirectResponse
     {
+        $isCheckout = $request->routeIs('checkout.place-order');
+        $deliverySelected = $request->input('fulfillment_method') === 'delivery';
         $validated = $request->validate([
-            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_name' => [$isCheckout ? 'nullable' : 'required_without:first_name', 'string', 'max:255'],
+            'first_name' => [$isCheckout ? 'required' : 'nullable', 'string', 'max:128'],
+            'last_name' => [$isCheckout ? 'required' : 'nullable', 'string', 'max:128'],
             'customer_email' => ['required', 'email', 'max:255'],
-            'customer_phone' => ['nullable', 'string', 'max:40'],
-            'payment_method' => ['sometimes', 'required', 'in:cash,gcash,bank_transfer,other'],
-            'fulfillment_method' => ['sometimes', 'required', 'in:pickup,delivery'],
-            'delivery_address' => ['required_if:fulfillment_method,delivery', 'nullable', 'string', 'max:2000'],
+            'customer_phone' => [$isCheckout ? 'required' : 'nullable', 'string', 'max:40'],
+            'customer_company' => ['nullable', 'string', 'max:255'],
+            'address_line_1' => [$isCheckout ? 'required_if:fulfillment_method,delivery' : 'nullable', 'nullable', 'string', 'max:255'],
+            'address_line_2' => ['nullable', 'string', 'max:255'],
+            'address_city' => [$isCheckout ? 'required_if:fulfillment_method,delivery' : 'nullable', 'nullable', 'string', 'max:255'],
+            'address_province' => ['nullable', 'string', 'max:255'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
+            'payment_method' => [
+                $isCheckout ? 'required' : 'sometimes',
+                'in:cash,gcash,bank_transfer,other',
+                Rule::when($request->input('shipping_zone') === 'outside_davao', ['not_in:cash']),
+            ],
+            'fulfillment_method' => [$isCheckout ? 'required' : 'sometimes', 'in:pickup,delivery'],
+            'delivery_address' => [
+                $isCheckout ? 'nullable' : 'required_if:fulfillment_method,delivery',
+                'nullable',
+                'string',
+                'max:2000',
+            ],
             'shipping_zone' => [
                 'required_if:fulfillment_method,delivery',
                 'prohibited_unless:fulfillment_method,delivery',
@@ -118,7 +165,7 @@ class CartController extends Controller
             ]);
         }
 
-        $order = DB::transaction(function () use ($request, $validated, $cart): StoreOrder {
+        $order = DB::transaction(function () use ($request, $validated, $cart, $isCheckout, $deliverySelected): StoreOrder {
             $products = Product::query()
                 ->whereIn('id', array_keys($cart))
                 ->orderBy('id')
@@ -155,19 +202,39 @@ class CartController extends Controller
                 'outside_davao' => null,
                 default => 0,
             };
+            $billingAddress = $isCheckout
+                ? ($deliverySelected
+                    ? collect([
+                        $validated['address_line_1'] ?? null,
+                        $validated['address_line_2'] ?? null,
+                        $validated['address_city'] ?? null,
+                        $validated['address_province'] ?? null,
+                        $validated['postal_code'] ?? null,
+                        'Philippines',
+                    ])->filter()->implode(', ')
+                    : config('store.address'))
+                : null;
+            $customerName = isset($validated['first_name'])
+                ? trim($validated['first_name'].' '.$validated['last_name'])
+                : trim($validated['customer_name']);
 
             $order = StoreOrder::create([
                 'user_id' => $request->user()?->id,
-                'customer_name' => trim($validated['customer_name']),
+                'customer_name' => $customerName,
                 'customer_email' => trim($validated['customer_email']),
                 'customer_phone' => isset($validated['customer_phone']) ? trim($validated['customer_phone']) : null,
+                'customer_company' => isset($validated['customer_company']) ? trim($validated['customer_company']) : null,
+                'billing_address' => $billingAddress,
                 'total_amount' => $total + ($shippingFee ?? 0),
                 'status' => 'pending',
-                'payment_method' => $validated['payment_method'] ?? 'cash',
+                'payment_method' => $validated['payment_method']
+                    ?? ($shippingZone === 'outside_davao' ? 'gcash' : 'cash'),
                 'fulfillment_method' => $validated['fulfillment_method'] ?? 'pickup',
-                'delivery_address' => ($validated['fulfillment_method'] ?? 'pickup') === 'delivery'
-                    ? trim($validated['delivery_address'])
-                    : null,
+                'delivery_address' => $isCheckout
+                    ? $billingAddress
+                    : (($validated['fulfillment_method'] ?? 'pickup') === 'delivery'
+                        ? trim($validated['delivery_address'])
+                        : null),
                 'shipping_zone' => $shippingZone,
                 'shipping_distance_km' => $shippingDistance,
                 'shipping_fee' => $shippingFee,

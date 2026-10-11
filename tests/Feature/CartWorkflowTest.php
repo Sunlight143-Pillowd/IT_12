@@ -276,12 +276,9 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Cart Photo Product')
             ->assertSee('storage/products/cart-photo.webp')
             ->assertSee('Cart Totals')
-            ->assertSee('Davao City rider')
-            ->assertSee('Outside Davao City')
-            ->assertSee('Calculate shipping')
+            ->assertSee('Proceed to checkout')
             ->assertSee('Subtotal')
             ->assertSee('Total')
-            ->assertSee('Pay As')
             ->assertSee('Decrease quantity of Cart Photo Product')
             ->assertSee('Increase quantity of Cart Photo Product')
             ->assertSee('name="quantity"', false)
@@ -299,9 +296,11 @@ class CartWorkflowTest extends TestCase
         $this->post(route('cart.items.store', $product), ['quantity' => 2]);
 
         $this->get(route('cart.index'))
+            ->assertSee('Proceed to checkout');
+        $this->get(route('checkout.index'))
             ->assertSee('Place order')
-            ->assertSee('customer_name')
-            ->assertSee('customer_email');
+            ->assertSee('name="first_name"', false)
+            ->assertSee('name="customer_email"', false);
 
         $this->post(route('cart.order'), [
             'customer_name' => 'Guest Buyer',
@@ -326,6 +325,150 @@ class CartWorkflowTest extends TestCase
             'subtotal' => 2500,
         ]);
         $this->assertSame(4, $product->fresh()->stock_quantity);
+        $this->assertSame([], session('cart', []));
+    }
+
+    public function test_checkout_displays_the_order_summary_and_billing_form(): void
+    {
+        $product = Product::factory()->create([
+            'name' => 'Checkout Summary Product',
+            'price' => 1250,
+            'stock_quantity' => 2,
+        ]);
+        $this->post(route('cart.items.store', $product), ['quantity' => 2]);
+
+        $this->get(route('checkout.index'))
+            ->assertSee('Your order')
+            ->assertSee('Checkout Summary Product')
+            ->assertSee('₱2,500.00')
+            ->assertSee('Customer details')
+            ->assertSee('Shipping address')
+            ->assertSee('Pickup location')
+            ->assertSee(config('store.address'))
+            ->assertSee('x-show="shippingChoice !== \'pickup\'"', false)
+            ->assertSee('x-bind:disabled="shippingChoice === \'outside_davao\'"', false)
+            ->assertSee('paymentMethod = \'gcash\'', false)
+            ->assertSee('First name')
+            ->assertSee('Street address')
+            ->assertSee('Place order');
+    }
+
+    public function test_checkout_rejects_cash_for_outside_davao_delivery(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->from(route('checkout.index'))->post(route('checkout.place-order'), [
+            'first_name' => 'Outside',
+            'last_name' => 'Customer',
+            'customer_email' => 'outside-checkout@example.com',
+            'customer_phone' => '09170000000',
+            'address_line_1' => '123 Main Street',
+            'address_city' => 'Tagum City',
+            'payment_method' => 'cash',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'outside_davao',
+        ])->assertRedirect(route('checkout.index'))
+            ->assertSessionHasErrors('payment_method');
+
+        $this->assertDatabaseCount('store_orders', 0);
+        $this->assertSame([$product->id => 1], session('cart'));
+    }
+
+    public function test_checkout_place_order_saves_contact_details_and_order_items_for_pickup(): void
+    {
+        $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 2]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->post(route('checkout.place-order'), [
+            'first_name' => 'Checkout',
+            'last_name' => 'Customer',
+            'customer_company' => 'Example Company',
+            'customer_email' => 'checkout@example.com',
+            'customer_phone' => '09170000000',
+            'payment_method' => 'gcash',
+            'fulfillment_method' => 'pickup',
+            'shipping_zone' => '',
+        ])->assertRedirect(route('cart.index'))
+            ->assertSessionHas('status', 'Order #1 placed successfully. It is pending staff confirmation.');
+
+        $this->assertDatabaseHas('store_orders', [
+            'id' => 1,
+            'customer_name' => 'Checkout Customer',
+            'customer_email' => 'checkout@example.com',
+            'customer_phone' => '09170000000',
+            'customer_company' => 'Example Company',
+            'billing_address' => config('store.address'),
+            'payment_method' => 'gcash',
+            'fulfillment_method' => 'pickup',
+            'delivery_address' => config('store.address'),
+            'total_amount' => 500,
+            'status' => 'pending',
+        ]);
+        $this->assertDatabaseHas('store_order_items', [
+            'store_order_id' => 1,
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => 500,
+            'subtotal' => 500,
+        ]);
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+        $this->assertSame([], session('cart', []));
+    }
+
+    public function test_checkout_requires_a_shipping_address_when_delivery_is_selected(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->from(route('checkout.index'))->post(route('checkout.place-order'), [
+            'first_name' => 'Checkout',
+            'last_name' => 'Customer',
+            'customer_email' => 'checkout@example.com',
+            'customer_phone' => '09170000000',
+            'payment_method' => 'cash',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'outside_davao',
+        ])->assertRedirect(route('checkout.index'))
+            ->assertSessionHasErrors(['address_line_1', 'address_city']);
+
+        $this->assertDatabaseCount('store_orders', 0);
+        $this->assertSame([$product->id => 1], session('cart'));
+    }
+
+    public function test_checkout_saves_a_shipping_address_when_delivery_is_selected(): void
+    {
+        $product = Product::factory()->create(['price' => 500, 'stock_quantity' => 2]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->post(route('checkout.place-order'), [
+            'first_name' => 'Delivery',
+            'last_name' => 'Customer',
+            'customer_email' => 'delivery-checkout@example.com',
+            'customer_phone' => '09170000000',
+            'address_line_1' => '123 Main Street',
+            'address_line_2' => 'Unit 4',
+            'address_city' => 'Davao City',
+            'address_province' => 'Davao del Sur',
+            'postal_code' => '8000',
+            'payment_method' => 'cash',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'davao_city',
+            'shipping_distance_km' => 3,
+        ])->assertRedirect(route('cart.index'));
+
+        $this->assertDatabaseHas('store_orders', [
+            'customer_name' => 'Delivery Customer',
+            'customer_email' => 'delivery-checkout@example.com',
+            'billing_address' => '123 Main Street, Unit 4, Davao City, Davao del Sur, 8000, Philippines',
+            'delivery_address' => '123 Main Street, Unit 4, Davao City, Davao del Sur, 8000, Philippines',
+            'shipping_zone' => 'davao_city',
+            'shipping_fee' => 79,
+            'total_amount' => 579,
+            'status' => 'pending',
+        ]);
+        $this->assertSame(2, $product->fresh()->stock_quantity);
         $this->assertSame([], session('cart', []));
     }
 
@@ -431,6 +574,11 @@ class CartWorkflowTest extends TestCase
             'delivery_address' => 'Tagum City',
         ])->assertRedirect(route('cart.index'))
             ->assertSessionHas('status', 'Order #1 placed successfully. It is pending staff confirmation. Staff will confirm the shipping fee before accepting your order.');
+
+        $this->assertDatabaseHas('store_orders', [
+            'customer_email' => 'outside@example.com',
+            'payment_method' => 'gcash',
+        ]);
 
         $order = StoreOrder::query()->firstOrFail();
         $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
@@ -573,6 +721,8 @@ class CartWorkflowTest extends TestCase
             'customer_email' => 'buyer@example.com',
             'total_amount' => 1000,
             'status' => 'pending',
+            'fulfillment_method' => 'pickup',
+            'delivery_address' => config('store.address'),
         ]);
         $order->items()->create([
             'product_id' => $product->id,
@@ -586,6 +736,7 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Customer Orders')
             ->assertSee('Dashboard Buyer')
             ->assertSee('buyer@example.com')
+            ->assertSee('Pickup at: '.config('store.address'))
             ->assertSee($product->name.' × 1');
     }
 

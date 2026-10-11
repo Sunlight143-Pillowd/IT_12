@@ -100,76 +100,15 @@
                     </section>
 
                     <aside class="h-fit rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <h3 class="text-lg font-black text-gray-900">Checkout</h3>
-                        <div class="mt-4 space-y-2 border-b border-gray-100 pb-4 text-sm">
-                            <div class="flex justify-between gap-4 text-gray-600">
-                                <span>Subtotal</span>
-                                <span>₱<?php echo e(number_format($subtotal, 2)); ?></span>
-                            </div>
-                            <div class="flex justify-between gap-4 text-base font-black text-gray-900">
-                                <span>Total</span>
-                                <span>₱<?php echo e(number_format($subtotal, 2)); ?></span>
-                            </div>
+                        <h3 class="text-lg font-black uppercase tracking-wide text-gray-900">Cart Totals</h3>
+                        <div class="mt-5 flex justify-between border-b border-gray-100 pb-4 text-sm text-gray-600">
+                            <span>Subtotal</span>
+                            <span class="font-semibold text-gray-900">₱<?php echo e(number_format($subtotal, 2)); ?></span>
                         </div>
-
-                        <form method="POST" action="<?php echo e(route('cart.order')); ?>" class="mt-5 space-y-5" x-data="{ fulfillment: '<?php echo e(old('fulfillment_method', 'pickup')); ?>' }">
-                            <?php echo csrf_field(); ?>
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Customer information</legend>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Full name
-                                    <input type="text" name="customer_name" value="<?php echo e(old('customer_name', auth()->user()?->name)); ?>" maxlength="255" required autocomplete="name"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Email
-                                    <input type="email" name="customer_email" value="<?php echo e(old('customer_email', auth()->user()?->email)); ?>" maxlength="255" required autocomplete="email"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Contact number <span class="font-normal text-gray-400">(optional)</span>
-                                    <input type="tel" name="customer_phone" value="<?php echo e(old('customer_phone')); ?>" maxlength="40" autocomplete="tel"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                            </fieldset>
-
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Delivery or pickup</legend>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <?php $__currentLoopData = ['pickup' => 'Store pickup', 'delivery' => 'Delivery']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-3 text-sm font-semibold text-gray-700 has-checked:border-purple-600 has-checked:bg-purple-50 has-checked:text-purple-800">
-                                            <input type="radio" name="fulfillment_method" value="<?php echo e($value); ?>" x-model="fulfillment" <?php if(old('fulfillment_method', 'pickup') === $value): echo 'checked'; endif; ?> class="border-gray-300 text-purple-700 focus:ring-purple-500">
-                                            <?php echo e($label); ?>
-
-                                        </label>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </div>
-                                <label x-cloak x-show="fulfillment === 'delivery'" class="block text-sm font-medium text-gray-700">
-                                    Delivery address
-                                    <textarea name="delivery_address" rows="3" maxlength="2000" :required="fulfillment === 'delivery'" autocomplete="street-address"
-                                              class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500"><?php echo e(old('delivery_address')); ?></textarea>
-                                </label>
-                            </fieldset>
-
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Mode of payment</legend>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <?php $__currentLoopData = ['cash' => 'Cash', 'gcash' => 'GCash', 'bank_transfer' => 'Bank transfer', 'other' => 'Other']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $value => $label): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-3 text-sm font-semibold text-gray-700 has-checked:border-purple-600 has-checked:bg-purple-50 has-checked:text-purple-800">
-                                            <input type="radio" name="payment_method" value="<?php echo e($value); ?>" <?php if(old('payment_method', 'cash') === $value): echo 'checked'; endif; ?> class="border-gray-300 text-purple-700 focus:ring-purple-500">
-                                            <?php echo e($label); ?>
-
-                                        </label>
-                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-                                </div>
-                                <p class="text-xs text-gray-500">Payment is recorded as a preference only; online payment is not yet enabled.</p>
-                            </fieldset>
-
-                            <button type="submit" class="w-full rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                                Place order
-                            </button>
-                            <p class="text-center text-xs leading-relaxed text-gray-500">Your order will be saved as pending until staff confirms it. Stock is deducted after acceptance.</p>
-                        </form>
+                        <a href="<?php echo e(route('checkout.index')); ?>" class="mt-5 inline-flex w-full justify-center rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                            Proceed to checkout
+                        </a>
+                        <p class="mt-3 text-center text-xs leading-relaxed text-gray-500">Review your shipping and billing details before placing the order.</p>
                     </aside>
                 </div>
             <?php endif; ?>
