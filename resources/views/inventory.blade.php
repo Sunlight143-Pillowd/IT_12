@@ -16,6 +16,11 @@
                     {{ session('success') }}
                 </div>
             @endif
+            @if ($errors->any())
+                <div role="alert" class="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {{ $errors->first() }}
+                </div>
+            @endif
 
             <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div class="mb-5">
@@ -113,13 +118,21 @@
                         </form>
 
                         @if ($categoryRecords->isNotEmpty())
-                            <div class="flex flex-wrap gap-3 border-t border-gray-100 pt-4">
+                            <div class="border-t border-gray-100 pt-4">
+                                <form id="category-order-form" method="POST" action="{{ route('inventory.categories.reorder') }}" class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                    @csrf
+                                    <div data-category-order-inputs></div>
+                                    <p class="text-xs text-gray-500">Drag categories into your preferred order, then save.</p>
+                                    <button type="submit" class="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-800 transition hover:bg-purple-100">Save category order</button>
+                                </form>
+                            <div data-category-list class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                 @foreach ($categoryRecords as $category)
-                                    <div class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2">
-                                        <form method="POST" action="{{ route('inventory.categories.update', $category->id) }}" class="flex items-center gap-2">
+                                    <div draggable="true" data-category-row data-category-id="{{ $category->id }}" class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition duration-150 motion-reduce:transition-none">
+                                        <span aria-hidden="true" class="cursor-grab select-none px-1 text-gray-400 active:cursor-grabbing">::</span>
+                                        <form method="POST" action="{{ route('inventory.categories.update', $category->id) }}" class="flex min-w-0 flex-1 items-center gap-2">
                                             @csrf
                                             @method('PATCH')
-                                            <input type="text" name="name" value="{{ $category->name }}" aria-label="Editable category name for {{ $category->name }}" required class="w-36 rounded-lg border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-purple-500">
+                                            <input type="text" name="name" value="{{ $category->name }}" aria-label="Editable category name for {{ $category->name }}" required class="min-w-0 flex-1 rounded-lg border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-purple-500">
                                             <button type="submit" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-800">Save</button>
                                         </form>
                                         <form method="POST" action="{{ route('inventory.categories.destroy', $category->id) }}" onsubmit="return confirm('Delete the {{ $category->name }} category?')">
@@ -130,12 +143,41 @@
                                     </div>
                                 @endforeach
                             </div>
+                            </div>
                         @else
                             <p class="border-t border-gray-100 pt-4 text-sm text-gray-500">No categories yet. Add one to get started.</p>
                         @endif
                     </div>
                 </div>
             </section>
+
+            <form method="GET" action="{{ route('inventory.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
+                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Search inventory
+                    <input type="search" name="search" value="{{ $search }}" placeholder="Product, type, or category" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                </label>
+                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Category
+                    <select name="category" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                        <option value="all">All categories</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category }}" @selected($selectedCategory === $category)>{{ $category }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
+                    Sort stock quantity
+                    <select name="stock_sort" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                        <option value="name" @selected($stockSort === 'name')>Default order</option>
+                        <option value="ascending" @selected($stockSort === 'ascending')>Ascending (lowest first)</option>
+                        <option value="descending" @selected($stockSort === 'descending')>Descending (highest first)</option>
+                    </select>
+                </label>
+                <div class="flex items-end gap-2">
+                    <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800">Apply filters</button>
+                    <a href="{{ route('inventory.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Clear</a>
+                </div>
+            </form>
 
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                 <div class="overflow-x-auto">
@@ -192,4 +234,56 @@
             </div>
         </div>
     </div>
+<script>
+    (() => {
+        const categoryList = document.querySelector('[data-category-list]');
+        const orderForm = document.querySelector('#category-order-form');
+
+        if (!categoryList || !orderForm) {
+            return;
+        }
+
+        let draggedCategory = null;
+
+        categoryList.addEventListener('dragstart', (event) => {
+            const row = event.target.closest('[data-category-row]');
+            if (!row) {
+                return;
+            }
+
+            draggedCategory = row;
+            row.classList.add('opacity-50', 'border-purple-500');
+            event.dataTransfer.effectAllowed = 'move';
+        });
+
+        categoryList.addEventListener('dragover', (event) => {
+            if (!draggedCategory) {
+                return;
+            }
+
+            event.preventDefault();
+            const rows = [...categoryList.querySelectorAll('[data-category-row]:not(.opacity-50)')];
+            const nextRow = rows.find((row) => event.clientY <= row.getBoundingClientRect().top + row.offsetHeight / 2);
+            categoryList.insertBefore(draggedCategory, nextRow ?? null);
+        });
+
+        categoryList.addEventListener('dragend', () => {
+            draggedCategory?.classList.remove('opacity-50', 'border-purple-500');
+            draggedCategory = null;
+        });
+
+        orderForm.addEventListener('submit', () => {
+            const inputs = orderForm.querySelector('[data-category-order-inputs]');
+            inputs.replaceChildren();
+
+            categoryList.querySelectorAll('[data-category-row]').forEach((row) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'category_ids[]';
+                input.value = row.dataset.categoryId;
+                inputs.append(input);
+            });
+        });
+    })();
+</script>
 </x-app-layout>

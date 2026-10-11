@@ -35,14 +35,14 @@ class DatabaseSeeder extends Seeder
         );
 
         $products = [
-            ['name' => 'Boss Strike ITX', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 54999, 'stock_quantity' => 14, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
-            ['name' => 'Boss Vanguard Mid', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 74999, 'stock_quantity' => 11, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
-            ['name' => 'Boss Apex 4K', 'type' => 'desktop', 'category' => 'Gaming', 'price' => 119999, 'stock_quantity' => 7, 'low_stock_threshold' => 5, 'stock_location' => 'store'],
-            ['name' => 'Boss Nomad 15', 'type' => 'laptop', 'category' => 'Thin & Light', 'price' => 69999, 'stock_quantity' => 8, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
-            ['name' => 'Boss Overclock 16', 'type' => 'laptop', 'category' => 'Performance', 'price' => 94999, 'stock_quantity' => 6, 'low_stock_threshold' => 5, 'stock_location' => 'store'],
-            ['name' => 'Boss Mechanical Keyboard', 'type' => 'accessory', 'category' => 'Peripherals', 'price' => 3499, 'stock_quantity' => 18, 'low_stock_threshold' => 5, 'stock_location' => 'store'],
-            ['name' => 'Boss Wireless Mouse', 'type' => 'accessory', 'category' => 'Peripherals', 'price' => 2299, 'stock_quantity' => 27, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse'],
-            ['name' => '27\" 1440p Monitor', 'type' => 'accessory', 'category' => 'Displays', 'price' => 12999, 'stock_quantity' => 4, 'low_stock_threshold' => 5, 'stock_location' => 'store'],
+            ['name' => 'Boss Strike ITX', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 54999, 'stock_quantity' => 14, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse', 'image_path' => 'products/3N2lr3q3LeDrWS8NQoGsPHmtcMC84Ji69Gk3q0LH.jpg'],
+            ['name' => 'Boss Vanguard Mid', 'type' => 'desktop', 'category' => 'Ready to Ship', 'price' => 74999, 'stock_quantity' => 11, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse', 'image_path' => 'categories/1jTumgBf3ozP25LWEDSI8meNgdhwCLnddeSknYNq.jpg'],
+            ['name' => 'Boss Apex 4K', 'type' => 'desktop', 'category' => 'Gaming', 'price' => 119999, 'stock_quantity' => 7, 'low_stock_threshold' => 5, 'stock_location' => 'store', 'image_path' => 'products/CxNOoMnARYkrQiwRf9wploW5lXIUULzImvPl7Kwl.jpg'],
+            ['name' => 'Boss Nomad 15', 'type' => 'laptop', 'category' => 'Thin & Light', 'price' => 69999, 'stock_quantity' => 8, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse', 'image_path' => 'products/NDTThhwZdO1YBxrgiFyND1l5s0jXp2e46itvy2rS.jpg'],
+            ['name' => 'Boss Overclock 16', 'type' => 'laptop', 'category' => 'Performance', 'price' => 94999, 'stock_quantity' => 6, 'low_stock_threshold' => 5, 'stock_location' => 'store', 'image_path' => 'products/kAYE23KfKnWOmdzzau3pcggfvcJnGeIOUTjRqSC4.jpg'],
+            ['name' => 'Boss Mechanical Keyboard', 'type' => 'accessory', 'category' => 'Peripherals', 'price' => 3499, 'stock_quantity' => 18, 'low_stock_threshold' => 5, 'stock_location' => 'store', 'image_path' => 'products/vgolPDjGOgGZ04u84typwgUblOjLpu6OzbznFuqf.jpg'],
+            ['name' => 'Boss Wireless Mouse', 'type' => 'accessory', 'category' => 'Peripherals', 'price' => 2299, 'stock_quantity' => 27, 'low_stock_threshold' => 5, 'stock_location' => 'warehouse', 'image_path' => 'products/GukOLwKANPFr38OfF8QMj11Pv62LUKK49ochNKW1.jpg'],
+            ['name' => '27\" 1440p Monitor', 'type' => 'accessory', 'category' => 'Displays', 'price' => 12999, 'stock_quantity' => 4, 'low_stock_threshold' => 5, 'stock_location' => 'store', 'image_path' => 'products/RcaZjdmeTQrLV53IIIFKbSliPK2l2tqLl1G6Nlsc.jpg'],
         ];
 
         foreach ($products as $product) {
@@ -52,13 +52,13 @@ class DatabaseSeeder extends Seeder
             );
 
             $slug = Str::slug($product['name']);
-            $productExists = Product::query()
+            $productRecord = Product::query()
                 ->where('slug', $slug)
                 ->orWhere('name', $product['name'])
-                ->exists();
+                ->first();
 
-            if (! $productExists) {
-                Product::create([
+            if (! $productRecord) {
+                $productRecord = Product::create([
                     'name' => $product['name'],
                     'slug' => $slug,
                     'type' => $product['type'],
@@ -69,7 +69,12 @@ class DatabaseSeeder extends Seeder
                     'stock_location' => $product['stock_location'],
                     'description' => 'System inventory item',
                     'is_active' => true,
+                    'image_path' => $product['image_path'],
                 ]);
+            }
+
+            if (! $productRecord->image_path) {
+                $productRecord->update(['image_path' => $product['image_path']]);
             }
         }
     }

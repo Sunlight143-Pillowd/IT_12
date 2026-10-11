@@ -17,9 +17,9 @@ Route::get('/desktops', [HomeController::class, 'desktops'])->name('store.deskto
 Route::get('/laptops', [HomeController::class, 'laptops'])->name('store.laptops');
 Route::get('/accessories', [HomeController::class, 'accessories'])->name('store.accessories');
 Route::get('/categories', [HomeController::class, 'categories'])->name('store.categories');
+Route::get('/categories/{categorySlug}', [HomeController::class, 'category'])->name('store.category');
 Route::get('/special-offers', [HomeController::class, 'specialOffers'])->name('store.special-offers');
 Route::get('/top-selling', [HomeController::class, 'topSelling'])->name('store.top-selling');
-Route::get('/build-pc', [PcBuildController::class, 'customerIndex'])->name('buildpc.customer');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
 Route::get('/checkout', [CartController::class, 'checkout'])->name('checkout.index');
 Route::post('/checkout', [CartController::class, 'placeOrder'])->name('checkout.place-order');
@@ -32,11 +32,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/dashboard/orders/{storeOrder}/accept', [DashboardController::class, 'acceptOrder'])->name('dashboard.orders.accept');
     Route::post('/dashboard/orders/{storeOrder}/shipping-fee', [DashboardController::class, 'updateShippingFee'])->name('dashboard.orders.shipping-fee');
+    Route::patch('/dashboard/orders/{storeOrder}', [DashboardController::class, 'updateAcceptedOrder'])->name('dashboard.orders.update');
     Route::patch('/dashboard/customer-builds/{pcBuild}', [PcBuildController::class, 'updateCustomerBuild'])->name('dashboard.customer-builds.update');
     Route::get('/dashboard/inventory', [InventoryController::class, 'index'])->name('inventory.index');
     Route::post('/dashboard/inventory', [InventoryController::class, 'store'])->name('inventory.store');
     Route::post('/dashboard/inventory/categories', [CategoryController::class, 'store'])->name('inventory.categories.store');
     Route::patch('/dashboard/inventory/categories/{category}', [CategoryController::class, 'update'])->name('inventory.categories.update');
+    Route::post('/dashboard/inventory/categories/order', [CategoryController::class, 'reorder'])->name('inventory.categories.reorder');
     Route::delete('/dashboard/inventory/categories/{category}', [CategoryController::class, 'destroy'])->name('inventory.categories.destroy');
     Route::post('/dashboard/inventory/categories/{categorySlug}/image', [CategoryController::class, 'uploadImage'])->name('inventory.categories.image');
     Route::post('/dashboard/homepage-images/{imageKey}', [CategoryController::class, 'uploadHomepageImage'])->name('homepage-images.upload');
@@ -67,6 +69,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::get('/build-pc', [PcBuildController::class, 'customerIndex'])->name('buildpc.customer');
     Route::get('/build-pc/{pcBuild}/edit', [PcBuildController::class, 'customerEdit'])->name('buildpc.customer.edit');
     Route::patch('/build-pc/{pcBuild}', [PcBuildController::class, 'update'])->name('buildpc.customer.update');
     Route::post('/build-pc', [PcBuildController::class, 'storeCustomerBuild'])->name('buildpc.customer.store');

@@ -11,22 +11,6 @@
                 display: none !important;
             }
 
-            @media (min-width: 1280px) {
-                .storefront-desktop-navigation {
-                    display: flex !important;
-                }
-
-                .storefront-menu-toggle,
-                .storefront-responsive-navigation {
-                    display: none !important;
-                }
-            }
-
-            @media (max-width: 1279px) {
-                .storefront-desktop-navigation {
-                    display: none !important;
-                }
-            }
         </style>
     </head>
     <body class="bg-white text-gray-900 antialiased">
@@ -46,9 +30,9 @@
             </div>
         </div>
 
-        <header x-data="{ mobileMenuOpen: false }" class="border-b border-gray-200 bg-white">
-            <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-4">
-                <a href="<?php echo e(url('/')); ?>" class="flex min-w-0 items-center gap-2" aria-label="Davao Boss Computer home">
+        <header class="sticky top-0 z-50 border-b border-gray-200 bg-white">
+            <div class="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-x-3 px-4">
+                <a href="<?php echo e(url('/')); ?>" class="flex min-w-0 shrink-0 items-center gap-2" aria-label="Davao Boss Computer home">
                     <?php if (isset($component)) { $__componentOriginal8892e718f3d0d7a916180885c6f012e7 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal8892e718f3d0d7a916180885c6f012e7 = $attributes; } ?>
 <?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.application-logo','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? $attributes->all() : [])); ?>
@@ -71,15 +55,29 @@
 <?php endif; ?>
                 </a>
 
-                <nav class="storefront-desktop-navigation hidden items-center gap-5 text-xs font-bold tracking-wide text-gray-800 xl:flex">
-                    <a href="<?php echo e(route('store.desktops')); ?>" class="hover:text-purple-700">DESKTOPS</a>
-                    <a href="<?php echo e(route('store.laptops')); ?>" class="hover:text-purple-700">LAPTOPS</a>
-                    <a href="<?php echo e(route('store.categories')); ?>" class="hover:text-purple-700">CATEGORIES</a>
-                    <a href="<?php echo e(route('store.top-selling')); ?>" class="hover:text-purple-700">TOP SELLING</a>
-                    <a href="<?php echo e(route('buildpc.customer')); ?>" class="hover:text-purple-700">BUILD PC</a>
-                    <a href="<?php echo e(route('store.special-offers')); ?>" class="text-purple-700 hover:text-purple-800">OFFERS</a>
+                <nav aria-label="Product navigation" class="order-3 flex w-full flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 py-2 text-xs font-bold tracking-wide text-gray-800 xl:order-none xl:w-auto xl:flex-nowrap xl:gap-5 xl:border-0 xl:py-0">
+                    <a href="<?php echo e(route('store.desktops')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-700">DESKTOPS</a>
+                    <a href="<?php echo e(route('store.laptops')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-700">LAPTOPS</a>
+                    <div class="group relative shrink-0">
+                        <a href="<?php echo e(route('store.categories')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500" aria-haspopup="true">CATEGORIES</a>
+                        <div class="invisible absolute left-0 top-full z-50 mt-2 max-h-72 min-w-52 translate-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                            <?php $__empty_1 = true; $__currentLoopData = $navigationCategories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <a href="<?php echo e(route('store.category', ['categorySlug' => $category->slug])); ?>" class="block whitespace-nowrap px-4 py-2 text-sm font-medium tracking-normal text-gray-700 transition hover:bg-purple-50 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700 focus:outline-none">
+                                    <?php echo e($category->name); ?>
+
+                                </a>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <span class="block px-4 py-2 text-sm font-normal tracking-normal text-gray-500">No categories available</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <a href="<?php echo e(route('store.top-selling')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-700">TOP SELLING</a>
                     <?php if(auth()->guard()->check()): ?>
-                        <a href="<?php echo e(route('dashboard')); ?>" class="hover:text-purple-600"><?php echo e(Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS'); ?></a>
+                        <a href="<?php echo e(route('buildpc.customer')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-700">BUILD PC</a>
+                    <?php endif; ?>
+                    <a href="<?php echo e(route('store.special-offers')); ?>" class="shrink-0 whitespace-nowrap text-purple-700 hover:text-purple-800">OFFERS</a>
+                    <?php if(auth()->guard()->check()): ?>
+                        <a href="<?php echo e(route('dashboard')); ?>" class="shrink-0 whitespace-nowrap hover:text-purple-600"><?php echo e(Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS'); ?></a>
                     <?php endif; ?>
                 </nav>
 
@@ -126,23 +124,8 @@
                             </div>
                         </div>
                     <?php endif; ?>
-                    <button type="button" @click="mobileMenuOpen = !mobileMenuOpen" :aria-expanded="mobileMenuOpen.toString()" aria-controls="product-navigation" aria-label="Toggle product navigation" class="storefront-menu-toggle inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-700 hover:bg-gray-50 xl:hidden">
-                        <svg x-show="!mobileMenuOpen" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                        <svg x-show="mobileMenuOpen" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" d="m6 6 12 12M18 6 6 18"></path></svg>
-                    </button>
                 </div>
             </div>
-
-            <nav id="product-navigation" x-show="mobileMenuOpen" x-cloak aria-label="Product navigation" class="storefront-responsive-navigation border-t border-gray-100 bg-white px-4 py-3 xl:hidden">
-                <div class="mx-auto grid max-w-7xl gap-1 sm:grid-cols-2">
-                    <a href="<?php echo e(route('store.desktops')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Desktops</a>
-                    <a href="<?php echo e(route('store.laptops')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Laptops</a>
-                    <a href="<?php echo e(route('store.categories')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Categories</a>
-                    <a href="<?php echo e(route('store.top-selling')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Top Selling</a>
-                    <a href="<?php echo e(route('buildpc.customer')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Build PC</a>
-                    <a href="<?php echo e(route('store.special-offers')); ?>" class="rounded-lg px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-purple-50">Special offers</a>
-                </div>
-            </nav>
         </header>
 
         <main>

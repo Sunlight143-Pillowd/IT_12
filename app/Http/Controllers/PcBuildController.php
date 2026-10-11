@@ -10,6 +10,7 @@ use App\Services\PcBuildService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PcBuildController extends Controller
@@ -25,7 +26,7 @@ class PcBuildController extends Controller
             ->get();
         $customerBuildManagement = PcBuild::query()
             ->whereNotNull('user_id')
-            ->with('items.product')
+            ->with(['items.product', 'user'])
             ->latest()
             ->get();
 
@@ -35,7 +36,7 @@ class PcBuildController extends Controller
             'builds' => $builds,
             'customerBuildManagement' => $customerBuildManagement,
             'buildStatusOptions' => [
-                'pending' => ['accepted', 'cancelled'],
+                'pending' => ['cancelled'],
                 'accepted' => ['building', 'cancelled'],
                 'building' => ['testing', 'cancelled'],
                 'testing' => ['ready', 'cancelled'],
@@ -58,8 +59,6 @@ class PcBuildController extends Controller
 
     public function customerIndex(): View
     {
-        $products = $this->pcBuildService->availableProducts();
-
         $builds = auth()->check()
             ? PcBuild::query()
                 ->where('user_id', auth()->id())
@@ -67,6 +66,7 @@ class PcBuildController extends Controller
                 ->latest()
                 ->get()
             : collect();
+        $products = $this->pcBuildService->availableProducts();
 
         return view('store.build-pc', [
             'builds' => $builds,
@@ -80,12 +80,50 @@ class PcBuildController extends Controller
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:150'],
             'customer_email' => ['nullable', 'email', 'max:150'],
-            'items' => ['required', 'array'],
-            'items.*' => ['array'],
-            'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'components' => ['required', 'array:cpu,motherboard,gpu,ram,storage,power_supply,case,cpu_cooler'],
+            'components.*' => ['nullable', 'integer', 'exists:products,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
         abort_unless($request->user() instanceof User, 401);
+        $componentGroups = $this->pcBuildService->componentGroups();
+        $products = $this->pcBuildService->availableProducts()->keyBy('id');
+        $componentNotes = collect($validated['components'])
+            ->map(function (int|string|null $productId, string $component) use ($componentGroups, $products): ?string {
+                if ($productId === null) {
+                    return null;
+                }
+
+                $product = $products->get((int) $productId);
+
+                if ($product === null || $this->pcBuildService->componentGroupForProduct($product) !== $component) {
+                    throw ValidationException::withMessages([
+                        'components.'.$component => ['Select an available '.$componentGroups[$component].' from the list.'],
+                    ]);
+                }
+
+                return $componentGroups[$component].': '.$product->name;
+            })
+            ->filter()
+            ->values();
+
+        if ($componentNotes->isEmpty()) {
+            throw ValidationException::withMessages([
+                'components' => ['Select at least one component for your build request.'],
+            ]);
+        }
+
+        $additionalNotes = trim((string) ($validated['notes'] ?? ''));
+        $validated['notes'] = $componentNotes
+            ->when($additionalNotes !== '', fn ($lines) => $lines->push('Additional notes: '.$additionalNotes))
+            ->implode("\n");
+
+        if (mb_strlen($validated['notes']) > 2000) {
+            throw ValidationException::withMessages([
+                'notes' => ['The combined component details must not exceed 2,000 characters.'],
+            ]);
+        }
+
         $build = $this->pcBuildService->createCustomerBuild($request->user(), $validated);
 
         return redirect()->route('buildpc.customer')->with('success', 'Build '.$build->build_number.' submitted. You can follow its status here and in your dashboard.');
@@ -98,6 +136,7 @@ class PcBuildController extends Controller
 
         $validated = $request->validate([
             'status' => ['nullable', 'in:pending,accepted,building,testing,ready,completed,cancelled'],
+            'notes' => ['nullable', 'string', 'max:2000'],
             'product_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -105,6 +144,10 @@ class PcBuildController extends Controller
 
         if (! empty($validated['status']) && $validated['status'] !== $pcBuild->status) {
             $this->pcBuildService->updateCustomerBuildStatus($pcBuild, $validated['status']);
+        }
+
+        if (array_key_exists('notes', $validated)) {
+            $pcBuild->update(['notes' => trim((string) $validated['notes']) ?: null]);
         }
 
         $photoColumns = [
@@ -161,7 +204,9 @@ class PcBuildController extends Controller
 
         foreach ($pcBuild->items as $item) {
             $group = $this->pcBuildService->componentGroupForProduct($item->product);
-            $selectedProducts[$group ?? 'other'] = $item->product_id;
+            if ($group !== null) {
+                $selectedProducts[$group] = $item->product_id;
+            }
         }
 
         return view('build-pc-edit', [
@@ -188,7 +233,9 @@ class PcBuildController extends Controller
 
         foreach ($pcBuild->items as $item) {
             $group = $this->pcBuildService->componentGroupForProduct($item->product);
-            $selectedProducts[$group ?? 'other'] = $item->product_id;
+            if ($group !== null) {
+                $selectedProducts[$group] = $item->product_id;
+            }
         }
 
         return view('store.build-pc-edit', [
@@ -250,7 +297,7 @@ class PcBuildController extends Controller
                 ->filter(function ($product) use ($type): bool {
                     $group = $this->pcBuildService->componentGroupForProduct($product);
 
-                    return $type === 'other' ? $group === 'other' : $group === $type;
+                    return $group === $type;
                 })
                 ->values();
         }

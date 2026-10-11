@@ -33,16 +33,16 @@
 
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                    <article class="relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:border-purple-600 hover:shadow-md">
-                        <a href="<?php echo e($category['route']); ?>" class="block">
+                    <article class="group relative rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition duration-200 motion-reduce:transition-none hover:-translate-y-1 hover:border-purple-600 hover:shadow-lg">
+                        <a href="<?php echo e($category['route']); ?>" class="block rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-purple-600">
                             <div class="relative mb-4 flex h-20 items-center justify-center overflow-hidden rounded-lg bg-gray-100 text-[11px] font-semibold uppercase tracking-[0.2em] text-gray-400">
                                 <?php if($category['image_path']): ?>
-                                    <img src="<?php echo e(asset('storage/'.$category['image_path'])); ?>" alt="<?php echo e($category['label']); ?>" class="h-full w-full object-contain">
+                                    <img src="<?php echo e(asset('storage/'.$category['image_path'])); ?>" alt="<?php echo e($category['label']); ?>" class="h-full w-full object-contain transition duration-200 motion-reduce:transition-none group-hover:scale-105">
                                 <?php else: ?>
                                     [ Category ]
                                 <?php endif; ?>
                             </div>
-                            <h3 class="text-lg font-bold text-gray-900"><?php echo e($category['label']); ?></h3>
+                            <h3 class="text-lg font-bold text-gray-900 transition-colors group-hover:text-purple-700"><?php echo e($category['label']); ?></h3>
                             <p class="mt-2 text-sm text-gray-500">Explore available products in this category.</p>
                         </a>
                     </article>

@@ -17,7 +17,7 @@ return new class extends Migration
                     Current_Stock = Current_Stock + NEW.Quantity,
                     last_reorder_date = NEW.Date_Received,
                     Notification = CASE
-                        WHEN (Current_Stock + NEW.Quantity) <= COALESCE(reorder_level, 10)
+                        WHEN (Current_Stock + NEW.Quantity) <= 10
                         THEN \'Low Stock\'
                         ELSE NULL
                     END

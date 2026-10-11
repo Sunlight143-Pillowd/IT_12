@@ -1,8 +1,14 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('POS Transactions') }}
-        </h2>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                {{ __('POS Transactions') }}
+            </h2>
+
+            <a href="{{ route('dashboard') }}" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-600 hover:text-purple-600">
+                {{ __('Back to Dashboard') }}
+            </a>
+        </div>
     </x-slot>
 
     <div class="py-6">
@@ -31,7 +37,7 @@
                             Receipts ({{ $recentSales->count() }})
                         </button>
                         <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="builds" aria-pressed="false">
-                            Computer Builds ({{ $recentBuilds->count() }})
+                            Computer Build Orders ({{ $recentBuilds->count() }})
                         </button>
                         <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="invoices" aria-pressed="false">
                             Supplier Invoices ({{ $recentStockIns->count() }})

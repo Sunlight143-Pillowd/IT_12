@@ -383,7 +383,6 @@ class CartWorkflowTest extends TestCase
         $this->post(route('checkout.place-order'), [
             'first_name' => 'Checkout',
             'last_name' => 'Customer',
-            'customer_company' => 'Example Company',
             'customer_email' => 'checkout@example.com',
             'customer_phone' => '09170000000',
             'payment_method' => 'gcash',
@@ -397,7 +396,7 @@ class CartWorkflowTest extends TestCase
             'customer_name' => 'Checkout Customer',
             'customer_email' => 'checkout@example.com',
             'customer_phone' => '09170000000',
-            'customer_company' => 'Example Company',
+            'customer_company' => null,
             'billing_address' => config('store.address'),
             'payment_method' => 'gcash',
             'fulfillment_method' => 'pickup',
@@ -687,7 +686,7 @@ class CartWorkflowTest extends TestCase
         $this->assertSame([$product->id => 2], session('cart'));
     }
 
-    public function test_order_requires_customer_name_and_valid_email(): void
+    public function test_order_requires_customer_name_and_rejects_invalid_email(): void
     {
         $product = Product::factory()->create(['stock_quantity' => 1]);
         $this->post(route('cart.items.store', $product));
@@ -699,6 +698,36 @@ class CartWorkflowTest extends TestCase
             ->assertSessionHasErrors(['customer_name', 'customer_email']);
 
         $this->assertDatabaseCount('store_orders', 0);
+    }
+
+    public function test_checkout_succeeds_without_an_email_address(): void
+    {
+        $product = Product::factory()->create(['stock_quantity' => 1]);
+        $this->post(route('cart.items.store', $product));
+
+        $this->get(route('checkout.index'))
+            ->assertSee('(optional)')
+            ->assertDontSee('Company name');
+
+        $this->post(route('checkout.place-order'), [
+            'first_name' => 'No',
+            'last_name' => 'Email',
+            'customer_email' => '',
+            'customer_phone' => '09170000000',
+            'payment_method' => 'cash',
+            'fulfillment_method' => 'pickup',
+            'shipping_zone' => '',
+        ])->assertRedirect(route('cart.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('store_orders', [
+            'customer_name' => 'No Email',
+            'customer_email' => null,
+            'customer_phone' => '09170000000',
+            'customer_company' => null,
+            'status' => 'pending',
+        ]);
+        $this->assertSame([], session('cart', []));
     }
 
     public function test_order_cannot_be_placed_when_the_cart_is_empty(): void
@@ -818,6 +847,73 @@ class CartWorkflowTest extends TestCase
             'employee_id' => $employee->id,
         ]);
         $this->assertSame(0, $product->fresh()->stock_quantity);
+    }
+
+    public function test_accepted_order_details_and_shipping_fee_remain_editable_for_staff(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $regularUser = User::factory()->create();
+        $product = Product::factory()->create(['price' => 800, 'stock_quantity' => 2]);
+        $order = StoreOrder::create([
+            'customer_name' => 'Accepted Buyer',
+            'customer_email' => 'accepted@example.com',
+            'customer_phone' => '09170000000',
+            'total_amount' => 800,
+            'status' => 'pending',
+            'fulfillment_method' => 'delivery',
+            'shipping_zone' => 'outside_davao',
+        ]);
+        $order->items()->create([
+            'product_id' => $product->id,
+            'product_name' => $product->name,
+            'quantity' => 1,
+            'unit_price' => 800,
+            'subtotal' => 800,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.orders.shipping-fee', $order), ['shipping_fee' => 100])
+            ->assertRedirect(route('dashboard'));
+        $this->actingAs($admin)
+            ->post(route('dashboard.orders.accept', $order))
+            ->assertRedirect(route('dashboard'));
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertSee('Edit accepted order');
+
+        $this->actingAs($admin)
+            ->patch(route('dashboard.orders.update', $order), [
+                'customer_name' => 'Updated Buyer',
+                'customer_email' => '',
+                'customer_phone' => '09220000000',
+                'delivery_address' => 'Updated delivery address',
+            ])
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHasNoErrors();
+
+        $order->refresh();
+        $this->assertSame('accepted', $order->status);
+        $this->assertSame('Updated Buyer', $order->customer_name);
+        $this->assertNull($order->customer_email);
+        $this->assertSame('Updated delivery address', $order->delivery_address);
+        $this->assertDatabaseHas('sales', [
+            'store_order_id' => $order->id,
+            'customer_name' => 'Updated Buyer',
+            'total_amount' => 900,
+            'shipping_fee' => 100,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.orders.shipping-fee', $order), ['shipping_fee' => 175])
+            ->assertRedirect(route('dashboard'));
+        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'status' => 'accepted', 'total_amount' => 975]);
+        $this->assertDatabaseHas('sales', ['store_order_id' => $order->id, 'total_amount' => 975, 'shipping_fee' => 175]);
+
+        $this->actingAs($regularUser)
+            ->patch(route('dashboard.orders.update', $order), ['customer_name' => 'Unauthorized'])
+            ->assertForbidden();
+        $this->assertDatabaseHas('store_orders', ['id' => $order->id, 'customer_name' => 'Updated Buyer']);
     }
 
     public function test_order_is_not_accepted_when_acceptance_cannot_fulfil_the_stock(): void

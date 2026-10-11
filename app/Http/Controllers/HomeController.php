@@ -38,70 +38,7 @@ class HomeController extends Controller
 
     private function categoryRouteFor(string $category): string
     {
-        $normalized = strtolower(trim($category));
-        $normalized = preg_replace('/\s+/', ' ', $normalized) ?? $normalized;
-
-        $routeMap = [
-            'custom build' => ['route' => 'store.desktops', 'filter' => 'all'],
-            'gaming' => ['route' => 'store.desktops', 'filter' => 'gaming'],
-            'ready to ship' => ['route' => 'store.desktops', 'filter' => 'ready-to-ship'],
-            'ready-to-ship' => ['route' => 'store.desktops', 'filter' => 'ready-to-ship'],
-            'workstation' => ['route' => 'store.desktops', 'filter' => 'workstation'],
-            'thin & light' => ['route' => 'store.laptops', 'filter' => 'thin-and-light'],
-            'thin-and-light' => ['route' => 'store.laptops', 'filter' => 'thin-and-light'],
-            'performance' => ['route' => 'store.laptops', 'filter' => 'performance'],
-            'gpu' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'psu' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'storage' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'networking' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'fan' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'fans' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'graphics card' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'graphics cards' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'cpu' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'case' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'cpu cooler' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'ssd' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'ram' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'memory modules' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'power supply' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'power supplies' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'motherboard' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'mother board' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'motherboards' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'network attached storage' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'network attached storage(nas)' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'printers' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'routers' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'processors' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'hard drives' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'flash drives' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'external hard drives' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'external ssd' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'micro sd' => ['route' => 'store.accessories', 'filter' => 'components'],
-            'monitor' => ['route' => 'store.accessories', 'filter' => 'displays'],
-            'monitors' => ['route' => 'store.accessories', 'filter' => 'displays'],
-            'display' => ['route' => 'store.accessories', 'filter' => 'displays'],
-            'displays' => ['route' => 'store.accessories', 'filter' => 'displays'],
-            'mouse' => ['route' => 'store.accessories', 'filter' => 'peripherals'],
-            'mice' => ['route' => 'store.accessories', 'filter' => 'peripherals'],
-            'keyboard' => ['route' => 'store.accessories', 'filter' => 'peripherals'],
-            'keyboards' => ['route' => 'store.accessories', 'filter' => 'peripherals'],
-            'peripherals' => ['route' => 'store.accessories', 'filter' => 'peripherals'],
-            'speaker' => ['route' => 'store.accessories', 'filter' => 'audio'],
-            'speakers' => ['route' => 'store.accessories', 'filter' => 'audio'],
-            'audio' => ['route' => 'store.accessories', 'filter' => 'audio'],
-            'headset' => ['route' => 'store.accessories', 'filter' => 'audio'],
-            'headsets' => ['route' => 'store.accessories', 'filter' => 'audio'],
-        ];
-
-        if (isset($routeMap[$normalized])) {
-            $config = $routeMap[$normalized];
-
-            return route($config['route'], ['filter' => $config['filter']]);
-        }
-
-        return route('store.desktops', ['filter' => 'gaming']);
+        return route('store.category', ['categorySlug' => Str::slug($category)]);
     }
 
     private function categoryDisplayName(string $category): string
@@ -191,6 +128,16 @@ class HomeController extends Controller
                 ])
                 ->all()
             : [];
+        $categoryOrder = Schema::hasTable('categories')
+            ? Category::query()
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->pluck('sort_order', 'slug')
+            : collect();
+        $categoryCards = collect($categoryCards)
+            ->sortBy(fn (array $category): int => (int) $categoryOrder->get($category['slug'], PHP_INT_MAX))
+            ->values()
+            ->all();
 
         $specialOffers = Schema::hasTable('products')
             ? Product::query()
@@ -246,7 +193,6 @@ class HomeController extends Controller
             'type' => 'desktop',
             'filters' => [
                 'all' => 'All Desktops',
-                'ready-to-ship' => 'Ready to Ship',
                 'gaming' => 'Gaming',
                 'workstation' => 'Workstation',
             ],
@@ -367,9 +313,11 @@ class HomeController extends Controller
                 ->toArray()
             : [];
 
-        $categoryImages = Schema::hasTable('categories')
-            ? Category::query()->pluck('image_path', 'slug')
+        $categoryRecords = Schema::hasTable('categories')
+            ? Category::query()->orderBy('sort_order')->orderBy('id')->get()
             : collect();
+        $categoryImages = $categoryRecords->pluck('image_path', 'slug');
+        $categoryOrder = $categoryRecords->pluck('sort_order', 'slug');
 
         $categoryLinks = array_map(function ($category) use ($categoryImages) {
             $slug = Str::slug($category);
@@ -382,8 +330,48 @@ class HomeController extends Controller
                 'image_path' => $categoryImages->get($slug),
             ];
         }, $categories);
+        $categoryLinks = collect($categoryLinks)
+            ->sortBy(fn (array $category): int => (int) $categoryOrder->get($category['slug'], PHP_INT_MAX))
+            ->values()
+            ->all();
 
         return view('store.categories', ['categories' => $categoryLinks]);
+    }
+
+    public function category(string $categorySlug): View
+    {
+        $category = Schema::hasTable('categories')
+            ? Category::query()->where('slug', $categorySlug)->first()
+            : null;
+        $categoryName = $category?->name;
+
+        if ($categoryName === null) {
+            $categoryName = Product::query()
+                ->whereNotNull('category')
+                ->distinct()
+                ->pluck('category')
+                ->first(fn (string $name): bool => Str::slug($name) === $categorySlug);
+        }
+
+        abort_if($categoryName === null, 404);
+
+        $products = Product::query()
+            ->where('is_active', true)
+            ->inStock()
+            ->where('category', $categoryName)
+            ->orderBy('name')
+            ->get();
+        $label = $this->categoryDisplayName($categoryName);
+
+        return view('store.catalog', [
+            'title' => $label,
+            'description' => 'Explore available products in '.$label.'.',
+            'products' => $products,
+            'filter' => 'all',
+            'type' => 'category',
+            'categorySlug' => $categorySlug,
+            'filters' => ['all' => 'All '.$label],
+        ]);
     }
 
     public function specialOffers(): View

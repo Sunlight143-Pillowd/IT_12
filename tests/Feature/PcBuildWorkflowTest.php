@@ -151,6 +151,9 @@ class PcBuildWorkflowTest extends TestCase
         $this->actingAs($user)
             ->get(route('buildpc.index'))
             ->assertOk()
+            ->assertSee('href="'.route('dashboard').'"', false)
+            ->assertSee('border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-600 hover:text-purple-600', false)
+            ->assertDontSee('Other Components')
             ->assertSee('id="build-summary-body"', false)
             ->assertSee("componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));", false)
             ->assertDontSee('name="items[cpu][quantity]"')
@@ -196,18 +199,24 @@ class PcBuildWorkflowTest extends TestCase
             ->assertSee('Build your PC')
             ->assertSee('Build Customer')
             ->assertSee($customer->email)
+            ->assertSee('name="components[cpu]"', false)
+            ->assertSee('name="components[ram]"', false)
             ->assertSee('Build CPU')
-            ->assertSee('Estimated total')
-            ->assertSee('id="build-summary-body"', false)
-            ->assertSee("componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));", false)
+            ->assertSee('Build RAM')
+            ->assertSee('Choose your components')
+            ->assertSee('Submit build request')
+            ->assertDontSee('type="text" name="components[cpu]"', false)
+            ->assertDontSee('Other Components')
+            ->assertDontSee('Estimated total')
             ->assertDontSee('name="items[cpu][quantity]"')
             ->assertDontSee('>Qty<', false);
 
         $this->actingAs($customer)->post(route('buildpc.customer.store'), [
-            'items' => [
-                'cpu' => ['product_id' => $cpu->id, 'quantity' => 8],
-                'ram' => ['product_id' => $ram->id, 'quantity' => 2],
+            'components' => [
+                'cpu' => (string) $cpu->id,
+                'ram' => (string) $ram->id,
             ],
+            'notes' => 'Quiet workstation, budget-conscious.',
         ])->assertRedirect(route('buildpc.customer'));
 
         $build = PcBuild::query()->where('user_id', $customer->id)->firstOrFail();
@@ -215,10 +224,10 @@ class PcBuildWorkflowTest extends TestCase
             'id' => $build->id,
             'customer_name' => 'Build Customer',
             'status' => 'pending',
-            'total_cost' => 15000,
+            'total_cost' => 0,
+            'notes' => "CPU: Build CPU\nRAM: Build RAM\nAdditional notes: Quiet workstation, budget-conscious.",
         ]);
-        $this->assertDatabaseMissing('products', ['category' => 'Custom Build']);
-        $this->assertSame([1, 1], $build->items()->orderBy('id')->pluck('quantity')->all());
+        $this->assertDatabaseCount('pc_build_items', 0);
         $this->assertSame(2, $cpu->fresh()->stock_quantity);
         $this->assertSame(4, $ram->fresh()->stock_quantity);
 
@@ -230,8 +239,10 @@ class PcBuildWorkflowTest extends TestCase
         $this->actingAs($admin)
             ->get(route('buildpc.index'))
             ->assertSee('Customer Build / PC Build Management')
+            ->assertDontSee('Other Components')
             ->assertSee($build->build_number)
-            ->assertSee('Build CPU');
+            ->assertSee('CPU: Build CPU')
+            ->assertSee('RAM: Build RAM');
 
         $this->actingAs($admin)
             ->from(route('buildpc.index'))
@@ -244,20 +255,27 @@ class PcBuildWorkflowTest extends TestCase
 
         $build->refresh();
         $this->assertSame('accepted', $build->status);
-        $this->assertNotNull($build->stock_deducted_at);
+        $this->assertNull($build->stock_deducted_at);
         $this->assertNotNull($build->product_photo_path);
         $this->assertNotNull($build->before_photo_path);
         Storage::disk('public')->assertExists($build->product_photo_path);
         Storage::disk('public')->assertExists($build->before_photo_path);
-        $this->assertSame(1, $cpu->fresh()->stock_quantity);
-        $this->assertSame(3, $ram->fresh()->stock_quantity);
+        $this->assertSame(2, $cpu->fresh()->stock_quantity);
+        $this->assertSame(4, $ram->fresh()->stock_quantity);
+
+        $this->actingAs($admin)
+            ->patch(route('dashboard.customer-builds.update', $build), ['notes' => 'CPU: Admin-edited specification'])
+            ->assertRedirect(route('buildpc.index'))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('accepted', $build->fresh()->status);
+        $this->assertSame('CPU: Admin-edited specification', $build->fresh()->notes);
 
         $this->actingAs($customer)
             ->get(route('dashboard'))
             ->assertSee('My PC Builds')
             ->assertSee($build->build_number)
             ->assertSee('Accepted')
-            ->assertSee('Build CPU')
+            ->assertSee('Admin-edited specification')
             ->assertSee('Product photo');
 
         foreach (['building', 'testing', 'ready', 'completed'] as $status) {
@@ -267,6 +285,43 @@ class PcBuildWorkflowTest extends TestCase
         }
 
         $this->assertDatabaseHas('pc_builds', ['id' => $build->id, 'status' => 'completed']);
+    }
+
+    public function test_customer_cannot_submit_an_empty_build_request(): void
+    {
+        $customer = User::factory()->create();
+
+        $this->actingAs($customer)
+            ->from(route('buildpc.customer'))
+            ->post(route('buildpc.customer.store'), [
+                'customer_name' => $customer->name,
+                'components' => ['cpu' => '', 'ram' => ''],
+            ])
+            ->assertRedirect(route('buildpc.customer'))
+            ->assertSessionHasErrors('components');
+
+        $this->assertDatabaseCount('pc_builds', 0);
+    }
+
+    public function test_customer_cannot_select_a_product_from_the_wrong_component_group(): void
+    {
+        $customer = User::factory()->create();
+        $ram = Product::factory()->create([
+            'name' => 'Wrong slot RAM',
+            'type' => 'ram',
+            'category' => 'RAM',
+            'stock_quantity' => 2,
+        ]);
+
+        $this->actingAs($customer)
+            ->from(route('buildpc.customer'))
+            ->post(route('buildpc.customer.store'), [
+                'components' => ['cpu' => $ram->id],
+            ])
+            ->assertRedirect(route('buildpc.customer'))
+            ->assertSessionHasErrors('components.cpu');
+
+        $this->assertDatabaseCount('pc_builds', 0);
     }
 
     public function test_customer_cannot_change_another_customers_build(): void

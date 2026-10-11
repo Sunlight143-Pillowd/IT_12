@@ -28,7 +28,6 @@ class PcBuildService
             'power_supply' => 'PSU',
             'case' => 'PC Case',
             'cpu_cooler' => 'CPU Cooler',
-            'other' => 'Other Components',
         ];
     }
 
@@ -77,21 +76,9 @@ class PcBuildService
         $category = $aliases[$category] ?? $category;
 
         foreach (array_keys($this->componentGroups()) as $group) {
-            if ($group === 'other') {
-                continue;
-            }
-
             if ($type === $group || $category === $group) {
                 return $group;
             }
-        }
-
-        $otherComponentTypes = ['fan', 'fans', 'networking', 'storage', 'ssd', 'hdd', 'accessory'];
-        $otherComponentCategories = ['component', 'components', 'fan', 'fans', 'networking', 'storage', 'ssd', 'hdd'];
-
-        if (in_array($type, $otherComponentTypes, true)
-            && ($type !== 'accessory' || in_array($category, $otherComponentCategories, true))) {
-            return 'other';
         }
 
         return null;
@@ -99,83 +86,23 @@ class PcBuildService
 
     public function createCustomerBuild(User $user, array $payload): PcBuild
     {
-        $requestedItems = [];
-
-        foreach (($payload['items'] ?? []) as $group => $item) {
-            $productId = (int) ($item['product_id'] ?? 0);
-            if ($productId < 1) {
-                continue;
-            }
-
-            $requestedItems[] = [
-                'group' => (string) $group,
-                'product_id' => $productId,
-                'quantity' => 1,
-            ];
-        }
-
-        if ($requestedItems === []) {
+        $notes = trim((string) ($payload['notes'] ?? ''));
+        if ($notes === '') {
             throw ValidationException::withMessages([
-                'items' => ['Select at least one component to submit your build.'],
+                'components' => ['Select at least one component for your build request.'],
             ]);
         }
 
-        return DB::transaction(function () use ($user, $requestedItems): PcBuild {
-            $products = Product::query()
-                ->whereIn('id', array_column($requestedItems, 'product_id'))
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->keyBy('id');
-
-            $buildItems = [];
-            $total = 0;
-
-            foreach ($requestedItems as $entry) {
-                $product = $products->get($entry['product_id']);
-                if (! $product || ! $product->is_active) {
-                    throw ValidationException::withMessages([
-                        'items' => ['One of the selected products is no longer available.'],
-                    ]);
-                }
-
-                $productGroup = $this->componentGroupForProduct($product);
-                if (($entry['group'] === 'other' && $productGroup !== 'other')
-                    || ($entry['group'] !== 'other' && $entry['group'] !== $productGroup)) {
-                    throw ValidationException::withMessages([
-                        'items' => ["{$product->name} is not available in the selected component category."],
-                    ]);
-                }
-
-                $quantity = $entry['quantity'];
-                if ($quantity < 1 || $this->availableQuantity($product) < $quantity) {
-                    throw ValidationException::withMessages([
-                        'items' => ["{$product->name} does not have enough stock for this build."],
-                    ]);
-                }
-
-                $subtotal = (float) $product->price * $quantity;
-                $buildItems[] = [
-                    'product_id' => $product->id,
-                    'quantity' => $quantity,
-                    'unit_price' => (float) $product->price,
-                    'subtotal' => $subtotal,
-                ];
-                $total += $subtotal;
-            }
-
+        return DB::transaction(function () use ($user, $payload, $notes): PcBuild {
             $build = PcBuild::create([
                 'build_number' => $this->nextBuildNumber(),
                 'customer_name' => trim((string) ($payload['customer_name'] ?? $user->name)),
                 'customer_email' => trim((string) ($payload['customer_email'] ?? $user->email)) ?: $user->email,
                 'user_id' => $user->id,
                 'status' => 'pending',
-                'total_cost' => $total,
+                'total_cost' => 0,
+                'notes' => $notes,
             ]);
-
-            foreach ($buildItems as $item) {
-                $build->items()->create($item);
-            }
 
             return $build->fresh(['items.product']);
         });
@@ -209,7 +136,7 @@ class PcBuildService
                 ->get()
                 ->keyBy('id');
 
-            if ($status === 'accepted' && $lockedBuild->stock_deducted_at === null) {
+            if ($status === 'accepted' && $lockedBuild->stock_deducted_at === null && $quantities->isNotEmpty()) {
                 foreach ($quantities as $productId => $quantity) {
                     $product = $products->get($productId);
                     if (! $product || ! $product->is_active || $this->availableQuantity($product) < $quantity) {

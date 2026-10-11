@@ -45,16 +45,29 @@ class InventoryController extends Controller
     public function index(Request $request): View
     {
         $selectedCategory = trim((string) $request->query('category', ''));
+        $search = trim((string) $request->query('search', ''));
+        $stockSort = $request->query('stock_sort', 'name');
+        $stockSort = in_array($stockSort, ['name', 'ascending', 'descending'], true)
+            ? $stockSort
+            : 'name';
 
         $products = Product::query()
             ->when($selectedCategory !== '' && $selectedCategory !== 'all', function ($query) use ($selectedCategory) {
                 $query->where('category', $selectedCategory);
             })
-            ->orderBy('type')
-            ->orderBy('name')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('type', 'like', '%'.$search.'%')
+                        ->orWhere('category', 'like', '%'.$search.'%');
+                });
+            })
+            ->when($stockSort === 'ascending', fn ($query) => $query->orderBy('stock_quantity')->orderBy('name'))
+            ->when($stockSort === 'descending', fn ($query) => $query->orderByDesc('stock_quantity')->orderBy('name'))
+            ->when($stockSort === 'name', fn ($query) => $query->orderBy('type')->orderBy('name'))
             ->get();
 
-        $categoryRecords = Category::orderBy('name')->get();
+        $categoryRecords = Category::query()->orderBy('sort_order')->orderBy('id')->get();
         $categories = $categoryRecords->pluck('name')->toArray();
         $fallbackCategories = ['GPU', 'CPU', 'Monitor', 'Mouse', 'Keyboard', 'Case', 'Fans', 'CPU Cooler', 'SSD', 'RAM'];
         $categories = array_values(array_unique(array_merge($categories, $fallbackCategories)));
@@ -64,6 +77,8 @@ class InventoryController extends Controller
             'categories' => $categories,
             'categoryRecords' => $categoryRecords,
             'selectedCategory' => $selectedCategory,
+            'search' => $search,
+            'stockSort' => $stockSort,
         ]);
     }
 

@@ -37,7 +37,7 @@
                             <div class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
                                 <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                                     <h1 class="text-xl font-black text-white">Customer Orders</h1>
-                                    <span class="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-200"><?php echo e($storeOrders->count()); ?> order(s)</span>
+                                    <span class="rounded-full bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-200"><?php echo e($totalOrders); ?> order(s)</span>
                                 </div>
                                 <div class="h-[22rem] overflow-auto rounded-lg border border-white/10">
                                     <table class="min-w-[760px] text-left text-sm text-gray-200">
@@ -90,15 +90,15 @@
                                                                     <?php echo csrf_field(); ?>
                                                                     <label class="text-xs text-gray-300">
                                                                         Shipping fee
-                                                                        <input type="number" name="shipping_fee" min="0" max="100000" step="0.01" required
+                                                                        <input type="number" name="shipping_fee" min="0" max="100000" step="0.01" value="<?php echo e($order->shipping_fee); ?>" required
                                                                                class="mt-1 block w-28 rounded-md border-gray-300 text-sm text-gray-900 shadow-sm focus:border-purple-500 focus:ring-purple-500">
                                                                     </label>
-                                                                    <button type="submit" class="rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">Save fee</button>
+                                                                    <button type="submit" class="rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800"><?php echo e($order->status === 'accepted' ? 'Update fee' : 'Confirm fee'); ?></button>
                                                                 </form>
                                                             <?php elseif($order->status === 'pending' && Auth::user()?->canManageOrders()): ?>
-                                                                <form method="POST" action="<?php echo e(route('dashboard.orders.accept', $order)); ?>" class="inline-block">
+                                                                <form method="POST" action="<?php echo e(route('dashboard.orders.accept', $order)); ?>" class="inline-block" onsubmit="const button = this.querySelector('button[type=submit]'); button.disabled = true; button.textContent = 'Accepting...';">
                                                                     <?php echo csrf_field(); ?>
-                                                                    <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">Accept order</button>
+                                                                    <button type="submit" class="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-emerald-800">Accept</button>
                                                                 </form>
                                                             <?php elseif($order->status === 'accepted'): ?>
                                                                 <div class="flex flex-wrap items-center gap-2">
@@ -106,7 +106,38 @@
                                                                     <?php if($order->sale): ?>
                                                                         <a href="<?php echo e(route('pos.receipt', $order->sale)); ?>" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-bold text-gray-700 hover:border-purple-600 hover:text-purple-700">View receipt</a>
                                                                     <?php endif; ?>
+                                                                    <?php if($order->shipping_zone === 'outside_davao' && Auth::user()?->canManageOrders()): ?>
+                                                                        <form method="POST" action="<?php echo e(route('dashboard.orders.shipping-fee', $order)); ?>" class="flex items-end gap-2">
+                                                                            <?php echo csrf_field(); ?>
+                                                                            <label class="text-xs text-gray-300">
+                                                                                Shipping fee
+                                                                                <input type="number" name="shipping_fee" min="0" max="100000" step="0.01" value="<?php echo e($order->shipping_fee); ?>" required
+                                                                                       class="mt-1 block w-28 rounded-md border-gray-300 text-sm text-gray-900 shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                                                            </label>
+                                                                            <button type="submit" class="rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">Update fee</button>
+                                                                        </form>
+                                                                    <?php endif; ?>
                                                                 </div>
+                                                                <details class="mt-2 w-56 rounded-lg border border-white/20 p-2">
+                                                                    <summary class="cursor-pointer text-xs font-bold text-white">Edit accepted order</summary>
+                                                                    <form method="POST" action="<?php echo e(route('dashboard.orders.update', $order)); ?>" class="mt-3 space-y-2">
+                                                                        <?php echo csrf_field(); ?>
+                                                                        <?php echo method_field('PATCH'); ?>
+                                                                        <label class="block text-xs text-gray-300">Customer name
+                                                                            <input type="text" name="customer_name" value="<?php echo e($order->customer_name); ?>" maxlength="255" required class="mt-1 block w-full rounded-md border-gray-300 text-sm text-gray-900">
+                                                                        </label>
+                                                                        <label class="block text-xs text-gray-300">Email (optional)
+                                                                            <input type="email" name="customer_email" value="<?php echo e($order->customer_email); ?>" maxlength="255" class="mt-1 block w-full rounded-md border-gray-300 text-sm text-gray-900">
+                                                                        </label>
+                                                                        <label class="block text-xs text-gray-300">Phone
+                                                                            <input type="tel" name="customer_phone" value="<?php echo e($order->customer_phone); ?>" maxlength="40" class="mt-1 block w-full rounded-md border-gray-300 text-sm text-gray-900">
+                                                                        </label>
+                                                                        <label class="block text-xs text-gray-300">Delivery / pickup address
+                                                                            <textarea name="delivery_address" rows="2" maxlength="2000" class="mt-1 block w-full rounded-md border-gray-300 text-sm text-gray-900"><?php echo e($order->delivery_address); ?></textarea>
+                                                                        </label>
+                                                                        <button type="submit" class="rounded-lg bg-purple-700 px-3 py-2 text-xs font-bold text-white transition hover:bg-purple-800">Save details</button>
+                                                                    </form>
+                                                                </details>
                                                             <?php endif; ?>
                                                         </div>
                                                     </td>
@@ -119,27 +150,27 @@
                                 </div>
                             </div>
 
-                            <div class="flex h-full flex-col rounded-xl border border-white/10 bg-white/5 p-5 backdrop-blur-sm">
-                                <div class="mb-4 flex items-center justify-between">
+                            <div class="flex flex-col rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm sm:p-5 lg:h-full">
+                                <div class="mb-3 flex items-center justify-between lg:mb-4">
                                     <span class="text-sm font-bold uppercase tracking-wide text-purple-300">Today</span>
                                     <span class="rounded-full bg-emerald-500/20 px-2 py-1 text-[10px] font-bold uppercase text-emerald-300">Live</span>
                                 </div>
-                                <div class="grid flex-1 auto-rows-fr grid-cols-2 gap-3">
-                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
-                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Revenue</p>
-                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱<?php echo e(number_format($revenue, 0)); ?></p>
-                                    </div>
-                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
-                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Orders</p>
-                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white"><?php echo e($todayOrders); ?></p>
-                                    </div>
-                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-red-300/30">
-                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Low Stock</p>
-                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-red-400"><?php echo e($lowStock); ?></p>
-                                    </div>
-                                    <div class="flex min-w-0 flex-col justify-center gap-3 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-4 transition-colors hover:border-purple-300/30">
+                                <div class="grid grid-cols-2 gap-2 lg:flex-1 lg:auto-rows-fr lg:gap-3">
+                                    <div class="flex min-w-0 flex-col justify-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-3 transition-colors hover:border-purple-300/30 lg:gap-3 lg:p-4">
                                         <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Sales Today</p>
-                                        <p class="break-words text-2xl font-black leading-none tracking-tight tabular-nums text-white">₱<?php echo e(number_format($todaySales, 0)); ?></p>
+                                        <p class="break-words text-xl font-black leading-tight tracking-tight tabular-nums text-white sm:text-2xl">₱<?php echo e(number_format($todaySales, 0)); ?></p>
+                                    </div>
+                                    <div class="flex min-w-0 flex-col justify-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-3 transition-colors hover:border-purple-300/30 lg:gap-3 lg:p-4">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Pending Orders Today</p>
+                                        <p class="break-words text-xl font-black leading-tight tracking-tight tabular-nums text-white sm:text-2xl"><?php echo e($todayOrders); ?></p>
+                                    </div>
+                                    <div class="flex min-w-0 flex-col justify-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-3 transition-colors hover:border-red-300/30 lg:gap-3 lg:p-4">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Low Stock</p>
+                                        <p class="break-words text-xl font-black leading-tight tracking-tight tabular-nums text-red-400 sm:text-2xl"><?php echo e($lowStock); ?></p>
+                                    </div>
+                                    <div class="flex min-w-0 flex-col justify-center gap-2 rounded-xl border border-white/10 bg-gradient-to-br from-white/10 to-white/[0.03] p-3 transition-colors hover:border-purple-300/30 lg:gap-3 lg:p-4">
+                                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-300">Total Revenue</p>
+                                        <p class="break-words text-xl font-black leading-tight tracking-tight tabular-nums text-white sm:text-2xl">₱<?php echo e(number_format($revenue, 0)); ?></p>
                                     </div>
                                 </div>
                             </div>
@@ -171,6 +202,45 @@
                                 <p class="text-sm text-gray-500">Create custom desktop builds</p>
                             </a>
                         </div>
+                </section>
+
+                <section aria-label="Store summary" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                    <?php $__currentLoopData = [
+                        ['Total Products', $products, 'text-purple-700'],
+                        ['Total Orders', $totalOrders, 'text-gray-900'],
+                        ['Pending Orders', $pendingOrders, 'text-amber-700'],
+                        ['Accepted Orders', $acceptedOrders, 'text-emerald-700'],
+                        ['Low-stock Products', $lowStock, 'text-red-700'],
+                    ]; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as [$label, $count, $color]): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                            <p class="text-xs font-bold uppercase tracking-wide text-gray-500"><?php echo e($label); ?></p>
+                            <p class="mt-2 text-3xl font-black tabular-nums <?php echo e($color); ?>"><?php echo e($count); ?></p>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </section>
+
+                <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-black text-gray-900">Recent customer build requests</h2>
+                            <p class="text-sm text-gray-500"><?php echo e($pendingBuildRequests); ?> pending request(s)</p>
+                        </div>
+                        <a href="<?php echo e(route('buildpc.index')); ?>" class="text-sm font-semibold text-purple-700 hover:underline">Manage requests</a>
+                    </div>
+                    <?php $__empty_1 = true; $__currentLoopData = $recentCustomerBuilds; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $build): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <article class="flex flex-col gap-2 border-t border-gray-100 py-3 first:border-0 first:pt-0 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="font-bold text-gray-900"><?php echo e($build->build_number); ?> · <?php echo e($build->customer_name); ?></p>
+                                <p class="text-xs text-gray-500"><?php echo e($build->user?->email); ?> · <?php echo e($build->created_at->format('M j, Y')); ?></p>
+                                <?php if($build->notes): ?>
+                                    <p class="mt-1 whitespace-pre-line text-sm text-gray-700"><?php echo e($build->notes); ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <span class="w-fit rounded-full px-3 py-1 text-xs font-bold uppercase <?php echo e($build->status === 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'); ?>"><?php echo e(ucfirst($build->status)); ?></span>
+                        </article>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <p class="border-t border-gray-100 pt-3 text-sm text-gray-500">No customer build requests yet.</p>
+                    <?php endif; ?>
                 </section>
 
                 <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -334,6 +404,9 @@
                                 <span class="text-gray-800"><?php echo e($item->product->name); ?> × <?php echo e($item->quantity); ?></span>
                             </div>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        <?php if($build->notes): ?>
+                            <p class="col-span-full whitespace-pre-line text-sm text-gray-700"><?php echo e($build->notes); ?></p>
+                        <?php endif; ?>
                         <div class="text-sm font-black text-gray-900">Total Price: ₱<?php echo e(number_format($build->total_cost, 2)); ?></div>
                     </div>
                     <div class="grid grid-cols-3 gap-2">

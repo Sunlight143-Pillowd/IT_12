@@ -9,10 +9,17 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
      <?php $__env->slot('header', null, []); ?> 
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            <?php echo e(__('POS Transactions')); ?>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                <?php echo e(__('POS Transactions')); ?>
 
-        </h2>
+            </h2>
+
+            <a href="<?php echo e(route('dashboard')); ?>" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-600 hover:text-purple-600">
+                <?php echo e(__('Back to Dashboard')); ?>
+
+            </a>
+        </div>
      <?php $__env->endSlot(); ?>
 
     <div class="py-6">
@@ -43,7 +50,7 @@
                             Receipts (<?php echo e($recentSales->count()); ?>)
                         </button>
                         <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="builds" aria-pressed="false">
-                            Computer Builds (<?php echo e($recentBuilds->count()); ?>)
+                            Computer Build Orders (<?php echo e($recentBuilds->count()); ?>)
                         </button>
                         <button type="button" class="history-tab rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700" data-history-tab="invoices" aria-pressed="false">
                             Supplier Invoices (<?php echo e($recentStockIns->count()); ?>)

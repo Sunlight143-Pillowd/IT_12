@@ -13,10 +13,18 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
      <?php $__env->slot('header', null, []); ?> 
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            <?php echo e($title); ?>
+        <div class="flex flex-wrap items-center justify-between gap-4">
+            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                <?php echo e($title); ?>
 
-        </h2>
+            </h2>
+
+            <?php if($type === 'category'): ?>
+                <a href="<?php echo e(route('store.categories')); ?>" class="inline-flex items-center rounded-lg border border-purple-600 bg-white px-4 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-50">
+                    Back to Categories
+                </a>
+            <?php endif; ?>
+        </div>
      <?php $__env->endSlot(); ?>
 
     <div class="py-4">
@@ -51,12 +59,16 @@
                             'desktop' => 'store.desktops',
                             'laptop' => 'store.laptops',
                             'accessory' => 'store.accessories',
+                            'category' => 'store.category',
                             default => 'store.special-offers',
                         };
+                        $routeParameters = $type === 'category'
+                            ? ['categorySlug' => $categorySlug]
+                            : ($value === 'all' ? [] : ['filter' => $value]);
                     ?>
 
-                    <a href="<?php echo e(route($routeName, $value === 'all' ? [] : ['filter' => $value])); ?>"
-                       class="rounded-full border px-3 py-1.5 text-xs font-semibold <?php echo e($currentFilter === $value ? 'border-purple-600 bg-purple-600 text-white' : 'border-gray-300 text-gray-700 hover:border-purple-400'); ?>">
+                    <a href="<?php echo e(route($routeName, $routeParameters)); ?>"
+                       class="rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors duration-150 motion-reduce:transition-none <?php echo e($currentFilter === $value ? 'border-purple-600 bg-purple-600 text-white' : 'border-gray-300 text-gray-700 hover:border-purple-400'); ?>">
                         <?php echo e($label); ?>
 
                     </a>
@@ -66,7 +78,7 @@
             <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                     <?php ($availableStock = $product->availableStock()); ?>
-                    <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                    <div class="flex h-full flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition duration-200 motion-reduce:transition-none hover:-translate-y-1 hover:shadow-lg">
                         <div data-photo-card class="relative h-52 bg-gray-100">
                             <?php if($product->image_path): ?>
                                 <img src="<?php echo e(asset('storage/'.$product->image_path)); ?>" alt="<?php echo e($product->name); ?>" class="h-full w-full object-contain">

@@ -14,7 +14,9 @@
                 <p class="text-xs font-bold uppercase tracking-[0.2em] text-purple-700">Custom configuration</p>
                 <h1 class="mt-1 text-2xl font-black text-gray-900">Build your PC</h1>
             </div>
-            <a href="<?php echo e(route('dashboard')); ?>" class="text-sm font-semibold text-purple-700 hover:underline">Back to dashboard</a>
+            <a href="<?php echo e(route('dashboard')); ?>" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-600 hover:text-purple-600">
+                Back to dashboard
+            </a>
         </div>
      <?php $__env->endSlot(); ?>
 
@@ -122,7 +124,11 @@
                                             <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase text-purple-800"><?php echo e(ucfirst($build->status)); ?></span>
                                         </div>
                                         <p class="mt-1 text-sm font-semibold text-gray-800"><?php echo e($build->customer_name); ?></p>
+                                        <p class="text-xs text-gray-500"><?php echo e($build->user?->email); ?></p>
                                         <p class="text-xs text-gray-500">Build date: <?php echo e($build->created_at->format('M j, Y')); ?></p>
+                                        <?php if($build->notes): ?>
+                                            <p class="mt-3 whitespace-pre-line rounded-lg bg-purple-50 p-3 text-sm text-gray-700"><?php echo e($build->notes); ?></p>
+                                        <?php endif; ?>
                                         <ul class="mt-3 grid gap-x-6 gap-y-1 text-sm text-gray-700 sm:grid-cols-2">
                                             <?php $__currentLoopData = $build->items; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                 <li><?php echo e($item->product->category); ?>: <?php echo e($item->product->name); ?> × <?php echo e($item->quantity); ?></li>
@@ -130,6 +136,15 @@
                                         </ul>
                                         <p class="mt-3 font-black text-gray-900">Total price: ₱<?php echo e(number_format($build->total_cost, 2)); ?></p>
                                     </div>
+
+                                    <?php if($build->status === 'pending'): ?>
+                                        <form method="POST" action="<?php echo e(route('dashboard.customer-builds.update', $build)); ?>" class="w-full" onsubmit="const button = this.querySelector('button[type=submit]'); button.disabled = true; button.textContent = 'Accepting...';">
+                                            <?php echo csrf_field(); ?>
+                                            <?php echo method_field('PATCH'); ?>
+                                            <input type="hidden" name="status" value="accepted">
+                                            <button type="submit" class="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-emerald-800">Accept</button>
+                                        </form>
+                                    <?php endif; ?>
 
                                     <form method="POST" action="<?php echo e(route('dashboard.customer-builds.update', $build)); ?>" enctype="multipart/form-data" class="w-full space-y-4 rounded-xl bg-gray-50 p-4">
                                         <?php echo csrf_field(); ?>
@@ -144,8 +159,12 @@
                                                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                 </select>
                                             </label>
-                                            <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-purple-800">Save updates</button>
+                                            <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-purple-800">Save details</button>
                                         </div>
+                                        <label class="block text-sm font-semibold text-gray-700">
+                                            Component specifications and notes
+                                            <textarea name="notes" rows="4" maxlength="2000" class="mt-1 block w-full rounded-lg border-gray-300 bg-white text-sm font-normal shadow-sm focus:border-purple-500 focus:ring-purple-500"><?php echo e($build->notes); ?></textarea>
+                                        </label>
                                         <div class="grid grid-cols-3 gap-3">
                                             <?php $__currentLoopData = [
                                                 'product_photo' => ['Product photo', $build->product_photo_path],

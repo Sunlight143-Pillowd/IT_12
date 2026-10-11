@@ -21,14 +21,32 @@ class DashboardController extends Controller
 
         $products = Product::count();
         $lowStock = Product::whereColumn('stock_quantity', '<=', 'low_stock_threshold')->count();
+        $totalOrders = StoreOrder::count();
+        $pendingOrders = StoreOrder::where('status', 'pending')->count();
+        $acceptedOrders = StoreOrder::where('status', 'accepted')->count();
+        $pendingBuildRequests = PcBuild::query()
+            ->whereNotNull('user_id')
+            ->where('status', 'pending')
+            ->count();
         $todaySales = Sale::whereDate('created_at', today())->sum('total_amount');
-        $todayOrders = Sale::whereDate('created_at', today())->count();
+        $todayOrders = StoreOrder::where('status', 'pending')
+            ->whereDate('created_at', today())
+            ->count();
         $revenue = Sale::sum('total_amount');
         $recentSales = Sale::with('items')->withCount('items')->latest()->limit(10)->get();
         $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
         $storeOrders = $user?->canManageOrders()
             ? StoreOrder::with('items.product', 'sale')
                 ->latest()
+                ->limit(10)
+                ->get()
+            : collect();
+        $recentCustomerBuilds = $user?->canManageOrders()
+            ? PcBuild::query()
+                ->whereNotNull('user_id')
+                ->with('user')
+                ->latest()
+                ->limit(5)
                 ->get()
             : collect();
         $customerStoreOrders = $user && ! $user->canManageOrders()
@@ -65,12 +83,17 @@ class DashboardController extends Controller
             'user' => $user,
             'products' => $products,
             'lowStock' => $lowStock,
+            'totalOrders' => $totalOrders,
+            'pendingOrders' => $pendingOrders,
+            'acceptedOrders' => $acceptedOrders,
+            'pendingBuildRequests' => $pendingBuildRequests,
             'todaySales' => $todaySales,
             'todayOrders' => $todayOrders,
             'revenue' => $revenue,
             'recentSales' => $recentSales,
             'recentStockIns' => $recentStockIns,
             'storeOrders' => $storeOrders,
+            'recentCustomerBuilds' => $recentCustomerBuilds,
             'customerStoreOrders' => $customerStoreOrders,
             'customerBuilds' => $customerBuilds,
             'purchaseHistory' => $purchaseHistory,
@@ -142,7 +165,7 @@ class DashboardController extends Controller
             $order->update(['status' => 'accepted']);
         });
 
-        return back()->with('status', 'Order #'.$storeOrder->id.' accepted successfully.');
+        return redirect()->route('dashboard')->with('status', 'Order #'.$storeOrder->id.' accepted successfully.');
     }
 
     public function updateShippingFee(Request $request, StoreOrder $storeOrder): RedirectResponse
@@ -158,7 +181,7 @@ class DashboardController extends Controller
         DB::transaction(function () use ($storeOrder, $validated): void {
             $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
 
-            abort_if($order->status !== 'pending', 409, 'Shipping can only be updated on pending orders.');
+            abort_unless(in_array($order->status, ['pending', 'accepted'], true), 409, 'Shipping can only be updated on pending or accepted orders.');
             abort_unless($order->shipping_zone === 'outside_davao', 409, 'Only outside-Davao orders need a confirmed shipping fee.');
 
             $subtotal = $order->items()->sum('subtotal');
@@ -168,8 +191,48 @@ class DashboardController extends Controller
                 'shipping_fee' => $shippingFee,
                 'total_amount' => $subtotal + $shippingFee,
             ]);
+
+            if ($order->status === 'accepted') {
+                $order->sale()->update([
+                    'shipping_fee' => $shippingFee,
+                    'total_amount' => $subtotal + $shippingFee,
+                ]);
+            }
         });
 
-        return back()->with('status', 'Shipping fee confirmed for order #'.$storeOrder->id.'.');
+        $message = $storeOrder->status === 'accepted'
+            ? 'Shipping fee updated for order #'.$storeOrder->id.'.'
+            : 'Shipping fee confirmed for order #'.$storeOrder->id.'.';
+
+        return redirect()->route('dashboard')->with('status', $message);
+    }
+
+    public function updateAcceptedOrder(Request $request, StoreOrder $storeOrder): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to update orders.');
+
+        $validated = $request->validate([
+            'customer_name' => ['required', 'string', 'max:255'],
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'customer_phone' => ['nullable', 'string', 'max:40'],
+            'delivery_address' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        DB::transaction(function () use ($storeOrder, $validated): void {
+            $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
+            abort_unless($order->status === 'accepted', 409, 'Only accepted orders can be edited here.');
+
+            $order->update([
+                'customer_name' => trim($validated['customer_name']),
+                'customer_email' => trim((string) ($validated['customer_email'] ?? '')) ?: null,
+                'customer_phone' => trim((string) ($validated['customer_phone'] ?? '')) ?: null,
+                'delivery_address' => trim((string) ($validated['delivery_address'] ?? '')) ?: null,
+            ]);
+            $order->sale()->update(['customer_name' => $order->customer_name]);
+        });
+
+        return redirect()->route('dashboard')->with('status', 'Accepted order #'.$storeOrder->id.' updated successfully.');
     }
 }

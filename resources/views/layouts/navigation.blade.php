@@ -1,8 +1,8 @@
-<nav x-data="{ open: false }" @keydown.escape.window="open = false" class="bg-white border-b border-gray-100">
+<nav class="sticky top-0 z-50 border-b border-gray-100 bg-white">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex min-w-0 items-center">
+        <div class="flex min-h-16 flex-wrap items-center justify-between gap-x-3">
+            <div class="flex min-w-0 shrink-0 items-center">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('home') }}" title="Main Storefront">
@@ -12,7 +12,50 @@
 
             </div>
 
-            <div class="ms-auto flex items-center gap-1">
+            <nav aria-label="Primary navigation" class="app-desktop-navigation order-3 flex w-full min-w-0 flex-wrap items-center gap-x-4 gap-y-2 border-t border-gray-100 py-2 text-xs font-bold tracking-wide text-gray-800 xl:order-none xl:w-auto xl:flex-1 xl:flex-nowrap xl:gap-5 xl:border-0 xl:py-0">
+                @php
+                    $navigationLinkClasses = 'shrink-0 whitespace-nowrap transition hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500';
+                    $activeNavigationLinkClasses = 'text-purple-700';
+                @endphp
+                <a href="{{ route('home') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('home')])>{{ __('Store') }}</a>
+                <a href="{{ route('store.desktops') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.desktops')])>{{ __('Desktops') }}</a>
+                <a href="{{ route('store.laptops') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.laptops')])>{{ __('Laptops') }}</a>
+                <div class="group relative shrink-0">
+                    <a href="{{ route('store.categories') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.categories')]) aria-haspopup="true">
+                        {{ __('Categories') }}
+                    </a>
+                    <div class="invisible absolute left-0 top-full z-50 mt-2 max-h-72 min-w-52 translate-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                        @forelse ($navigationCategories as $category)
+                            <a href="{{ route('store.category', ['categorySlug' => $category->slug]) }}" class="block whitespace-nowrap px-4 py-2 text-sm font-medium tracking-normal text-gray-700 transition hover:bg-purple-50 hover:text-purple-700 focus:bg-purple-50 focus:text-purple-700 focus:outline-none">
+                                {{ $category->name }}
+                            </a>
+                        @empty
+                            <span class="block px-4 py-2 text-sm font-normal tracking-normal text-gray-500">{{ __('No categories available') }}</span>
+                        @endforelse
+                    </div>
+                </div>
+                <a href="{{ route('store.top-selling') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.top-selling')])>{{ __('Top Selling') }}</a>
+                @auth
+                    <a href="{{ route('buildpc.customer') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('buildpc.customer')])>{{ __('Build PC') }}</a>
+                @endauth
+                <a href="{{ route('store.special-offers') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.special-offers')])>{{ __('Special offers') }}</a>
+
+                @auth
+                    @if (Auth::user()->isAdmin())
+                        <a href="{{ route('dashboard') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')])>{{ __('Dashboard') }}</a>
+                    @else
+                        <a href="{{ route('dashboard') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')])>{{ __('My Orders') }}</a>
+                        <a href="{{ route('cart.index') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('cart.*')])>{{ __('Cart') }} ({{ array_sum(session('cart', [])) }})</a>
+                    @endif
+                @else
+                    <a href="{{ route('login') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('login')])>{{ __('Sign In') }}</a>
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('register')])>{{ __('Register') }}</a>
+                    @endif
+                @endauth
+            </nav>
+
+            <div class="ms-auto flex shrink-0 items-center gap-1">
             <!-- Settings Dropdown -->
             @auth
                 <div class="app-settings-navigation flex shrink-0 items-center">
@@ -59,81 +102,7 @@
                 </div>
             @endauth
 
-            <!-- Hamburger -->
-            <div class="app-mobile-navigation-toggle flex shrink-0 items-center">
-                <button @click="open = ! open" :aria-expanded="open.toString()" aria-controls="app-responsive-navigation" aria-label="Toggle navigation" class="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 text-gray-500 transition hover:bg-gray-50 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                    <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
             </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Responsive Navigation Menu -->
-    <div id="app-responsive-navigation" x-show="open" x-cloak @click.outside="open = false" class="app-responsive-navigation">
-        <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="route('home')" :active="request()->routeIs('home')">
-                {{ __('Store') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('store.desktops')" :active="request()->routeIs('store.desktops')">
-                {{ __('Desktops') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('store.laptops')" :active="request()->routeIs('store.laptops')">
-                {{ __('Laptops') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('store.categories')" :active="request()->routeIs('store.categories')">
-                {{ __('Categories') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('store.top-selling')" :active="request()->routeIs('store.top-selling')">
-                {{ __('Top Selling') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('buildpc.customer')" :active="request()->routeIs('buildpc.customer')">
-                {{ __('Build PC') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('store.special-offers')" :active="request()->routeIs('store.special-offers')">
-                {{ __('Special offers') }}
-            </x-responsive-nav-link>
-            @auth
-                @if (Auth::user()->isAdmin())
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('Dashboard') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('inventory.index')" :active="request()->routeIs('inventory.*')">
-                        {{ __('Inventory') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('stock-in.index')" :active="request()->routeIs('stock-in.*')">
-                        {{ __('Stock In') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('pos.index')" :active="request()->routeIs('pos.*')">
-                        {{ __('POS') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('quotation.index')" :active="request()->routeIs('quotation.*')">
-                        {{ __('Quotations') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('buildpc.index')" :active="request()->routeIs('buildpc.index', 'buildpc.show', 'buildpc.edit')">
-                        {{ __('Build PC Orders') }}
-                    </x-responsive-nav-link>
-                @else
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        {{ __('My Orders') }}
-                    </x-responsive-nav-link>
-                    <x-responsive-nav-link :href="route('cart.index')" :active="request()->routeIs('cart.*')">
-                        {{ __('Cart') }} ({{ array_sum(session('cart', [])) }})
-                    </x-responsive-nav-link>
-                @endif
-            @else
-                <x-responsive-nav-link :href="route('login')" :active="request()->routeIs('login')">
-                    {{ __('Sign In') }}
-                </x-responsive-nav-link>
-                @if (Route::has('register'))
-                    <x-responsive-nav-link :href="route('register')" :active="request()->routeIs('register')">
-                        {{ __('Register') }}
-                    </x-responsive-nav-link>
-                @endif
-            @endauth
         </div>
     </div>
 </nav>

@@ -133,12 +133,6 @@
                                 </label>
                             </div>
 
-                            <label class="block text-sm font-medium text-gray-700">
-                                Company name <span class="font-normal text-gray-400">(optional)</span>
-                                <input type="text" name="customer_company" value="{{ old('customer_company') }}" maxlength="255" autocomplete="organization"
-                                       class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                            </label>
-
                             <div x-cloak x-show="shippingChoice === 'pickup'" x-transition class="space-y-2 border-t border-gray-100 pt-5">
                                 <h4 class="text-lg font-bold text-gray-900">Pickup location</h4>
                                 <p class="text-sm text-gray-700">{{ config('store.name') }}</p>
@@ -187,8 +181,8 @@
                             </label>
 
                             <label class="block text-sm font-medium text-gray-700">
-                                Email address <span class="text-red-600">*</span>
-                                <input type="email" name="customer_email" value="{{ old('customer_email', auth()->user()?->email) }}" maxlength="255" required autocomplete="email"
+                                Email address <span class="font-normal text-gray-400">(optional)</span>
+                                <input type="email" name="customer_email" value="{{ old('customer_email', auth()->user()?->email) }}" maxlength="255" autocomplete="email"
                                        class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
                             </label>
 
