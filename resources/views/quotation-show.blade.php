@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $quotationVat = \App\Support\PhilippineVat::breakdown((float) $quotation->total_amount);
+    @endphp
+
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h2 class="text-xl font-semibold text-gray-800 leading-tight">Quotation #{{ $quotation->id }}</h2>
@@ -48,9 +52,20 @@
                 </div>
 
                 <div class="flex justify-end pt-5">
-                    <div class="flex w-full max-w-xs justify-between text-lg font-bold text-gray-900">
-                        <span>Total</span>
-                        <span>₱{{ number_format($quotation->total_amount, 2) }}</span>
+                    <div class="w-full max-w-xs space-y-2 text-sm">
+                        <p class="text-xs text-gray-500">Prices include 12% Philippine VAT.</p>
+                        <div class="flex justify-between gap-4 text-gray-700">
+                            <span>Amount before VAT</span>
+                            <span>₱{{ number_format($quotationVat['net'], 2) }}</span>
+                        </div>
+                        <div class="flex justify-between gap-4 text-gray-700">
+                            <span>VAT (12%, included)</span>
+                            <span>₱{{ number_format($quotationVat['vat'], 2) }}</span>
+                        </div>
+                        <div class="flex justify-between gap-4 border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                            <span>Total (VAT included)</span>
+                            <span>₱{{ number_format($quotationVat['total'], 2) }}</span>
+                        </div>
                     </div>
                 </div>
             </article>

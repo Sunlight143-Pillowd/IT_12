@@ -20,6 +20,7 @@
     <div class="py-4">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <p class="mb-6 text-sm text-gray-500">{{ $description }}</p>
+            <p class="mb-6 text-xs font-medium text-gray-500">Displayed prices include 12% Philippine VAT.</p>
 
             @if (session('status'))
                 <div class="mb-4 rounded-lg bg-green-50 px-4 py-3 text-sm text-green-700" role="status">

@@ -57,7 +57,7 @@ class PcBuildController extends Controller
         return redirect()->route('buildpc.index')->with('success', 'PC build #'.$build->build_number.' saved and reserved successfully.');
     }
 
-    public function customerIndex(): View
+    public function customerIndex(Request $request): View
     {
         $builds = auth()->check()
             ? PcBuild::query()
@@ -72,11 +72,36 @@ class PcBuildController extends Controller
             'builds' => $builds,
             'componentGroups' => $this->pcBuildService->componentGroups(),
             'groupedProducts' => $this->groupProductsByType($products),
+            'pendingBuild' => $request->session()->pull('pending_customer_build', []),
         ]);
     }
 
     public function storeCustomerBuild(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            $submittedComponents = $request->input('components', []);
+            $pendingComponents = [];
+
+            if (is_array($submittedComponents)) {
+                foreach ($this->pcBuildService->componentGroups() as $component => $label) {
+                    $productId = $submittedComponents[$component] ?? '';
+                    $pendingComponents[$component] = is_scalar($productId) ? (string) $productId : '';
+                }
+            }
+
+            $request->session()->put('pending_customer_build', [
+                'customer_name' => is_string($request->input('customer_name')) ? $request->input('customer_name') : '',
+                'customer_email' => is_string($request->input('customer_email')) ? $request->input('customer_email') : '',
+                'components' => $pendingComponents,
+                'notes' => is_string($request->input('notes')) ? $request->input('notes') : '',
+            ]);
+            $request->session()->put('url.intended', route('buildpc.customer'));
+
+            return redirect()->route('login');
+        }
+
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:150'],
             'customer_email' => ['nullable', 'email', 'max:150'],
@@ -85,11 +110,11 @@ class PcBuildController extends Controller
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        abort_unless($request->user() instanceof User, 401);
         $componentGroups = $this->pcBuildService->componentGroups();
         $products = $this->pcBuildService->availableProducts()->keyBy('id');
+        $estimatedCost = 0.0;
         $componentNotes = collect($validated['components'])
-            ->map(function (int|string|null $productId, string $component) use ($componentGroups, $products): ?string {
+            ->map(function (int|string|null $productId, string $component) use ($componentGroups, $products, &$estimatedCost): ?string {
                 if ($productId === null) {
                     return null;
                 }
@@ -101,6 +126,8 @@ class PcBuildController extends Controller
                         'components.'.$component => ['Select an available '.$componentGroups[$component].' from the list.'],
                     ]);
                 }
+
+                $estimatedCost += (float) $product->price;
 
                 return $componentGroups[$component].': '.$product->name;
             })
@@ -124,7 +151,8 @@ class PcBuildController extends Controller
             ]);
         }
 
-        $build = $this->pcBuildService->createCustomerBuild($request->user(), $validated);
+        $build = $this->pcBuildService->createCustomerBuild($user, $validated, $estimatedCost);
+        $request->session()->forget('pending_customer_build');
 
         return redirect()->route('buildpc.customer')->with('success', 'Build '.$build->build_number.' submitted. You can follow its status here and in your dashboard.');
     }
@@ -137,9 +165,9 @@ class PcBuildController extends Controller
         $validated = $request->validate([
             'status' => ['nullable', 'in:pending,accepted,building,testing,ready,completed,cancelled'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'product_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'product_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
+            'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
+            'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
         ]);
 
         if (! empty($validated['status']) && $validated['status'] !== $pcBuild->status) {

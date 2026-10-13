@@ -106,39 +106,31 @@ class HomeController extends Controller
 
     public function index(): View
     {
-        $categoryImages = Schema::hasTable('categories')
-            ? Category::query()->pluck('image_path', 'slug')
+        $categoryRecords = Schema::hasTable('categories')
+            ? Category::query()->orderBy('sort_order')->orderBy('id')->get()
             : collect();
-
-        $categoryCards = Schema::hasTable('products')
+        $availableCategories = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
                 ->inStock()
                 ->whereNotNull('category')
                 ->select('category')
                 ->distinct()
-                ->orderBy('category')
-                ->get()
-                ->map(fn (Product $product): array => [
-                    'label' => $this->categoryDisplayName($product->category),
-                    'route' => $this->categoryRouteFor($product->category),
-                    'name' => $product->category,
-                    'slug' => Str::slug($product->category),
-                    'image_path' => $categoryImages->get(Str::slug($product->category)),
-                ])
-                ->all()
-            : [];
-        $categoryOrder = Schema::hasTable('categories')
-            ? Category::query()
-                ->orderBy('sort_order')
-                ->orderBy('id')
-                ->pluck('sort_order', 'slug')
+                ->pluck('category')
             : collect();
-        $categoryCards = collect($categoryCards)
-            ->sortBy(fn (array $category): int => (int) $categoryOrder->get($category['slug'], PHP_INT_MAX))
+        $categoryCards = $categoryRecords
+            ->whereIn('name', $availableCategories)
+            ->map(fn (Category $category): array => [
+                'label' => $this->categoryDisplayName($category->name),
+                'route' => $this->categoryRouteFor($category->name),
+                'name' => $category->name,
+                'slug' => $category->slug,
+                'image_path' => $category->image_path,
+            ])
             ->values()
             ->all();
 
+        $categoryImages = $categoryRecords->pluck('image_path', 'slug');
         $specialOffers = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
@@ -301,39 +293,32 @@ class HomeController extends Controller
 
     public function categories(): View
     {
-        $categories = Schema::hasTable('products')
+        $availableCategories = Schema::hasTable('products')
             ? Product::query()
                 ->where('is_active', true)
                 ->inStock()
                 ->select('category')
                 ->whereNotNull('category')
                 ->distinct()
-                ->orderBy('category')
                 ->pluck('category')
-                ->toArray()
-            : [];
-
-        $categoryRecords = Schema::hasTable('categories')
-            ? Category::query()->orderBy('sort_order')->orderBy('id')->get()
             : collect();
-        $categoryImages = $categoryRecords->pluck('image_path', 'slug');
-        $categoryOrder = $categoryRecords->pluck('sort_order', 'slug');
-
-        $categoryLinks = array_map(function ($category) use ($categoryImages) {
-            $slug = Str::slug($category);
-
-            return [
-                'label' => $this->categoryDisplayName($category),
-                'route' => $this->categoryRouteFor($category),
-                'name' => $category,
-                'slug' => $slug,
-                'image_path' => $categoryImages->get($slug),
-            ];
-        }, $categories);
-        $categoryLinks = collect($categoryLinks)
-            ->sortBy(fn (array $category): int => (int) $categoryOrder->get($category['slug'], PHP_INT_MAX))
-            ->values()
-            ->all();
+        $categoryLinks = Schema::hasTable('categories')
+            ? Category::query()
+                ->whereIn('name', $availableCategories)
+                ->orderBy('sort_order')
+                ->orderBy('id')
+                ->get()
+                ->map(function (Category $category): array {
+                    return [
+                        'label' => $this->categoryDisplayName($category->name),
+                        'route' => $this->categoryRouteFor($category->name),
+                        'name' => $category->name,
+                        'slug' => $category->slug,
+                        'image_path' => $category->image_path,
+                    ];
+                })
+                ->all()
+            : [];
 
         return view('store.categories', ['categories' => $categoryLinks]);
     }
@@ -343,25 +328,15 @@ class HomeController extends Controller
         $category = Schema::hasTable('categories')
             ? Category::query()->where('slug', $categorySlug)->first()
             : null;
-        $categoryName = $category?->name;
-
-        if ($categoryName === null) {
-            $categoryName = Product::query()
-                ->whereNotNull('category')
-                ->distinct()
-                ->pluck('category')
-                ->first(fn (string $name): bool => Str::slug($name) === $categorySlug);
-        }
-
-        abort_if($categoryName === null, 404);
+        abort_if($category === null, 404);
 
         $products = Product::query()
             ->where('is_active', true)
             ->inStock()
-            ->where('category', $categoryName)
+            ->where('category', $category->name)
             ->orderBy('name')
             ->get();
-        $label = $this->categoryDisplayName($categoryName);
+        $label = $this->categoryDisplayName($category->name);
 
         return view('store.catalog', [
             'title' => $label,

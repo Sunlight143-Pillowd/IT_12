@@ -73,6 +73,7 @@
                                     <span class="mt-1 block text-[11px] font-semibold text-purple-700">Customer order #<?php echo e($sale->store_order_id); ?></span>
                                 <?php endif; ?>
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
+                                <span class="mt-1 block text-[11px] text-gray-500">Includes 12% Philippine VAT</span>
                                 <span class="mt-1 block text-[11px] text-gray-500"><?php echo e($sale->items->count()); ?> item(s) · <?php echo e($sale->created_at->format('M j, Y')); ?></span>
                             </button>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -90,6 +91,11 @@
                                 <span class="block truncate text-sm font-bold text-gray-900"><?php echo e($build->build_number); ?></span>
                                 <span class="mt-1 block truncate text-xs text-gray-600"><?php echo e($build->customer_name ?: 'Customer not recorded'); ?></span>
                                 <span class="mt-2 block text-sm font-bold text-purple-600">₱<?php echo e(number_format($build->total_cost, 2)); ?></span>
+                                <?php if($build->estimated_cost !== null): ?>
+                                    <span class="mt-1 block text-[11px] text-gray-500">Estimate includes 12% Philippine VAT</span>
+                                <?php else: ?>
+                                    <span class="mt-1 block text-[11px] text-gray-500">Includes 12% Philippine VAT</span>
+                                <?php endif; ?>
                                 <span class="mt-1 block text-[11px] uppercase text-gray-500">
                                     <?php if($build->user_id !== null && $build->stock_deducted_at !== null): ?>
                                         Customer PC Build Receipt
@@ -115,6 +121,7 @@
                                 <span class="block truncate text-sm font-bold text-gray-900">Invoice <?php echo e($stockIn->invoice_number); ?></span>
                                 <span class="mt-1 block truncate text-xs text-gray-600"><?php echo e($stockIn->supplier_name); ?></span>
                                 <span class="mt-2 block text-sm font-bold text-red-600">₱<?php echo e(number_format($stockIn->invoice_total, 2)); ?></span>
+                                <span class="mt-1 block text-[11px] text-gray-500">Includes 12% Philippine VAT</span>
                                 <span class="mt-1 block text-[11px] text-gray-500"><?php echo e($stockIn->items->count()); ?> item(s) · <?php echo e($stockIn->received_at->format('M j, Y')); ?></span>
                             </button>
                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
@@ -135,6 +142,9 @@
             <div class="hidden" aria-hidden="true">
                 <?php $__currentLoopData = $recentSales; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $sale): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <template id="receipt-detail-<?php echo e($sale->id); ?>">
+                        <?php
+                            $saleVat = \App\Support\PhilippineVat::breakdown((float) $sale->total_amount);
+                        ?>
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">Receipt #<?php echo e($sale->id); ?></p>
@@ -167,9 +177,14 @@
                                     <span class="font-semibold text-gray-900">₱<?php echo e(number_format($sale->shipping_fee, 2)); ?></span>
                                 </div>
                             <?php endif; ?>
+                            <div class="space-y-2 border-t border-gray-200 py-3 text-sm">
+                                <p class="text-xs text-gray-500">Prices include 12% Philippine VAT.</p>
+                                <div class="flex items-center justify-between text-gray-700"><span>Amount before VAT</span><span>₱<?php echo e(number_format($saleVat['net'], 2)); ?></span></div>
+                                <div class="flex items-center justify-between text-gray-700"><span>VAT (12%, included)</span><span>₱<?php echo e(number_format($saleVat['vat'], 2)); ?></span></div>
+                            </div>
                             <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
-                                <span>Total</span>
-                                <span>₱<?php echo e(number_format($sale->total_amount, 2)); ?></span>
+                                <span>Total (VAT included)</span>
+                                <span>₱<?php echo e(number_format($saleVat['total'], 2)); ?></span>
                             </div>
                             <a href="<?php echo e(route('pos.receipt', $sale)); ?>" class="mt-4 inline-flex rounded border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">Open printable receipt</a>
                         </div>
@@ -178,6 +193,12 @@
 
                 <?php $__currentLoopData = $recentBuilds; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $build): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <template id="build-detail-<?php echo e($build->id); ?>">
+                        <?php
+                            $buildAmount = $build->user_id !== null && $build->estimated_cost !== null
+                                ? (float) $build->estimated_cost
+                                : (float) $build->total_cost;
+                            $buildVat = \App\Support\PhilippineVat::breakdown($buildAmount);
+                        ?>
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900"><?php echo e($build->build_number); ?></p>
@@ -210,9 +231,14 @@
                                         <p class="mt-1 wrap-break-word text-sm text-gray-700"><?php echo e($build->notes); ?></p>
                                 </div>
                             <?php endif; ?>
+                            <div class="space-y-2 border-t border-gray-200 py-3 text-sm">
+                                <p class="text-xs text-gray-500">Prices include 12% Philippine VAT.</p>
+                                <div class="flex items-center justify-between text-gray-700"><span>Amount before VAT</span><span>₱<?php echo e(number_format($buildVat['net'], 2)); ?></span></div>
+                                <div class="flex items-center justify-between text-gray-700"><span>VAT (12%, included)</span><span>₱<?php echo e(number_format($buildVat['vat'], 2)); ?></span></div>
+                            </div>
                             <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
-                                <span>Total</span>
-                                <span>₱<?php echo e(number_format($build->total_cost, 2)); ?></span>
+                                <span><?php echo e($build->user_id !== null ? 'Estimated total' : 'Total'); ?> (VAT included)</span>
+                                <span>₱<?php echo e(number_format($buildVat['total'], 2)); ?></span>
                             </div>
                         </div>
                     </template>
@@ -220,6 +246,9 @@
 
                 <?php $__currentLoopData = $recentStockIns; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $stockIn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <template id="invoice-detail-<?php echo e($stockIn->id); ?>">
+                        <?php
+                            $invoiceVat = \App\Support\PhilippineVat::breakdown((float) $stockIn->invoice_total);
+                        ?>
                         <div>
                             <div class="border-b border-gray-200 pb-3">
                                 <p class="font-bold text-gray-900">Supplier Invoice <?php echo e($stockIn->invoice_number); ?></p>
@@ -243,9 +272,14 @@
                             <?php if($stockIn->delivery_document_path): ?>
                                 <a class="mb-3 inline-block text-sm font-semibold text-purple-700 hover:underline" href="<?php echo e(asset('storage/'.$stockIn->delivery_document_path)); ?>" target="_blank" rel="noopener">Open supplier invoice document</a>
                             <?php endif; ?>
+                            <div class="space-y-2 border-t border-gray-200 py-3 text-sm">
+                                <p class="text-xs text-gray-500">Invoice prices include 12% Philippine VAT.</p>
+                                <div class="flex items-center justify-between text-gray-700"><span>Amount before VAT</span><span>₱<?php echo e(number_format($invoiceVat['net'], 2)); ?></span></div>
+                                <div class="flex items-center justify-between text-gray-700"><span>VAT (12%, included)</span><span>₱<?php echo e(number_format($invoiceVat['vat'], 2)); ?></span></div>
+                            </div>
                             <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
-                                <span>Invoice total</span>
-                                <span>₱<?php echo e(number_format($stockIn->invoice_total, 2)); ?></span>
+                                <span>Invoice total (VAT included)</span>
+                                <span>₱<?php echo e(number_format($invoiceVat['total'], 2)); ?></span>
                             </div>
                         </div>
                     </template>
@@ -253,11 +287,15 @@
             </div>
         </div>
 
+        <?php
+            $receiptVat = \App\Support\PhilippineVat::breakdown((float) $receiptTotal);
+            $invoiceVatSummary = \App\Support\PhilippineVat::breakdown((float) $invoiceTotal);
+        ?>
         <section id="pos-analytics" aria-labelledby="pos-analytics-heading" class="mt-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
             <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <h3 id="pos-analytics-heading" class="text-xl font-bold text-gray-900">Receipts & Supplier Invoice Analytics</h3>
-                    <p class="mt-1 text-sm text-gray-500">Daily totals for the last 30 days, including today.</p>
+                    <p class="mt-1 text-sm text-gray-500">Daily totals for the last 30 days, including today. Amounts include 12% Philippine VAT.</p>
                 </div>
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Green = receipts · Red = stock invoices</p>
             </div>
@@ -274,8 +312,11 @@
                         role="img"
                         aria-label="Receipts total ₱<?php echo e(number_format($receiptTotal, 2)); ?> and supplier invoices total ₱<?php echo e(number_format($invoiceTotal, 2)); ?> for the last 30 days">
                         <div class="absolute inset-6 flex flex-col items-center justify-center rounded-full bg-white text-center">
-                            <span class="text-xs font-semibold uppercase text-gray-500">POS activity</span>
-                            <span class="mt-1 text-lg font-black text-gray-900">₱<?php echo e(number_format($chartTotal, 2)); ?></span>
+                            <span class="text-xs font-semibold uppercase text-gray-500">Net receipts</span>
+                            <span class="mt-1 text-lg font-black <?php echo e($netTotal < 0 ? 'text-red-700' : 'text-gray-900'); ?>">
+                                <?php echo e($netTotal < 0 ? '-' : ''); ?>₱<?php echo e(number_format(abs($netTotal), 2)); ?>
+
+                            </span>
                         </div>
                     </div>
                     <div class="mt-5 space-y-2 text-sm">
@@ -283,9 +324,24 @@
                             <span class="flex items-center gap-2 text-gray-700"><span class="h-3 w-3 rounded-full bg-green-600"></span>Receipts + accepted builds</span>
                             <strong class="text-gray-900">₱<?php echo e(number_format($receiptTotal, 2)); ?></strong>
                         </p>
+                        <p class="flex items-center justify-between gap-3 text-xs text-gray-500">
+                            <span>Included VAT (12%)</span>
+                            <strong>₱<?php echo e(number_format($receiptVat['vat'], 2)); ?></strong>
+                        </p>
                         <p class="flex items-center justify-between gap-3">
                             <span class="flex items-center gap-2 text-gray-700"><span class="h-3 w-3 rounded-full bg-red-600"></span>Supplier invoices</span>
                             <strong class="text-gray-900">₱<?php echo e(number_format($invoiceTotal, 2)); ?></strong>
+                        </p>
+                        <p class="flex items-center justify-between gap-3 text-xs text-gray-500">
+                            <span>Included VAT (12%)</span>
+                            <strong>₱<?php echo e(number_format($invoiceVatSummary['vat'], 2)); ?></strong>
+                        </p>
+                        <p class="flex items-center justify-between gap-3 border-t border-gray-200 pt-2 font-semibold">
+                            <span class="text-gray-700">Receipts less supplier invoices</span>
+                            <strong class="<?php echo e($netTotal < 0 ? 'text-red-700' : 'text-green-700'); ?>">
+                                <?php echo e($netTotal < 0 ? '-' : ''); ?>₱<?php echo e(number_format(abs($netTotal), 2)); ?>
+
+                            </strong>
                         </p>
                     </div>
                 </figure>

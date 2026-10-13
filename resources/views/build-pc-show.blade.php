@@ -1,4 +1,11 @@
 <x-app-layout>
+    @php
+        $buildAmount = $pcBuild->user_id !== null && $pcBuild->estimated_cost !== null
+            ? (float) $pcBuild->estimated_cost
+            : (float) $pcBuild->total_cost;
+        $buildVat = \App\Support\PhilippineVat::breakdown($buildAmount);
+    @endphp
+
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h2 class="text-xl font-semibold text-gray-800 leading-tight">PC Build Details</h2>
@@ -18,7 +25,18 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <span class="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-purple-700">{{ $pcBuild->status }}</span>
-                        <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">Total: ₱{{ number_format($pcBuild->total_cost, 2) }}</span>
+                        @if ($pcBuild->user_id !== null)
+                            <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">
+                                @if ($pcBuild->estimated_cost !== null)
+                                    Estimated price: ₱{{ number_format($pcBuild->estimated_cost, 2) }}
+                                    <span class="mt-1 block text-[10px] font-medium normal-case tracking-normal text-gray-500">Includes ₱{{ number_format($buildVat['vat'], 2) }} Philippine VAT (12%).</span>
+                                @else
+                                    Quote pending
+                                @endif
+                            </span>
+                        @else
+                            <span class="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">Total: ₱{{ number_format($pcBuild->total_cost, 2) }}</span>
+                        @endif
                     </div>
                 </div>
 
@@ -44,6 +62,17 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if ($pcBuild->user_id === null || $pcBuild->estimated_cost !== null)
+                    <div class="mt-4 rounded-xl border border-purple-100 bg-purple-50 p-4 text-sm">
+                        <p class="mb-2 text-xs font-semibold text-purple-800">Prices include 12% Philippine VAT.</p>
+                        <dl class="space-y-2">
+                            <div class="flex justify-between gap-4 text-gray-700"><dt>Amount before VAT</dt><dd>₱{{ number_format($buildVat['net'], 2) }}</dd></div>
+                            <div class="flex justify-between gap-4 text-gray-700"><dt>VAT (12%, included)</dt><dd>₱{{ number_format($buildVat['vat'], 2) }}</dd></div>
+                            <div class="flex justify-between gap-4 border-t border-purple-200 pt-2 font-bold text-gray-900"><dt>{{ $pcBuild->user_id !== null ? 'Estimated total' : 'Total' }} (VAT included)</dt><dd>₱{{ number_format($buildVat['total'], 2) }}</dd></div>
+                        </dl>
+                    </div>
+                @endif
 
                 <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4">
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-gray-500">Notes</p>

@@ -43,11 +43,11 @@
                         <div class="mb-5 grid gap-4 md:grid-cols-2">
                             <div>
                                 <label for="customer_name" class="mb-2 block text-sm font-bold text-gray-800">Your name</label>
-                                <input id="customer_name" name="customer_name" type="text" value="<?php echo e(old('customer_name', auth()->user()?->name ?? '')); ?>" required maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="John Doe">
+                                <input id="customer_name" name="customer_name" type="text" value="<?php echo e(old('customer_name', $pendingBuild['customer_name'] ?? auth()->user()?->name ?? '')); ?>" required maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="John Doe">
                             </div>
                             <div>
                                 <label for="customer_email" class="mb-2 block text-sm font-bold text-gray-800">Email address <span class="font-normal text-gray-400">(optional)</span></label>
-                                <input id="customer_email" name="customer_email" type="email" value="<?php echo e(old('customer_email', auth()->user()?->email ?? '')); ?>" maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="you@example.com">
+                                <input id="customer_email" name="customer_email" type="email" value="<?php echo e(old('customer_email', $pendingBuild['customer_email'] ?? auth()->user()?->email ?? '')); ?>" maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="you@example.com">
                             </div>
                         </div>
                         <div class="mb-5">
@@ -61,25 +61,56 @@
                                     <select id="component-<?php echo e($type); ?>" name="components[<?php echo e($type); ?>]" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm transition focus:border-purple-500 focus:ring-purple-500">
                                         <option value="">Select <?php echo e($label); ?> (optional)</option>
                                         <?php $__currentLoopData = $groupedProducts[$type] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-                                            <option value="<?php echo e($product->id); ?>" <?php if((string) old('components.'.$type) === (string) $product->id): echo 'selected'; endif; ?>>
-                                                <?php echo e($product->name); ?> — <?php echo e($product->availableStock()); ?> available
+                                            <option value="<?php echo e($product->id); ?>" data-name="<?php echo e($product->name); ?>" data-price="<?php echo e($product->price); ?>" <?php if((string) old('components.'.$type, $pendingBuild['components'][$type] ?? '') === (string) $product->id): echo 'selected'; endif; ?>>
+                                                <?php echo e($product->name); ?> — ₱<?php echo e(number_format($product->price, 2)); ?> · <?php echo e($product->availableStock()); ?> available
                                             </option>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </select>
                                 </div>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
+                        <section id="customer-build-receipt" aria-live="polite" class="mt-5 rounded-xl border border-purple-200 bg-purple-50 p-4">
+                            <div class="mb-3">
+                                <h3 class="text-base font-black text-purple-900">Estimated receipt</h3>
+                                <p class="mt-1 text-xs text-purple-800">Catalog prices include 12% Philippine VAT. Final quote will be confirmed by our team.</p>
+                            </div>
+                            <div class="overflow-x-auto rounded-lg border border-purple-100 bg-white">
+                                <table class="min-w-full text-left text-sm">
+                                    <thead class="bg-purple-50 text-xs uppercase tracking-wide text-purple-800">
+                                        <tr><th class="px-3 py-2">Component</th><th class="px-3 py-2 text-right">Amount</th></tr>
+                                    </thead>
+                                    <tbody id="customer-build-receipt-items">
+                                        <tr><td colspan="2" class="px-3 py-4 text-center text-gray-500">Select components to see your estimate.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <dl class="mt-3 space-y-2 text-sm">
+                                <div class="flex justify-between gap-4 text-gray-700">
+                                    <dt>Amount before VAT</dt>
+                                    <dd id="customer-build-net" class="font-semibold">₱0.00</dd>
+                                </div>
+                                <div class="flex justify-between gap-4 text-gray-700">
+                                    <dt>VAT (12%, included)</dt>
+                                    <dd id="customer-build-vat" class="font-semibold">₱0.00</dd>
+                                </div>
+                                <div class="flex justify-between gap-4 border-t border-purple-200 pt-2 font-black text-purple-900">
+                                    <dt>Estimated total (VAT included)</dt>
+                                    <dd id="customer-build-total">₱0.00</dd>
+                                </div>
+                            </dl>
+                        </section>
                         <label for="build-notes" class="mt-5 block text-sm font-bold text-gray-800">
                             Additional notes <span class="font-normal text-gray-400">(optional)</span>
-                            <textarea id="build-notes" name="notes" rows="3" maxlength="2000" placeholder="Budget, intended use, or other preferences" class="mt-2 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500"><?php echo e(old('notes')); ?></textarea>
+                            <textarea id="build-notes" name="notes" rows="3" maxlength="2000" placeholder="Budget, intended use, or other preferences" class="mt-2 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500"><?php echo e(old('notes', $pendingBuild['notes'] ?? '')); ?></textarea>
                         </label>
                         <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                            <?php if(auth()->guard()->check()): ?>
-                                <button type="submit" class="inline-flex justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Submit build request</button>
-                            <?php else: ?>
-                                <a href="<?php echo e(route('login')); ?>" class="inline-flex justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800">Sign in to submit a request</a>
-                            <?php endif; ?>
-                            <p class="text-xs text-gray-500">Our team will review your specifications and contact you with a quote.</p>
+                            <button type="submit" class="inline-flex justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Submit build request</button>
+                            <p class="text-xs text-gray-500">
+                                Estimated price uses the selected catalog parts. Additional notes are not included; our team will confirm the final quote.
+                                <?php if(auth()->guard()->guest()): ?>
+                                    <span class="font-semibold text-purple-700">You’ll be asked to sign in before submitting.</span>
+                                <?php endif; ?>
+                            </p>
                         </div>
                     </section>
                 </form>
@@ -102,6 +133,18 @@
                                     <?php if($build->notes): ?>
                                         <p class="mt-2 whitespace-pre-line text-sm text-gray-700"><?php echo e($build->notes); ?></p>
                                     <?php endif; ?>
+                                    <p class="mt-2 text-sm font-semibold text-gray-700">
+                                        <?php if($build->estimated_cost !== null): ?>
+                                            <?php
+                                                $buildVat = \App\Support\PhilippineVat::breakdown((float) $build->estimated_cost);
+                                            ?>
+                                            Estimated price (VAT included): ₱<?php echo e(number_format($buildVat['total'], 2)); ?>
+
+                                            <span class="block text-xs font-normal text-gray-500">Includes ₱<?php echo e(number_format($buildVat['vat'], 2)); ?> Philippine VAT (12%).</span>
+                                        <?php else: ?>
+                                            Quote pending
+                                        <?php endif; ?>
+                                    </p>
                                 </div>
                                 <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800"><?php echo e(ucfirst($build->status)); ?></span>
                             </div>
@@ -124,6 +167,64 @@
         </div>
     </div>
 
+    <script>
+        (() => {
+            const componentSelects = document.querySelectorAll('#customer-build-form select[name^="components["]');
+            const receiptItems = document.getElementById('customer-build-receipt-items');
+            const netElement = document.getElementById('customer-build-net');
+            const vatElement = document.getElementById('customer-build-vat');
+            const totalElement = document.getElementById('customer-build-total');
+            const moneyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+            const vatRate = <?php echo e(\App\Support\PhilippineVat::RATE_PERCENT); ?>;
+
+            function updateEstimatedReceipt() {
+                const rows = [];
+                let total = 0;
+
+                componentSelects.forEach((select) => {
+                    const option = select.selectedOptions[0];
+                    if (!option || !option.value) {
+                        return;
+                    }
+
+                    const price = Number(option.dataset.price || 0);
+                    total += price;
+
+                    const row = document.createElement('tr');
+                    row.className = 'border-t border-gray-100';
+                    const componentCell = document.createElement('td');
+                    componentCell.className = 'px-3 py-2 font-medium text-gray-800';
+                    componentCell.textContent = option.dataset.name;
+                    const amountCell = document.createElement('td');
+                    amountCell.className = 'px-3 py-2 text-right font-semibold text-gray-900';
+                    amountCell.textContent = moneyFormatter.format(price);
+                    row.append(componentCell, amountCell);
+                    rows.push(row);
+                });
+
+                receiptItems.replaceChildren();
+                if (rows.length === 0) {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 2;
+                    cell.className = 'px-3 py-4 text-center text-gray-500';
+                    cell.textContent = 'Select components to see your estimate.';
+                    row.appendChild(cell);
+                    receiptItems.appendChild(row);
+                } else {
+                    rows.forEach((row) => receiptItems.appendChild(row));
+                }
+
+                const vat = Math.round(total * vatRate / (100 + vatRate) * 100) / 100;
+                netElement.textContent = moneyFormatter.format(total - vat);
+                vatElement.textContent = moneyFormatter.format(vat);
+                totalElement.textContent = moneyFormatter.format(total);
+            }
+
+            componentSelects.forEach((select) => select.addEventListener('change', updateEstimatedReceipt));
+            updateEstimatedReceipt();
+        })();
+    </script>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal9ac128a9029c0e4701924bd2d73d7f54)): ?>

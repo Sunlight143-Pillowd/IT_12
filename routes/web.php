@@ -27,6 +27,8 @@ Route::post('/cart/order', [CartController::class, 'placeOrder'])->name('cart.or
 Route::post('/cart/{product}', [CartController::class, 'store'])->name('cart.items.store');
 Route::put('/cart/{product}', [CartController::class, 'update'])->name('cart.items.update');
 Route::delete('/cart/{product}', [CartController::class, 'destroy'])->name('cart.items.destroy');
+Route::get('/build-pc', [PcBuildController::class, 'customerIndex'])->name('buildpc.customer');
+Route::post('/build-pc', [PcBuildController::class, 'storeCustomerBuild'])->name('buildpc.customer.store');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -48,6 +50,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/dashboard/stock-in', [StockInController::class, 'index'])->name('stock-in.index');
     Route::post('/dashboard/stock-in', [StockInController::class, 'store'])->name('stock-in.store');
+    Route::get('/dashboard/stock-in/{stockIn}/edit', [StockInController::class, 'edit'])->name('stock-in.edit');
+    Route::patch('/dashboard/stock-in/{stockIn}', [StockInController::class, 'update'])->name('stock-in.update');
 
     Route::get('/dashboard/pos', [PosController::class, 'index'])->name('pos.index');
     Route::get('/dashboard/pos/receipts/{sale}', [PosController::class, 'receipt'])->name('pos.receipt');
@@ -69,10 +73,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/build-pc', [PcBuildController::class, 'customerIndex'])->name('buildpc.customer');
     Route::get('/build-pc/{pcBuild}/edit', [PcBuildController::class, 'customerEdit'])->name('buildpc.customer.edit');
     Route::patch('/build-pc/{pcBuild}', [PcBuildController::class, 'update'])->name('buildpc.customer.update');
-    Route::post('/build-pc', [PcBuildController::class, 'storeCustomerBuild'])->name('buildpc.customer.store');
     Route::delete('/build-pc/{pcBuild}', [PcBuildController::class, 'destroy'])->name('buildpc.customer.destroy');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -365,6 +365,13 @@ class AdminDashboardTest extends TestCase
 
     public function test_category_links_route_to_matching_product_pages(): void
     {
+        foreach (['gaming', 'displays', 'peripherals'] as $categoryName) {
+            Category::create([
+                'name' => $categoryName,
+                'slug' => $categoryName,
+            ]);
+        }
+
         Product::create([
             'name' => 'RTX 4080',
             'slug' => 'rtx-4080',
@@ -420,6 +427,9 @@ class AdminDashboardTest extends TestCase
 
     public function test_category_cards_keep_their_actual_labels_for_desktop_and_laptop_types(): void
     {
+        Category::create(['name' => 'Performance', 'slug' => 'performance']);
+        Category::create(['name' => 'Ready to Ship', 'slug' => 'ready-to-ship']);
+
         Product::create([
             'name' => 'Performance Tower',
             'slug' => 'performance-tower',

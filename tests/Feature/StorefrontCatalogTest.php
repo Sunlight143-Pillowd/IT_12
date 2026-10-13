@@ -12,6 +12,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class StorefrontCatalogTest extends TestCase
@@ -105,14 +106,19 @@ class StorefrontCatalogTest extends TestCase
         $this->assertStringNotContainsString('Sign in', $productNavigation[1]);
         $this->assertStringNotContainsString('Register', $productNavigation[1]);
         $this->assertStringNotContainsString('Dashboard', $productNavigation[1]);
-        $this->assertStringNotContainsString('BUILD PC', $productNavigation[1]);
+        $this->assertStringContainsString('BUILD PC', $productNavigation[1]);
         $this->assertStringNotContainsString('Cart', $productNavigation[1]);
     }
 
-    public function test_guest_is_redirected_to_sign_in_from_customer_build_page(): void
+    public function test_guest_can_open_customer_build_page_from_homepage_navigation(): void
     {
+        $this->get(route('home'))
+            ->assertSee('<a href="'.route('buildpc.customer').'" class="shrink-0 whitespace-nowrap hover:text-purple-700">BUILD PC</a>', false);
+
         $this->get(route('buildpc.customer'))
-            ->assertRedirect(route('login'));
+            ->assertOk()
+            ->assertSee('Build your PC')
+            ->assertSee('Submit build request');
     }
 
     public function test_homepage_category_navigation_dropdown_lists_all_categories_in_saved_order(): void
@@ -396,6 +402,8 @@ class StorefrontCatalogTest extends TestCase
     {
         Storage::fake('public');
         $staff = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        Category::create(['name' => 'CPU', 'slug' => 'cpu']);
+
         Product::create([
             'name' => 'Test CPU',
             'slug' => 'test-cpu',
@@ -409,7 +417,6 @@ class StorefrontCatalogTest extends TestCase
         ]);
 
         $response = $this->actingAs($staff)->post(route('inventory.categories.image', 'cpu'), [
-            'category_name' => 'CPU',
             'image' => UploadedFile::fake()->createWithContent(
                 'cpu.png',
                 base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/MioAAAAASUVORK5CYII=')
@@ -434,10 +441,10 @@ class StorefrontCatalogTest extends TestCase
     {
         Storage::fake('public');
         $user = User::factory()->create(['email' => 'customer@example.com']);
+        Category::create(['name' => 'CPU', 'slug' => 'cpu']);
 
         $this->actingAs($user)
             ->post(route('inventory.categories.image', 'cpu'), [
-                'category_name' => 'CPU',
                 'image' => UploadedFile::fake()->createWithContent(
                     'cpu.png',
                     base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/MioAAAAASUVORK5CYII=')
@@ -445,7 +452,7 @@ class StorefrontCatalogTest extends TestCase
             ])
             ->assertForbidden();
 
-        $this->assertDatabaseMissing('categories', ['slug' => 'cpu']);
+        $this->assertDatabaseHas('categories', ['slug' => 'cpu', 'image_path' => null]);
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
@@ -453,10 +460,10 @@ class StorefrontCatalogTest extends TestCase
     {
         Storage::fake('public');
         $staff = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        Category::create(['name' => 'CPU', 'slug' => 'cpu']);
 
         $this->actingAs($staff)
             ->post(route('inventory.categories.image', 'cpu'), [
-                'category_name' => 'CPU',
                 'image' => UploadedFile::fake()->createWithContent(
                     'cpu.gif',
                     base64_decode('R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=')
@@ -473,11 +480,11 @@ class StorefrontCatalogTest extends TestCase
     {
         Storage::fake('public');
         $staff = User::factory()->create(['email' => 'employee@davaobosscomputer.com']);
+        Category::create(['name' => 'CPU', 'slug' => 'cpu']);
 
         $this->actingAs($staff)
             ->from('/')
             ->post(route('inventory.categories.image', 'cpu'), [
-                'category_name' => 'CPU',
                 'image' => UploadedFile::fake()->createWithContent('cpu.jpg', 'not an image'),
             ])
             ->assertRedirect('/')
@@ -704,6 +711,13 @@ class StorefrontCatalogTest extends TestCase
 
     public function test_product_categories_link_to_exact_category_pages(): void
     {
+        foreach (['PSU', 'Mother Board', 'Storage'] as $categoryName) {
+            Category::create([
+                'name' => $categoryName,
+                'slug' => Str::slug($categoryName),
+            ]);
+        }
+
         Product::create([
             'name' => '750W Power Supply',
             'slug' => '750w-power-supply',
@@ -805,6 +819,8 @@ class StorefrontCatalogTest extends TestCase
 
     public function test_custom_build_category_links_to_its_exact_category_page(): void
     {
+        Category::create(['name' => 'Custom Build', 'slug' => 'custom-build']);
+
         Product::create([
             'name' => 'Custom PC Build Sample',
             'slug' => 'custom-pc-build-sample',

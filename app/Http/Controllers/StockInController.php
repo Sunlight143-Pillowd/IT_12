@@ -8,6 +8,7 @@ use App\Models\StockIn;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -120,5 +121,79 @@ class StockInController extends Controller
         });
 
         return redirect()->route('stock-in.index')->with('success', 'Delivery recorded and inventory stock updated.');
+    }
+
+    public function edit(StockIn $stockIn): View
+    {
+        $stockIn->load('items.product', 'items.units');
+
+        return view('stock-in-edit', compact('stockIn'));
+    }
+
+    public function update(Request $request, StockIn $stockIn): RedirectResponse
+    {
+        $data = $request->validate([
+            'supplier_name' => ['required', 'string', 'max:150'],
+            'supplier_contact' => ['nullable', 'string', 'max:150'],
+            'invoice_number' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('stock_ins')
+                    ->where('supplier_name', $request->input('supplier_name'))
+                    ->ignore($stockIn->id),
+            ],
+            'received_at' => ['required', 'date'],
+            'delivery_document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($request->exists('items')) {
+            throw ValidationException::withMessages([
+                'items' => ['Delivered items cannot be changed after the delivery is recorded.'],
+            ]);
+        }
+
+        [$oldPaths, $newPaths] = DB::transaction(function () use ($request, $data, $stockIn): array {
+            $lockedStockIn = StockIn::query()->lockForUpdate()->findOrFail($stockIn->id);
+
+            $oldPaths = [
+                'delivery_document_path' => $lockedStockIn->delivery_document_path,
+                'before_photo_path' => $lockedStockIn->before_photo_path,
+                'after_photo_path' => $lockedStockIn->after_photo_path,
+            ];
+            $filePaths = [];
+            foreach ([
+                'delivery_document' => 'delivery_document_path',
+                'before_photo' => 'before_photo_path',
+                'after_photo' => 'after_photo_path',
+            ] as $fileField => $pathField) {
+                $filePaths[$pathField] = $request->file($fileField)?->store(
+                    $fileField === 'delivery_document' ? 'stock-ins/documents' : 'stock-ins/photos',
+                    'public',
+                ) ?? $oldPaths[$pathField];
+            }
+
+            $lockedStockIn->update([
+                'supplier_name' => $data['supplier_name'],
+                'supplier_contact' => $data['supplier_contact'] ?? null,
+                'invoice_number' => $data['invoice_number'],
+                'received_at' => $data['received_at'],
+                'notes' => $data['notes'] ?? null,
+                ...$filePaths,
+            ]);
+
+            return [$oldPaths, $filePaths];
+        });
+
+        foreach ($oldPaths as $pathField => $oldPath) {
+            if ($oldPath !== null && $oldPath !== $newPaths[$pathField]) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
+
+        return redirect()->route('stock-in.index')->with('success', 'Delivery updated successfully.');
     }
 }

@@ -1,4 +1,8 @@
 <x-app-layout>
+    @php
+        $saleVat = \App\Support\PhilippineVat::breakdown((float) $sale->total_amount);
+    @endphp
+
     <x-slot name="header">
         <div class="flex items-center justify-between gap-4">
             <h2 class="text-xl font-semibold text-gray-800 leading-tight">Receipt #{{ $sale->id }}</h2>
@@ -45,9 +49,20 @@
                         <span class="font-semibold text-gray-900">₱{{ number_format($sale->shipping_fee, 2) }}</span>
                     </div>
                 @endif
+                <div class="space-y-2 border-t border-gray-200 py-4 text-sm">
+                    <p class="text-xs text-gray-500">Prices include 12% Philippine VAT.</p>
+                    <div class="flex items-center justify-between text-gray-700">
+                        <span>Amount before VAT</span>
+                        <span>₱{{ number_format($saleVat['net'], 2) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-gray-700">
+                        <span>VAT (12%, included)</span>
+                        <span>₱{{ number_format($saleVat['vat'], 2) }}</span>
+                    </div>
+                </div>
                 <div class="flex items-center justify-between border-t border-gray-200 pt-4 text-lg font-bold text-gray-900">
-                    <span>Total</span>
-                    <span>₱{{ number_format($sale->total_amount, 2) }}</span>
+                    <span>Total (VAT included)</span>
+                    <span>₱{{ number_format($saleVat['total'], 2) }}</span>
                 </div>
             </article>
         </div>

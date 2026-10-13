@@ -56,9 +56,7 @@
                     </div>
                 </div>
                 <a href="<?php echo e(route('store.top-selling')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.top-selling')]); ?>"><?php echo e(__('Top Selling')); ?></a>
-                <?php if(auth()->guard()->check()): ?>
-                    <a href="<?php echo e(route('buildpc.customer')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('buildpc.customer')]); ?>"><?php echo e(__('Build PC')); ?></a>
-                <?php endif; ?>
+                <a href="<?php echo e(route('buildpc.customer')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('buildpc.customer')]); ?>"><?php echo e(__('Build PC')); ?></a>
                 <a href="<?php echo e(route('store.special-offers')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.special-offers')]); ?>"><?php echo e(__('Special offers')); ?></a>
 
                 <?php if(auth()->guard()->check()): ?>

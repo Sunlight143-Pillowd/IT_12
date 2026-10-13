@@ -84,7 +84,7 @@ class PcBuildService
         return null;
     }
 
-    public function createCustomerBuild(User $user, array $payload): PcBuild
+    public function createCustomerBuild(User $user, array $payload, float $estimatedCost): PcBuild
     {
         $notes = trim((string) ($payload['notes'] ?? ''));
         if ($notes === '') {
@@ -93,14 +93,15 @@ class PcBuildService
             ]);
         }
 
-        return DB::transaction(function () use ($user, $payload, $notes): PcBuild {
+        return DB::transaction(function () use ($user, $payload, $notes, $estimatedCost): PcBuild {
             $build = PcBuild::create([
                 'build_number' => $this->nextBuildNumber(),
                 'customer_name' => trim((string) ($payload['customer_name'] ?? $user->name)),
                 'customer_email' => trim((string) ($payload['customer_email'] ?? $user->email)) ?: $user->email,
                 'user_id' => $user->id,
                 'status' => 'pending',
-                'total_cost' => 0,
+                'total_cost' => $estimatedCost,
+                'estimated_cost' => $estimatedCost,
                 'notes' => $notes,
             ]);
 

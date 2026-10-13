@@ -119,6 +119,8 @@ class DashboardTransactionsTest extends TestCase
             ->assertSee('Customer PC Build Receipt')
             ->assertSee('₱11,500.00')
             ->assertSee('₱1,600.00')
+            ->assertSee('Receipts less supplier invoices')
+            ->assertSee('₱9,900.00')
             ->assertSee('id="pos-analytics"', false)
             ->assertSee('id="pos-line-chart"', false)
             ->assertSee('Receipts + accepted customer PC builds');

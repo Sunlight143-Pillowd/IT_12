@@ -30,7 +30,7 @@
                             @endforeach
                         </datalist>
                     </label>
-                    <label class="text-sm font-semibold text-gray-700">Selling price
+                    <label class="text-sm font-semibold text-gray-700">Selling price (includes 12% Philippine VAT)
                         <input type="number" name="price" min="0" step="1" required value="{{ old('price', $product->price) }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                     </label>
                     <label class="text-sm font-semibold text-gray-700">Low-stock threshold

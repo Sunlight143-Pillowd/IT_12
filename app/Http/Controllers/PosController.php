@@ -77,6 +77,7 @@ class PosController extends Controller
         $receiptTotal = (float) $posChartData->sum('receipts');
         $invoiceTotal = (float) $posChartData->sum('invoices');
         $chartTotal = $receiptTotal + $invoiceTotal;
+        $netTotal = $receiptTotal - $invoiceTotal;
         $receiptSharePercent = $chartTotal > 0 ? round($receiptTotal / $chartTotal * 100, 2) : 0;
 
         return view('pos', compact(
@@ -87,6 +88,7 @@ class PosController extends Controller
             'receiptTotal',
             'invoiceTotal',
             'chartTotal',
+            'netTotal',
             'receiptSharePercent',
         ));
     }

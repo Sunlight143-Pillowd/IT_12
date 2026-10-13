@@ -183,6 +183,7 @@
                         <option value="ascending" <?php if($stockSort === 'ascending'): echo 'selected'; endif; ?>>Ascending (lowest first)</option>
                         <option value="descending" <?php if($stockSort === 'descending'): echo 'selected'; endif; ?>>Descending (highest first)</option>
                     </select>
+                    <span class="mt-1 block text-[10px] font-normal normal-case text-gray-500">Low-stock products always appear first.</span>
                 </label>
                 <div class="flex items-end gap-2">
                     <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800">Apply filters</button>
@@ -199,7 +200,7 @@
                                 <th class="px-4 py-3">Product</th>
                                 <th class="px-4 py-3">Type</th>
                                 <th class="px-4 py-3">Category</th>
-                                <th class="px-4 py-3">Price</th>
+                                <th class="px-4 py-3">Price (VAT incl.)</th>
                                 <th class="px-4 py-3">Stock</th>
                                 <th class="px-4 py-3">Stock status</th>
                                 <th class="px-4 py-3">Location</th>

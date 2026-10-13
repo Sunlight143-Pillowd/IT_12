@@ -208,7 +208,9 @@ class CartWorkflowTest extends TestCase
             ->assertSee('2')
             ->assertSee('₱2,000')
             ->assertSee('Subtotal')
-            ->assertSee('Total');
+            ->assertSee('Total (VAT included)')
+            ->assertSee('VAT (12%, included)')
+            ->assertSee('₱214.29');
     }
 
     public function test_guest_can_update_cart_quantity_and_remove_a_product(): void
@@ -341,6 +343,8 @@ class CartWorkflowTest extends TestCase
             ->assertSee('Your order')
             ->assertSee('Checkout Summary Product')
             ->assertSee('₱2,500.00')
+            ->assertSee('VAT (12%, included)')
+            ->assertSee('₱267.86')
             ->assertSee('Customer details')
             ->assertSee('Shipping address')
             ->assertSee('Pickup location')

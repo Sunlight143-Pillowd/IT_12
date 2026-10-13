@@ -35,6 +35,7 @@ class QuotationWorkflowTest extends TestCase
         $index->assertOk();
         $index->assertSee(route('quotation.show', $quotation), false);
         $index->assertSee('>View</a>', false);
+        $index->assertSee('VAT included');
 
         $detail = $this->actingAs($user)->get(route('quotation.show', $quotation));
         $detail->assertOk();
@@ -42,5 +43,7 @@ class QuotationWorkflowTest extends TestCase
         $detail->assertSee('Explain the workstation configuration and price.');
         $detail->assertSee('Quotation Monitor');
         $detail->assertSee('₱5,000.00');
+        $detail->assertSee('VAT (12%, included)');
+        $detail->assertSee('₱535.71');
     }
 }

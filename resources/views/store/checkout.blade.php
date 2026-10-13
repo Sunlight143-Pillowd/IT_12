@@ -1,6 +1,7 @@
 <x-app-layout>
     @php
         $customerNameParts = explode(' ', trim((string) auth()->user()?->name), 2);
+        $subtotalVat = \App\Support\PhilippineVat::breakdown((float) $subtotal);
     @endphp
 
     <x-slot name="header">
@@ -24,6 +25,7 @@
                       paymentMethod: @js(old('payment_method', 'cash')),
                       distanceKm: @js(old('shipping_distance_km', '')),
                       subtotal: @js((float) $subtotal),
+                      vatRate: @js(\App\Support\PhilippineVat::RATE_PERCENT),
                       calculated: false,
                       shippingFee() {
                           if (this.shippingChoice === 'pickup') return 0;
@@ -31,6 +33,13 @@
                           const distance = Number(this.distanceKm);
                           if (!Number.isFinite(distance) || distance <= 0) return null;
                           return 79 + (Math.ceil(Math.max(0, distance - 4)) * 15);
+                      },
+                      orderTotal() {
+                          if (this.shippingChoice === 'outside_davao' || (this.shippingChoice === 'davao_city' && !this.calculated)) return this.subtotal;
+                          return this.subtotal + (this.shippingFee() || 0);
+                      },
+                      vatIncluded() {
+                          return Math.round(this.orderTotal() * this.vatRate / (100 + this.vatRate) * 100) / 100;
                       },
                       calculateShipping() {
                           this.calculated = true;
@@ -68,7 +77,7 @@
 
                                 <div class="space-y-3 border-t border-gray-200 pt-4 text-sm">
                                     <div class="flex justify-between gap-4 text-gray-600">
-                                        <span>Subtotal</span>
+                                        <span>Items (VAT included)</span>
                                         <span>₱{{ number_format($subtotal, 2) }}</span>
                                     </div>
                                     <div class="flex justify-between gap-4 text-gray-600">
@@ -80,10 +89,19 @@
                                             <span x-cloak x-show="shippingChoice === 'outside_davao'">To be confirmed</span>
                                         </span>
                                     </div>
-                                    <div class="flex justify-between gap-4 border-t border-gray-200 pt-3 text-base font-black text-gray-900">
-                                        <span x-text="shippingChoice === 'outside_davao' ? 'Total before shipping' : 'Total'">Total</span>
-                                        <span x-text="'₱' + (subtotal + (shippingChoice === 'outside_davao' || !calculated && shippingChoice === 'davao_city' ? 0 : (shippingFee() || 0))).toFixed(2)">₱{{ number_format($subtotal, 2) }}</span>
+                                    <div class="flex justify-between gap-4 border-t border-gray-100 pt-3 text-gray-600">
+                                        <span>Amount before VAT</span>
+                                        <span x-text="'₱' + (orderTotal() - vatIncluded()).toFixed(2)">₱{{ number_format($subtotalVat['net'], 2) }}</span>
                                     </div>
+                                    <div class="flex justify-between gap-4 text-gray-600">
+                                        <span>VAT (12%, included)</span>
+                                        <span x-text="'₱' + vatIncluded().toFixed(2)">₱{{ number_format($subtotalVat['vat'], 2) }}</span>
+                                    </div>
+                                    <div class="flex justify-between gap-4 border-t border-gray-200 pt-3 text-base font-black text-gray-900">
+                                        <span x-text="shippingChoice === 'outside_davao' ? 'Total before shipping' : 'Total (VAT included)'">Total (VAT included)</span>
+                                        <span x-text="'₱' + orderTotal().toFixed(2)">₱{{ number_format($subtotalVat['total'], 2) }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-500">Product prices and confirmed shipping fees include 12% Philippine VAT.</p>
                                 </div>
                             </div>
                         </div>

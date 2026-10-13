@@ -35,9 +35,7 @@
                     </div>
                 </div>
                 <a href="{{ route('store.top-selling') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.top-selling')])>{{ __('Top Selling') }}</a>
-                @auth
-                    <a href="{{ route('buildpc.customer') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('buildpc.customer')])>{{ __('Build PC') }}</a>
-                @endauth
+                <a href="{{ route('buildpc.customer') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('buildpc.customer')])>{{ __('Build PC') }}</a>
                 <a href="{{ route('store.special-offers') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.special-offers')])>{{ __('Special offers') }}</a>
 
                 @auth

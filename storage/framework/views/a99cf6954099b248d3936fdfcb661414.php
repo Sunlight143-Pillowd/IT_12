@@ -135,15 +135,20 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                            <tr><th class="px-4 py-3">Received</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Invoice</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Proof</th></tr>
+                            <tr><th class="px-4 py-3">Received</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Invoice</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Invoice total (VAT incl.)</th><th class="px-4 py-3">Proof</th><th class="px-4 py-3">Actions</th></tr>
                         </thead>
                         <tbody>
                             <?php $__empty_1 = true; $__currentLoopData = $stockIns; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $stockIn): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <?php
+                                    $invoiceTotal = $stockIn->items->sum(fn ($item): float => (float) $item->unit_cost * $item->quantity);
+                                    $invoiceVat = \App\Support\PhilippineVat::breakdown((float) $invoiceTotal);
+                                ?>
                                 <tr class="border-t border-gray-200 align-top">
                                     <td class="px-4 py-3"><?php echo e($stockIn->received_at->format('M j, Y')); ?></td>
                                     <td class="px-4 py-3 font-semibold"><?php echo e($stockIn->supplier_name); ?></td>
                                     <td class="px-4 py-3"><?php echo e($stockIn->invoice_number); ?></td>
                                     <td class="px-4 py-3"><?php echo e($stockIn->items->map(fn ($item) => $item->product->name.' × '.$item->quantity)->join(', ')); ?></td>
+                                    <td class="px-4 py-3 font-semibold">₱<?php echo e(number_format($invoiceVat['total'], 2)); ?><span class="mt-1 block text-xs font-normal text-gray-500">VAT included: ₱<?php echo e(number_format($invoiceVat['vat'], 2)); ?></span></td>
                                     <td class="px-4 py-3">
                                         <?php if($stockIn->delivery_document_path): ?>
                                             <a class="font-semibold text-purple-700 hover:underline" href="<?php echo e(asset('storage/'.$stockIn->delivery_document_path)); ?>" target="_blank" rel="noopener">Document</a>
@@ -154,9 +159,12 @@
                                             <?php endif; ?>
                                         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                     </td>
+                                    <td class="px-4 py-3">
+                                        <a href="<?php echo e(route('stock-in.edit', $stockIn)); ?>" class="rounded border border-purple-200 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-50">Edit</a>
+                                    </td>
                                 </tr>
                             <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
-                                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No supplier deliveries recorded yet.</td></tr>
+                                <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No supplier deliveries recorded yet.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>

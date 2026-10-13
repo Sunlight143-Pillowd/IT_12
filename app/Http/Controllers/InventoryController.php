@@ -62,15 +62,14 @@ class InventoryController extends Controller
                         ->orWhere('category', 'like', '%'.$search.'%');
                 });
             })
+            ->orderByRaw('CASE WHEN stock_quantity <= low_stock_threshold THEN 0 ELSE 1 END')
             ->when($stockSort === 'ascending', fn ($query) => $query->orderBy('stock_quantity')->orderBy('name'))
             ->when($stockSort === 'descending', fn ($query) => $query->orderByDesc('stock_quantity')->orderBy('name'))
             ->when($stockSort === 'name', fn ($query) => $query->orderBy('type')->orderBy('name'))
             ->get();
 
         $categoryRecords = Category::query()->orderBy('sort_order')->orderBy('id')->get();
-        $categories = $categoryRecords->pluck('name')->toArray();
-        $fallbackCategories = ['GPU', 'CPU', 'Monitor', 'Mouse', 'Keyboard', 'Case', 'Fans', 'CPU Cooler', 'SSD', 'RAM'];
-        $categories = array_values(array_unique(array_merge($categories, $fallbackCategories)));
+        $categories = $categoryRecords->pluck('name')->all();
 
         return view('inventory', [
             'products' => $products,

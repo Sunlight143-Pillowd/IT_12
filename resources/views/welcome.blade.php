@@ -52,9 +52,7 @@
                         </div>
                     </div>
                     <a href="{{ route('store.top-selling') }}" class="shrink-0 whitespace-nowrap hover:text-purple-700">TOP SELLING</a>
-                    @auth
-                        <a href="{{ route('buildpc.customer') }}" class="shrink-0 whitespace-nowrap hover:text-purple-700">BUILD PC</a>
-                    @endauth
+                    <a href="{{ route('buildpc.customer') }}" class="shrink-0 whitespace-nowrap hover:text-purple-700">BUILD PC</a>
                     <a href="{{ route('store.special-offers') }}" class="shrink-0 whitespace-nowrap text-purple-700 hover:text-purple-800">OFFERS</a>
                     @auth
                         <a href="{{ route('dashboard') }}" class="shrink-0 whitespace-nowrap hover:text-purple-600">{{ Auth::user()->isAdmin() ? 'DASHBOARD' : 'MY ORDERS' }}</a>
@@ -171,6 +169,7 @@
                                         <p class="text-xs font-bold uppercase tracking-[0.18em] text-purple-700">Special offer</p>
                                         <h2 class="break-words text-lg font-black text-gray-900 sm:text-xl">{{ $product->name }}</h2>
                                         <p class="mt-1 text-xl font-black text-purple-700">₱{{ number_format($product->price, 0) }}</p>
+                                        <p class="mt-1 text-xs text-gray-500">12% Philippine VAT included</p>
                                     </div>
                                     <span class="rounded-full px-2.5 py-1 text-xs font-semibold {{ $availableStock <= $product->low_stock_threshold ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' }}">
                                         {{ $availableStock }} in stock
@@ -216,7 +215,6 @@
                             @if (Auth::user()?->canManageOrders() && ! $category['image_path'])
                                 <form method="POST" action="{{ route('inventory.categories.image', $category['slug']) }}" enctype="multipart/form-data" class="absolute right-2 top-2 flex flex-col items-end gap-1">
                                     @csrf
-                                    <input type="hidden" name="category_name" value="{{ $category['name'] }}">
                                     <label class="inline-flex cursor-pointer items-center gap-1.5 rounded bg-white/95 px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wide text-gray-800 shadow transition hover:bg-purple-100 hover:text-purple-800">
                                         <span aria-hidden="true" class="text-sm leading-none">＋</span>
                                         <span>Upload Photo</span>

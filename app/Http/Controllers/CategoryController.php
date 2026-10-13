@@ -120,8 +120,8 @@ class CategoryController extends Controller
     {
         abort_unless($request->user()?->canManageOrders(), 403);
 
-        $data = $request->validate([
-            'category_name' => ['required', 'string', 'max:100'],
+        $category = Category::query()->where('slug', $categorySlug)->firstOrFail();
+        $request->validate([
             'image' => [
                 'required',
                 'file',
@@ -145,13 +145,6 @@ class CategoryController extends Controller
         ], [
             'image.max' => 'The image must be 5 MB or smaller.',
         ]);
-
-        abort_unless(Str::slug($data['category_name']) === $categorySlug, 404);
-
-        $category = Category::firstOrCreate(
-            ['slug' => $categorySlug],
-            ['name' => trim($data['category_name'])]
-        );
 
         $previousImage = $category->image_path;
         $category->update([

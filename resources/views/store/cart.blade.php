@@ -1,6 +1,7 @@
 <x-app-layout>
     @php
         /** @var \Illuminate\Support\ViewErrorBag $errors */
+        $cartVat = \App\Support\PhilippineVat::breakdown((float) $subtotal);
     @endphp
 
     <x-slot name="header">
@@ -90,9 +91,20 @@
 
                     <aside class="h-fit rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
                         <h3 class="text-lg font-black uppercase tracking-wide text-gray-900">Cart Totals</h3>
-                        <div class="mt-5 flex justify-between border-b border-gray-100 pb-4 text-sm text-gray-600">
-                            <span>Subtotal</span>
-                            <span class="font-semibold text-gray-900">₱{{ number_format($subtotal, 2) }}</span>
+                        <div class="mt-5 space-y-3 border-b border-gray-100 pb-4 text-sm">
+                            <p class="text-xs text-gray-500">Catalog prices include 12% Philippine VAT.</p>
+                            <div class="flex justify-between gap-4 text-gray-600">
+                                <span>Amount before VAT</span>
+                                <span class="font-semibold text-gray-900">₱{{ number_format($cartVat['net'], 2) }}</span>
+                            </div>
+                            <div class="flex justify-between gap-4 text-gray-600">
+                                <span>VAT (12%, included)</span>
+                                <span class="font-semibold text-gray-900">₱{{ number_format($cartVat['vat'], 2) }}</span>
+                            </div>
+                            <div class="flex justify-between gap-4 border-t border-gray-100 pt-3 font-bold text-gray-900">
+                                <span>Total (VAT included)</span>
+                                <span>₱{{ number_format($cartVat['total'], 2) }}</span>
+                            </div>
                         </div>
                         <a href="{{ route('checkout.index') }}" class="mt-5 inline-flex w-full justify-center rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
                             Proceed to checkout
