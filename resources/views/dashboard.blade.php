@@ -174,8 +174,12 @@
 
                         </div>
                         <div class="mt-6 flex flex-wrap gap-3">
-                            <a href="{{ route('inventory.index') }}" class="inline-block rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-purple-700">VIEW INVENTORY</a>
-                            <a href="{{ route('pos.index') }}" class="inline-block rounded-lg border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-white/10">OPEN POS</a>
+                            @if (Auth::user()->hasPermission('inventory.manage'))
+                                <a href="{{ route('inventory.index') }}" class="inline-block rounded-lg bg-purple-600 px-5 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-purple-700">VIEW INVENTORY</a>
+                            @endif
+                            @if (Auth::user()->hasPermission('sales.create'))
+                                <a href="{{ route('pos.index') }}" class="inline-block rounded-lg border border-white/30 bg-white/5 px-5 py-3 text-sm font-semibold tracking-wide text-white transition hover:bg-white/10">OPEN POS</a>
+                            @endif
                         </div>
                     </div>
                 </section>
@@ -183,22 +187,25 @@
                 <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                         <h2 class="text-xl font-black text-gray-900">Quick Actions</h2>
                         <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                            <a href="{{ route('inventory.index') }}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition hover:border-purple-600 hover:bg-purple-50">
-                                <p class="font-bold text-gray-900">Inventory</p>
-                                <p class="text-sm text-gray-500">Check stock levels</p>
-                            </a>
-                            <a href="{{ route('pos.index') }}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition hover:border-purple-600 hover:bg-purple-50">
-                                <p class="font-bold text-gray-900">POS</p>
-                                <p class="text-sm text-gray-500">Open cashier</p>
-                            </a>
-                            <a href="{{ route('quotation.index') }}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition hover:border-purple-600 hover:bg-purple-50">
-                                <p class="font-bold text-gray-900">Quotations</p>
-                                <p class="text-sm text-gray-500">Create customer quotes</p>
-                            </a>
-                            <a href="{{ route('buildpc.index') }}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition hover:border-purple-600 hover:bg-purple-50">
-                                <p class="font-bold text-gray-900">Build PC</p>
-                                <p class="text-sm text-gray-500">Create custom desktop builds</p>
-                            </a>
+                            @foreach ([
+                                ['inventory.manage', 'inventory.index', 'Inventory', 'Check stock levels'],
+                                ['sales.create', 'pos.index', 'POS', 'Process sales and print receipts'],
+                                ['quotations.manage', 'quotation.index', 'Quotations', 'Create customer quotes'],
+                                ['builds.manage', 'buildpc.index', 'Build PC', 'Create custom desktop builds'],
+                                ['customers.manage', 'customers.index', 'Customers', 'Manage customer records and feedback'],
+                                ['suppliers.manage', 'suppliers.index', 'Suppliers', 'Maintain supplier contacts'],
+                                ['warranty.verify', 'warranty.index', 'Warranty & Service', 'Verify coverage and update cases'],
+                                ['expenses.manage', 'expenses.index', 'Expenses', 'Record business expenses'],
+                                ['reports.view', 'reports.index', 'Reports', 'Generate period reports'],
+                                ['employees.manage', 'employees.index', 'Employees & Roles', 'Manage accounts and permissions'],
+                            ] as [$permission, $routeName, $title, $description])
+                                @if (Auth::user()->hasPermission($permission))
+                                    <a href="{{ route($routeName) }}" class="rounded-lg border border-gray-200 bg-gray-50 p-4 transition hover:border-purple-600 hover:bg-purple-50">
+                                        <p class="font-bold text-gray-900">{{ $title }}</p>
+                                        <p class="text-sm text-gray-500">{{ $description }}</p>
+                                    </a>
+                                @endif
+                            @endforeach
                         </div>
                 </section>
 
@@ -215,6 +222,67 @@
                             <p class="mt-2 text-3xl font-black tabular-nums {{ $color }}">{{ $count }}</p>
                         </article>
                     @endforeach
+                </section>
+
+                <section aria-labelledby="sales-report-heading" class="grid gap-4 xl:grid-cols-5">
+                    <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-3">
+                        <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-5 py-4 sm:px-6">
+                            <div>
+                                <h2 id="sales-report-heading" class="text-lg font-black text-gray-900">Sales overview</h2>
+                                <p class="mt-1 text-sm text-gray-500">Daily POS revenue for the last 7 days</p>
+                            </div>
+                            <a href="{{ route('reports.index') }}" class="text-sm font-semibold text-purple-700 hover:underline">View reports</a>
+                        </div>
+                        <div class="p-5 sm:px-6">
+                            <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+                                <p class="text-2xl font-black tabular-nums text-gray-950">₱{{ number_format($salesTrend->sum('revenue'), 2) }}</p>
+                                <p class="text-xs text-gray-500">{{ number_format($salesTrend->sum('transactions')) }} transactions this week</p>
+                            </div>
+                            <div role="img" aria-label="Daily POS revenue during the last seven days: {{ $salesTrend->map(fn ($day) => $day['date']->format('M j').', ₱'.number_format($day['revenue'], 2))->implode('; ') }}" class="grid h-52 grid-cols-7 gap-2 border-b border-gray-200 sm:gap-4">
+                                @foreach ($salesTrend as $day)
+                                    <div class="flex min-w-0 flex-col items-center justify-end gap-2">
+                                        <span class="max-w-full truncate text-center text-[10px] font-medium tabular-nums text-gray-500" title="₱{{ number_format($day['revenue'], 2) }}">
+                                            @if ($day['revenue'] > 0)
+                                                ₱{{ number_format($day['revenue'], 0) }}
+                                            @else
+                                                &nbsp;
+                                            @endif
+                                        </span>
+                                        <div class="flex h-32 w-full items-end justify-center rounded-t-md bg-gray-50">
+                                            <div class="w-4/5 rounded-t-md bg-gradient-to-t from-purple-700 to-violet-500 transition-all" style="height: {{ $day['revenue'] > 0 ? max(5, ($day['revenue'] / $salesTrendMaxRevenue) * 100) : 0 }}%" title="{{ $day['transactions'] }} transactions, ₱{{ number_format($day['revenue'], 2) }}"></div>
+                                        </div>
+                                        <span class="pb-2 text-xs font-semibold {{ $day['date']->isToday() ? 'text-purple-800' : 'text-gray-500' }}">{{ $day['label'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:col-span-2">
+                        <div class="border-b border-gray-100 px-5 py-4 sm:px-6">
+                            <h2 class="text-lg font-black text-gray-900">Top-selling products</h2>
+                            <p class="mt-1 text-sm text-gray-500">By units sold this month</p>
+                        </div>
+                        <div class="space-y-4 p-5 sm:px-6">
+                            @forelse ($topSellingProducts as $product)
+                                <div>
+                                    <div class="mb-1.5 flex items-center justify-between gap-3">
+                                        <p class="min-w-0 truncate text-sm font-semibold text-gray-800" title="{{ $product->product_name }}">{{ $product->product_name }}</p>
+                                        <span class="shrink-0 text-xs font-bold tabular-nums text-gray-600">{{ number_format($product->units_sold) }} sold</span>
+                                    </div>
+                                    <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                                        <div class="h-full rounded-full bg-gradient-to-r from-purple-700 to-violet-500" style="width: {{ ($product->units_sold / $topSellingMaxUnits) * 100 }}%"></div>
+                                    </div>
+                                    <p class="mt-1 text-right text-[11px] tabular-nums text-gray-500">₱{{ number_format($product->sales_total, 2) }} revenue</p>
+                                </div>
+                            @empty
+                                <div class="flex min-h-40 flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 text-center">
+                                    <p class="text-sm font-semibold text-gray-700">No sales this month yet</p>
+                                    <p class="mt-1 text-xs text-gray-500">Completed POS sales will appear here.</p>
+                                </div>
+                            @endforelse
+                        </div>
+                    </article>
                 </section>
 
                 <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">

@@ -15,6 +15,9 @@
                     <label class="text-sm font-semibold text-gray-700">Name
                         <input name="name" required value="{{ old('name', $product->name) }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                     </label>
+                    <label class="text-sm font-semibold text-gray-700">SKU / barcode
+                        <input name="sku" required maxlength="100" value="{{ old('sku', $product->sku) }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                    </label>
                     <label class="text-sm font-semibold text-gray-700">Type
                         <select name="type" required class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                             @foreach ($productTypeOptions as $value => $label)

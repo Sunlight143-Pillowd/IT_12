@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\StockIn;
 use App\Models\StoreOrder;
 use Illuminate\Http\RedirectResponse;
@@ -33,6 +34,36 @@ class DashboardController extends Controller
             ->whereDate('created_at', today())
             ->count();
         $revenue = Sale::sum('total_amount');
+        $salesTrendStart = today()->subDays(6);
+        $dailySales = Sale::query()
+            ->selectRaw('DATE(created_at) as report_date, SUM(total_amount) as revenue, COUNT(*) as transactions')
+            ->whereBetween('created_at', [$salesTrendStart->copy()->startOfDay(), today()->endOfDay()])
+            ->groupByRaw('DATE(created_at)')
+            ->get()
+            ->keyBy('report_date');
+        $salesTrend = collect(range(0, 6))
+            ->map(function (int $dayOffset) use ($salesTrendStart, $dailySales): array {
+                $date = $salesTrendStart->copy()->addDays($dayOffset);
+                $daySales = $dailySales->get($date->toDateString());
+
+                return [
+                    'date' => $date,
+                    'label' => $date->format('D'),
+                    'revenue' => (float) ($daySales?->revenue ?? 0),
+                    'transactions' => (int) ($daySales?->transactions ?? 0),
+                ];
+            });
+        $salesTrendMaxRevenue = max(1, (float) $salesTrend->max('revenue'));
+        $topSellingProducts = SaleItem::query()
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->selectRaw('sale_items.product_id, sale_items.product_name, SUM(sale_items.quantity) as units_sold, SUM(sale_items.subtotal) as sales_total')
+            ->whereBetween('sales.created_at', [now()->startOfMonth(), now()])
+            ->groupBy('sale_items.product_id', 'sale_items.product_name')
+            ->orderByDesc('units_sold')
+            ->orderByDesc('sales_total')
+            ->limit(5)
+            ->get();
+        $topSellingMaxUnits = max(1, (int) $topSellingProducts->max('units_sold'));
         $recentSales = Sale::with('items')->withCount('items')->latest()->limit(10)->get();
         $recentStockIns = StockIn::withCount('items')->latest()->limit(10)->get();
         $storeOrders = $user?->canManageOrders()
@@ -90,6 +121,10 @@ class DashboardController extends Controller
             'todaySales' => $todaySales,
             'todayOrders' => $todayOrders,
             'revenue' => $revenue,
+            'salesTrend' => $salesTrend,
+            'salesTrendMaxRevenue' => $salesTrendMaxRevenue,
+            'topSellingProducts' => $topSellingProducts,
+            'topSellingMaxUnits' => $topSellingMaxUnits,
             'recentSales' => $recentSales,
             'recentStockIns' => $recentStockIns,
             'storeOrders' => $storeOrders,
@@ -104,7 +139,7 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to accept orders.');
+        abort_unless($user && $user->hasPermission('sales.create'), 403, 'You are not allowed to accept orders.');
         DB::transaction(function () use ($storeOrder, $user): void {
             $order = StoreOrder::query()->whereKey($storeOrder->id)->lockForUpdate()->firstOrFail();
 
@@ -172,7 +207,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to update order shipping.');
+        abort_unless($user && $user->hasPermission('sales.create'), 403, 'You are not allowed to update order shipping.');
 
         $validated = $request->validate([
             'shipping_fee' => ['required', 'numeric', 'min:0', 'max:100000'],
@@ -211,7 +246,7 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        abort_unless($user && $user->canManageOrders(), 403, 'You are not allowed to update orders.');
+        abort_unless($user && $user->hasPermission('sales.create'), 403, 'You are not allowed to update orders.');
 
         $validated = $request->validate([
             'customer_name' => ['required', 'string', 'max:255'],

@@ -37,6 +37,99 @@
 
                 </div>
             <?php endif; ?>
+            <?php if($errors->any()): ?>
+                <ul class="mb-6 list-disc rounded border border-red-200 bg-red-50 px-4 py-3 pl-8 text-sm text-red-700">
+                    <?php $__currentLoopData = $errors->all(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <li><?php echo e($error); ?></li>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </ul>
+            <?php endif; ?>
+
+            <section aria-labelledby="pos-sale-heading" class="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="mb-4">
+                    <h3 id="pos-sale-heading" class="text-xl font-bold text-gray-900">Process Sale</h3>
+                    <p class="mt-1 text-sm text-gray-500">Search or scan a SKU, add products and quantities, then record payment.</p>
+                </div>
+                <div class="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]">
+                    <div class="space-y-3">
+                        <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_14rem]">
+                            <label class="sr-only" for="pos-product-search">Search products or scan SKU</label>
+                            <input id="pos-product-search" type="search" placeholder="Search products or scan SKU…" autocomplete="off" class="rounded border-gray-300 text-sm">
+                            <label class="sr-only" for="pos-category-filter">Filter by category</label>
+                            <select id="pos-category-filter" class="rounded border-gray-300 text-sm">
+                                <option value="all">All categories</option>
+                                <?php $__currentLoopData = $products->pluck('category')->unique()->sort(); $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e(strtolower($category)); ?>"><?php echo e($category); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
+                        </div>
+                        <div id="pos-product-grid" class="grid max-h-[34rem] gap-3 overflow-y-auto sm:grid-cols-2">
+                            <?php $__empty_1 = true; $__currentLoopData = $products; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $product): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                                <button type="button"
+                                    class="pos-product rounded-lg border border-gray-200 bg-gray-50 p-3 text-left transition hover:border-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    data-product-id="<?php echo e($product->id); ?>"
+                                    data-name="<?php echo e($product->name); ?>"
+                                    data-sku="<?php echo e($product->sku); ?>"
+                                    data-price="<?php echo e($product->price); ?>"
+                                    data-stock="<?php echo e($product->availableStock()); ?>"
+                                    data-category="<?php echo e(strtolower($product->category)); ?>"
+                                    data-search="<?php echo e(strtolower($product->name.' '.$product->sku.' '.$product->category)); ?>"
+                                    data-requires-serial="<?php echo e($product->requires_serial ? '1' : '0'); ?>">
+                                    <span class="block font-bold text-gray-900"><?php echo e($product->name); ?></span>
+                                    <span class="mt-1 block font-mono text-xs text-gray-500">SKU <?php echo e($product->sku); ?></span>
+                                    <span class="mt-2 flex justify-between gap-2 text-sm">
+                                        <strong class="text-purple-700">₱<?php echo e(number_format($product->price, 2)); ?></strong>
+                                        <span class="<?php echo e($product->availableStock() > 0 ? 'text-gray-600' : 'font-semibold text-red-700'); ?>">Stock <?php echo e($product->availableStock()); ?></span>
+                                    </span>
+                                </button>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                                <p class="col-span-full rounded border border-dashed border-gray-300 p-5 text-center text-sm text-gray-500">No active products are available.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <form id="pos-checkout-form" method="POST" action="<?php echo e(route('pos.checkout')); ?>" class="space-y-4 rounded-lg bg-gray-50 p-4">
+                        <?php echo csrf_field(); ?>
+                        <input type="hidden" name="cart_json" id="pos-cart-json">
+                        <div class="flex items-center justify-between gap-3">
+                            <h4 class="font-bold text-gray-900">Sale Items</h4>
+                            <button type="button" id="pos-clear-cart" class="text-xs font-semibold text-red-700 hover:underline">Clear cart</button>
+                        </div>
+                        <div id="pos-cart-items" class="max-h-72 min-h-20 space-y-3 overflow-y-auto text-sm">
+                            <p id="pos-cart-empty" class="text-gray-400">No products selected.</p>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-gray-200 pt-3 text-lg font-bold text-gray-900">
+                            <span>Total</span><span id="pos-cart-total">₱0.00</span>
+                        </div>
+                        <div class="space-y-3 border-t border-gray-200 pt-3">
+                            <label class="block text-xs font-bold uppercase text-gray-500">Customer (optional)
+                                <select name="customer_id" id="pos-customer-select" class="mt-1 w-full rounded border-gray-300 text-sm font-normal normal-case">
+                                    <option value="">Walk-in / not linked</option>
+                                    <?php $__currentLoopData = $customers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $customer): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                        <option value="<?php echo e($customer->id); ?>" data-name="<?php echo e($customer->name); ?>"><?php echo e($customer->name); ?><?php echo e($customer->phone ? ' · '.$customer->phone : ''); ?></option>
+                                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                                </select>
+                            </label>
+                            <input name="customer_name" id="pos-customer-name" maxlength="150" placeholder="Customer name (optional)" class="w-full rounded border-gray-300 text-sm">
+                            <div class="grid gap-3 sm:grid-cols-2">
+                                <label class="block text-xs font-bold uppercase text-gray-500">Payment method
+                                    <select name="payment_method" id="pos-payment-method" required class="mt-1 w-full rounded border-gray-300 text-sm font-normal normal-case">
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="bank_transfer">Bank transfer</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </label>
+                                <label class="block text-xs font-bold uppercase text-gray-500">Amount received
+                                    <input name="payment_amount" id="pos-payment-amount" type="number" min="0.01" step="0.01" required class="mt-1 w-full rounded border-gray-300 text-sm font-normal normal-case">
+                                </label>
+                            </div>
+                            <input name="payment_reference" maxlength="150" placeholder="Payment reference (optional)" class="w-full rounded border-gray-300 text-sm">
+                        </div>
+                        <button type="submit" class="w-full rounded bg-purple-700 px-4 py-3 text-sm font-bold text-white hover:bg-purple-800">Complete sale & open receipt</button>
+                    </form>
+                </div>
+            </section>
 
             <div class="grid gap-6 lg:grid-cols-3">
                 <section aria-labelledby="order-list-heading" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
@@ -363,6 +456,174 @@
 
     <script>
         (function () {
+            const productGrid = document.getElementById('pos-product-grid');
+            const productSearch = document.getElementById('pos-product-search');
+            const categoryFilter = document.getElementById('pos-category-filter');
+            const cartItems = document.getElementById('pos-cart-items');
+            const cartTotal = document.getElementById('pos-cart-total');
+            const cartJson = document.getElementById('pos-cart-json');
+            const paymentMethod = document.getElementById('pos-payment-method');
+            const paymentAmount = document.getElementById('pos-payment-amount');
+            const customerSelect = document.getElementById('pos-customer-select');
+            const customerName = document.getElementById('pos-customer-name');
+            const cart = new Map();
+            let total = 0;
+            let paymentWasEdited = false;
+
+            function renderCart() {
+                cartItems.replaceChildren();
+                total = [...cart.values()].reduce((sum, item) => sum + item.price * item.quantity, 0);
+                cartTotal.textContent = `₱${total.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                const entries = [...cart.values()];
+
+                if (entries.length === 0) {
+                    const empty = document.createElement('p');
+                    empty.className = 'text-gray-400';
+                    empty.textContent = 'No products selected.';
+                    cartItems.append(empty);
+                }
+
+                entries.forEach((item) => {
+                    const row = document.createElement('div');
+                    row.className = 'space-y-2 rounded border border-gray-200 bg-white p-3';
+                    const heading = document.createElement('div');
+                    heading.className = 'flex items-start justify-between gap-2';
+                    const name = document.createElement('p');
+                    name.className = 'font-semibold text-gray-900';
+                    name.textContent = `${item.name} · ₱${item.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`;
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'text-xs font-semibold text-red-700';
+                    remove.dataset.removeProduct = item.id;
+                    remove.textContent = 'Remove';
+                    heading.append(name, remove);
+                    row.append(heading);
+
+                    const quantity = document.createElement('label');
+                    quantity.className = 'flex items-center gap-2 text-xs text-gray-600';
+                    quantity.textContent = 'Quantity';
+                    const quantityInput = document.createElement('input');
+                    quantityInput.type = 'number';
+                    quantityInput.min = '1';
+                    quantityInput.max = String(item.stock);
+                    quantityInput.value = String(item.quantity);
+                    quantityInput.className = 'w-20 rounded border-gray-300 text-sm';
+                    quantityInput.dataset.quantityProduct = item.id;
+                    quantity.append(quantityInput);
+                    row.append(quantity);
+
+                    if (item.requiresSerial) {
+                        const serials = document.createElement('textarea');
+                        serials.rows = 2;
+                        serials.required = true;
+                        serials.maxLength = 100000;
+                        serials.placeholder = 'Enter one serial number per unit';
+                        serials.className = 'w-full rounded border-gray-300 text-xs';
+                        serials.value = item.serialNumbers.join('\n');
+                        serials.dataset.serialProduct = item.id;
+                        row.append(serials);
+                    }
+                    cartItems.append(row);
+                });
+
+                if (paymentMethod.value === 'cash') {
+                    if (!paymentWasEdited || paymentAmount.value === '') {
+                        paymentAmount.value = total > 0 ? total.toFixed(2) : '';
+                    }
+                    paymentAmount.readOnly = false;
+                } else {
+                    paymentAmount.value = total > 0 ? total.toFixed(2) : '';
+                    paymentAmount.readOnly = true;
+                }
+            }
+
+            function filterProducts() {
+                const term = productSearch.value.trim().toLowerCase();
+                const category = categoryFilter.value;
+                productGrid.querySelectorAll('.pos-product').forEach((button) => {
+                    button.hidden = !(button.dataset.search.includes(term)
+                        && (category === 'all' || button.dataset.category === category));
+                });
+            }
+
+            productGrid.addEventListener('click', (event) => {
+                const button = event.target.closest('.pos-product');
+                if (!button) {
+                    return;
+                }
+                const id = button.dataset.productId;
+                const existing = cart.get(id);
+                const stock = Number(button.dataset.stock);
+                if (stock < 1 || (existing && existing.quantity >= stock)) {
+                    return;
+                }
+                cart.set(id, existing ? { ...existing, quantity: existing.quantity + 1 } : {
+                    id,
+                    name: button.dataset.name,
+                    price: Number(button.dataset.price),
+                    stock,
+                    quantity: 1,
+                    requiresSerial: button.dataset.requiresSerial === '1',
+                    serialNumbers: [],
+                });
+                renderCart();
+            });
+            productSearch.addEventListener('input', filterProducts);
+            categoryFilter.addEventListener('change', filterProducts);
+            cartItems.addEventListener('input', (event) => {
+                const id = event.target.dataset.quantityProduct;
+                if (id) {
+                    const item = cart.get(id);
+                    const quantity = Number(event.target.value);
+                    if (item && quantity >= 1 && quantity <= item.stock) {
+                        cart.set(id, { ...item, quantity });
+                        renderCart();
+                    }
+                    return;
+                }
+                const serialId = event.target.dataset.serialProduct;
+                if (serialId) {
+                    const item = cart.get(serialId);
+                    if (item) {
+                        cart.set(serialId, { ...item, serialNumbers: event.target.value.split(/\r?\n/).map((value) => value.trim()).filter(Boolean) });
+                    }
+                }
+            });
+            cartItems.addEventListener('click', (event) => {
+                const id = event.target.dataset.removeProduct;
+                if (id) {
+                    cart.delete(id);
+                    renderCart();
+                }
+            });
+            paymentAmount.addEventListener('input', () => {
+                paymentWasEdited = true;
+            });
+            paymentMethod.addEventListener('change', renderCart);
+            customerSelect.addEventListener('change', () => {
+                const selectedName = customerSelect.selectedOptions[0]?.dataset.name ?? '';
+                if (selectedName) {
+                    customerName.value = selectedName;
+                }
+            });
+            document.getElementById('pos-clear-cart').addEventListener('click', () => {
+                cart.clear();
+                paymentWasEdited = false;
+                renderCart();
+            });
+            document.getElementById('pos-checkout-form').addEventListener('submit', (event) => {
+                if (cart.size === 0) {
+                    event.preventDefault();
+                    return;
+                }
+                cartJson.value = JSON.stringify([...cart.values()].map((item) => ({
+                    product_id: item.id,
+                    quantity: item.quantity,
+                    serial_numbers: item.serialNumbers,
+                })));
+            });
+            renderCart();
+
             const orderCards = document.querySelectorAll('.order-card');
             const orderDetails = document.getElementById('selected-order-details');
             const orderDetailsTitle = document.getElementById('selected-order-title');

@@ -35,6 +35,12 @@
 
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <label class="text-sm font-semibold text-gray-700">Supplier
+                            <select name="supplier_id" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                                <option value="">No linked supplier</option>
+                                <?php $__currentLoopData = $suppliers; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $supplier): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                    <option value="<?php echo e($supplier->id); ?>" <?php if(old('supplier_id', $stockIn->supplier_id) == $supplier->id): echo 'selected'; endif; ?>><?php echo e($supplier->name); ?></option>
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                            </select>
                             <input name="supplier_name" required value="<?php echo e(old('supplier_name', $stockIn->supplier_name)); ?>" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                         </label>
                         <label class="text-sm font-semibold text-gray-700">Supplier contact

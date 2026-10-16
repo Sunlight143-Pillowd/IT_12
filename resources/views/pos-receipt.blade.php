@@ -15,6 +15,9 @@
 
     <div class="py-6">
         <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+            @if (session('success'))
+                <p class="mb-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{{ session('success') }}</p>
+            @endif
             <article class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm print:border-0 print:shadow-none">
                 <div class="border-b border-gray-200 pb-4">
                     <p class="text-xs font-bold uppercase text-gray-500">Sales receipt #{{ $sale->id }}</p>
@@ -34,8 +37,11 @@
                                 @if ($item->product?->description)
                                     <p class="mt-1 wrap-break-word text-xs text-gray-600">{{ $item->product->description }}</p>
                                 @endif
+                                @if ($item->product?->sku)
+                                    <p class="mt-1 text-xs text-gray-500">SKU: {{ $item->product->sku }}</p>
+                                @endif
                                 @foreach ($item->units as $unit)
-                                    <p class="mt-1 text-xs text-gray-500">Serial: {{ $unit->serial_number ?? 'Not recorded' }} · Warranty: {{ $unit->warranty_months !== null ? $unit->warranty_months.' months' : 'Not recorded' }}</p>
+                                    <p class="mt-1 text-xs text-gray-500">Serial: {{ $unit->serial_number ?? 'Not recorded' }} · Lot: {{ $unit->lot_code ?: 'Not recorded' }} · Warranty through: {{ $unit->warranty_ends_at?->format('M j, Y') ?: 'Not recorded' }}</p>
                                 @endforeach
                             </div>
                             <p class="shrink-0 font-semibold text-gray-900">₱{{ number_format($item->subtotal, 2) }}</p>
@@ -49,6 +55,19 @@
                         <span class="font-semibold text-gray-900">₱{{ number_format($sale->shipping_fee, 2) }}</span>
                     </div>
                 @endif
+                @foreach ($sale->payments as $payment)
+                    <div class="space-y-1 border-t border-gray-200 py-4 text-sm">
+                        <div class="flex justify-between gap-3"><span>Payment method</span><strong class="capitalize">{{ str_replace('_', ' ', $payment->method) }}</strong></div>
+                        <div class="flex justify-between gap-3"><span>Paid</span><strong>₱{{ number_format((float) $payment->amount, 2) }}</strong></div>
+                        @if ((float) $payment->amount_tendered > (float) $payment->amount)
+                            <div class="flex justify-between gap-3"><span>Cash received</span><span>₱{{ number_format((float) $payment->amount_tendered, 2) }}</span></div>
+                            <div class="flex justify-between gap-3"><span>Change</span><span>₱{{ number_format((float) $payment->amount_tendered - (float) $payment->amount, 2) }}</span></div>
+                        @endif
+                        @if ($payment->reference)
+                            <div class="flex justify-between gap-3"><span>Reference</span><span>{{ $payment->reference }}</span></div>
+                        @endif
+                    </div>
+                @endforeach
                 <div class="space-y-2 border-t border-gray-200 py-4 text-sm">
                     <p class="text-xs text-gray-500">Prices include 12% Philippine VAT.</p>
                     <div class="flex items-center justify-between text-gray-700">

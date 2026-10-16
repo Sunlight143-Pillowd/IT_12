@@ -26,6 +26,12 @@
 
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <label class="text-sm font-semibold text-gray-700">Supplier
+                            <select name="supplier_id" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                                <option value="">No linked supplier</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier->id }}" @selected(old('supplier_id', $stockIn->supplier_id) == $supplier->id)>{{ $supplier->name }}</option>
+                                @endforeach
+                            </select>
                             <input name="supplier_name" required value="{{ old('supplier_name', $stockIn->supplier_name) }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                         </label>
                         <label class="text-sm font-semibold text-gray-700">Supplier contact

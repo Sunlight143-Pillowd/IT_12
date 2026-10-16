@@ -159,7 +159,7 @@ class PcBuildController extends Controller
 
     public function updateCustomerBuild(Request $request, PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('builds.manage'), 403);
         abort_if($pcBuild->user_id === null, 404);
 
         $validated = $request->validate([
@@ -204,7 +204,7 @@ class PcBuildController extends Controller
 
     public function show(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-show', compact('pcBuild'));
@@ -212,7 +212,7 @@ class PcBuildController extends Controller
 
     public function print(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-print', compact('pcBuild'));
@@ -220,7 +220,7 @@ class PcBuildController extends Controller
 
     public function edit(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
         $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
@@ -249,7 +249,7 @@ class PcBuildController extends Controller
 
     public function customerEdit(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
         $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
@@ -278,7 +278,7 @@ class PcBuildController extends Controller
 
     public function update(Request $request, PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
 
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
@@ -294,7 +294,7 @@ class PcBuildController extends Controller
 
     public function destroy(PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $this->pcBuildService->deleteBuild($pcBuild);
 
         return back()->with('success', 'PC build deleted successfully.');

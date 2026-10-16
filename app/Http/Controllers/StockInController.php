@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\StockIn;
+use App\Models\Supplier;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -18,9 +20,10 @@ class StockInController extends Controller
     public function index(): View
     {
         $products = Product::query()->where('is_active', true)->orderBy('name')->get();
-        $stockIns = StockIn::with('items.product', 'employee')->latest()->limit(20)->get();
+        $suppliers = Supplier::query()->where('is_active', true)->orderBy('name')->get();
+        $stockIns = StockIn::with('items.product', 'employee', 'supplier')->latest()->limit(20)->get();
 
-        return view('stock-in', compact('products', 'stockIns'));
+        return view('stock-in', compact('products', 'stockIns', 'suppliers'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -28,6 +31,7 @@ class StockInController extends Controller
         $data = $request->validate([
             'supplier_name' => ['required', 'string', 'max:150'],
             'supplier_contact' => ['nullable', 'string', 'max:150'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'invoice_number' => ['required', 'string', 'max:100', Rule::unique('stock_ins')->where('supplier_name', $request->input('supplier_name'))],
             'received_at' => ['required', 'date'],
             'delivery_document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
@@ -39,6 +43,9 @@ class StockInController extends Controller
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:10000'],
             'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
             'items.*.warranty_months' => ['nullable', 'integer', 'min:0', 'max:1200'],
+            'items.*.lot_code' => ['nullable', 'string', 'max:100'],
+            'items.*.manufactured_at' => ['nullable', 'date'],
+            'items.*.warranty_ends_at' => ['nullable', 'date'],
             'items.*.serial_numbers' => ['nullable', 'string', 'max:100000'],
         ]);
 
@@ -82,10 +89,14 @@ class StockInController extends Controller
         }
 
         DB::transaction(function () use ($request, $data, $preparedItems): void {
+            $supplier = isset($data['supplier_id'])
+                ? Supplier::findOrFail($data['supplier_id'])
+                : Supplier::query()->where('name', $data['supplier_name'])->first();
             $stockIn = StockIn::create([
                 'employee_id' => $request->user()->id,
-                'supplier_name' => $data['supplier_name'],
-                'supplier_contact' => $data['supplier_contact'] ?? null,
+                'supplier_id' => $supplier?->id,
+                'supplier_name' => $supplier?->name ?? $data['supplier_name'],
+                'supplier_contact' => $supplier?->phone ?? $data['supplier_contact'] ?? null,
                 'invoice_number' => $data['invoice_number'],
                 'received_at' => $data['received_at'],
                 'notes' => $data['notes'] ?? null,
@@ -105,6 +116,11 @@ class StockInController extends Controller
                     'unit_cost' => $item['unit_cost'],
                     'warranty_months' => $warrantyMonths,
                 ]);
+                $warrantyEndsAt = $item['warranty_ends_at'] ?? (
+                    $warrantyMonths !== null
+                        ? Carbon::parse($data['received_at'])->addMonths((int) $warrantyMonths)->toDateString()
+                        : null
+                );
 
                 foreach (range(0, $quantity - 1) as $unitIndex) {
                     ProductUnit::create([
@@ -112,6 +128,9 @@ class StockInController extends Controller
                         'product_id' => $product->id,
                         'serial_number' => $item['serial_numbers'][$unitIndex] ?? null,
                         'warranty_months' => $warrantyMonths,
+                        'lot_code' => $item['lot_code'] ?? null,
+                        'manufactured_at' => $item['manufactured_at'] ?? null,
+                        'warranty_ends_at' => $warrantyEndsAt,
                         'status' => 'in_stock',
                     ]);
                 }
@@ -126,8 +145,9 @@ class StockInController extends Controller
     public function edit(StockIn $stockIn): View
     {
         $stockIn->load('items.product', 'items.units');
+        $suppliers = Supplier::query()->where('is_active', true)->orderBy('name')->get();
 
-        return view('stock-in-edit', compact('stockIn'));
+        return view('stock-in-edit', compact('stockIn', 'suppliers'));
     }
 
     public function update(Request $request, StockIn $stockIn): RedirectResponse
@@ -135,6 +155,7 @@ class StockInController extends Controller
         $data = $request->validate([
             'supplier_name' => ['required', 'string', 'max:150'],
             'supplier_contact' => ['nullable', 'string', 'max:150'],
+            'supplier_id' => ['nullable', 'integer', 'exists:suppliers,id'],
             'invoice_number' => [
                 'required',
                 'string',
@@ -158,6 +179,9 @@ class StockInController extends Controller
 
         [$oldPaths, $newPaths] = DB::transaction(function () use ($request, $data, $stockIn): array {
             $lockedStockIn = StockIn::query()->lockForUpdate()->findOrFail($stockIn->id);
+            $supplier = isset($data['supplier_id'])
+                ? Supplier::findOrFail($data['supplier_id'])
+                : Supplier::query()->where('name', $data['supplier_name'])->first();
 
             $oldPaths = [
                 'delivery_document_path' => $lockedStockIn->delivery_document_path,
@@ -177,8 +201,9 @@ class StockInController extends Controller
             }
 
             $lockedStockIn->update([
-                'supplier_name' => $data['supplier_name'],
-                'supplier_contact' => $data['supplier_contact'] ?? null,
+                'supplier_id' => $supplier?->id,
+                'supplier_name' => $supplier?->name ?? $data['supplier_name'],
+                'supplier_contact' => $supplier?->phone ?? $data['supplier_contact'] ?? null,
                 'invoice_number' => $data['invoice_number'],
                 'received_at' => $data['received_at'],
                 'notes' => $data['notes'] ?? null,

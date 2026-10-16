@@ -15,6 +15,7 @@ class StockIn extends Model
 
     protected $fillable = [
         'employee_id',
+        'supplier_id',
         'supplier_name',
         'supplier_contact',
         'invoice_number',
@@ -35,6 +36,11 @@ class StockIn extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class);
     }
 
     public function items(): HasMany

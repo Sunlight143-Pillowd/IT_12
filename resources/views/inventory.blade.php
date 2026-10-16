@@ -1,290 +1,427 @@
 <x-app-layout>
+    @php
+        $productTypeOptions = \App\Http\Controllers\InventoryController::productTypeOptions();
+        $lowStockCount = $products->filter(fn ($product) => $product->stock_quantity <= $product->low_stock_threshold)->count();
+        $outOfStockCount = $products->filter(fn ($product) => $product->stock_quantity <= 0)->count();
+        $unitsOnHand = $products->sum('stock_quantity');
+    @endphp
+
     <x-slot name="header">
-        <div class="flex items-center justify-between gap-4">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">{{ __('Inventory') }}</h2>
-            <div class="flex gap-2">
-                <a href="{{ route('dashboard') }}" class="rounded border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:border-purple-600">Back to Dashboard</a>
-                <a href="{{ route('stock-in.index') }}" class="rounded bg-purple-600 px-3 py-2 text-sm font-semibold text-white hover:bg-purple-700">Stock In Delivery</a>
+        <div class="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-100 text-purple-700" aria-hidden="true">
+                    <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m4.4 7.7 7.6 4.4 7.6-4.4M12 12v8.5" />
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-purple-700">Back office</p>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-950">{{ __('Inventory') }}</h1>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('dashboard') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M11.78 3.22a.75.75 0 0 1 0 1.06L7.06 9h9.19a.75.75 0 0 1 0 1.5H7.06l4.72 4.72a.75.75 0 1 1-1.06 1.06l-6-6a.75.75 0 0 1 0-1.06l6-6a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd"/></svg>
+                    Dashboard
+                </a>
+                <a href="{{ route('stock-in.index') }}" class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-purple-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 3.5a.75.75 0 0 0-1.5 0v5.75H3.5a.75.75 0 0 0 0 1.5h5.75v5.75a.75.75 0 0 0 1.5 0v-5.75h5.75a.75.75 0 0 0 0-1.5h-5.75V3.5Z"/></svg>
+                    Record stock-in
+                </a>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+    <div class="min-h-full bg-gray-50 py-6 sm:py-8">
+        <div class="mx-auto max-w-screen-2xl space-y-6 px-4 sm:px-6 lg:px-8">
             @if (session('success'))
-                <div class="rounded border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                    {{ session('success') }}
+                <div role="status" class="flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+                    <svg class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.78-9.22a.75.75 0 0 0-1.06-1.06L9 11.44 7.28 9.72a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.06 0l4.25-4.25Z" clip-rule="evenodd"/></svg>
+                    <p>{{ session('success') }}</p>
                 </div>
             @endif
             @if ($errors->any())
-                <div role="alert" class="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {{ $errors->first() }}
+                <div role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 shadow-sm">
+                    <p class="font-semibold">Please review the following:</p>
+                    <ul class="mt-1 list-inside list-disc">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
                 </div>
             @endif
 
-            <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div class="mb-5">
-                    <h3 class="text-lg font-bold text-gray-900">Add New Item</h3>
-                    <p class="text-sm text-gray-500">Create and manage stock items below.</p>
+            <section aria-label="Inventory overview" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Products listed</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-gray-950">{{ number_format($products->count()) }}</p>
+                    <p class="mt-1 text-xs text-gray-500">Items matching the current filters</p>
+                </article>
+                <article class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Units on hand</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-gray-950">{{ number_format($unitsOnHand) }}</p>
+                    <p class="mt-1 text-xs text-gray-500">Across listed products</p>
+                </article>
+                <article class="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-amber-800">Low stock</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-amber-950">{{ number_format($lowStockCount) }}</p>
+                    <p class="mt-1 text-xs text-amber-800">At or below reorder threshold</p>
+                </article>
+                <article class="rounded-xl border border-red-200 bg-red-50 p-4 shadow-sm sm:p-5">
+                    <p class="text-xs font-bold uppercase tracking-wider text-red-800">Out of stock</p>
+                    <p class="mt-2 text-2xl font-bold tracking-tight text-red-950">{{ number_format($outOfStockCount) }}</p>
+                    <p class="mt-1 text-xs text-red-800">No units currently available</p>
+                </article>
+            </section>
+
+            <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex flex-col gap-2 border-b border-gray-200 px-5 py-5 sm:px-6">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-purple-50 text-purple-700" aria-hidden="true">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4.75A1.75 1.75 0 0 1 4.75 3h10.5A1.75 1.75 0 0 1 17 4.75v10.5A1.75 1.75 0 0 1 15.25 17H4.75A1.75 1.75 0 0 1 3 15.25V4.75ZM5.5 6a.75.75 0 0 0 0 1.5h9a.75.75 0 0 0 0-1.5h-9Zm0 3.25a.75.75 0 0 0 0 1.5h5a.75.75 0 0 0 0-1.5h-5Z"/></svg>
+                        </span>
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-950">Product catalog</h2>
+                            <p class="text-sm text-gray-500">Create products, set prices, and configure stock alerts.</p>
+                        </div>
+                    </div>
                 </div>
 
-                @php
-                    $productTypeOptions = \App\Http\Controllers\InventoryController::productTypeOptions();
-                @endphp
-
-                <form method="POST" action="{{ route('inventory.store') }}" enctype="multipart/form-data" class="grid gap-3 md:grid-cols-2 xl:grid-cols-7">
-                    @csrf
-                    <div class="xl:col-span-2">
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Name</label>
-                        <input type="text" name="name" required class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Type</label>
-                        <select name="type" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                            @foreach ($productTypeOptions as $value => $label)
-                                <option value="{{ $value }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Category</label>
-                        <select name="category" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                            <option value="general" selected>general</option>
-                            @foreach ($categories as $category)
-                                <option value="{{ $category }}">{{ $category }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Price</label>
-                        <input type="number" name="price" min="0" value="0" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Location</label>
-                        <select name="stock_location" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                            <option value="warehouse">Warehouse</option>
-                            <option value="store">Store</option>
-                            <option value="used_in_pc">Used in PC</option>
-                        </select>
-                    </div>
-                    <div class="xl:col-span-5">
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Low Stock Alert</label>
-                        <input type="number" name="low_stock_threshold" min="0" value="5" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <div class="xl:col-span-2">
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Description</label>
-                        <input type="text" name="description" class="w-full rounded border border-gray-300 px-3 py-2 text-sm" placeholder="Optional description">
-                    </div>
-                    @foreach (['image' => 'Product photo', 'before_image' => 'Before photo', 'after_image' => 'After photo'] as $field => $label)
-                        <div @class(['xl:col-span-2' => $field === 'image'])>
-                            <p class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">{{ $label }}</p>
-                            <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-purple-500 hover:text-purple-700">
-                                <span aria-hidden="true" class="text-lg leading-none">+</span>
-                                <span>Add Photo</span>
-                                <input type="file" name="{{ $field }}" accept="image/jpeg,image/png,image/webp" class="sr-only">
-                            </label>
-                        </div>
-                    @endforeach
-                    <div>
-                        <label class="mb-1 block text-[11px] font-bold uppercase tracking-[0.2em] text-gray-500">Warranty (months)</label>
-                        <input type="number" name="warranty_months" min="0" max="1200" class="w-full rounded border border-gray-300 px-3 py-2 text-sm">
-                    </div>
-                    <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 xl:col-span-2">
-                        <input type="checkbox" name="requires_serial" value="1" class="rounded border-gray-300">
-                        Track serial number for each unit
-                    </label>
-                    <div class="xl:col-span-7 flex justify-end">
-                        <button type="submit" class="rounded bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700">Add Item</button>
-                    </div>
-                </form>
-
-                <div class="mt-6 border-t border-gray-200 pt-5">
-                    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">Categories</h3>
-                            <p class="text-sm text-gray-500">Add and manage the categories used by inventory items.</p>
-                        </div>
-                        <span class="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">{{ $categoryRecords->count() }} categories</span>
-                    </div>
-
-                    <div class="space-y-4">
-                        <form method="POST" action="{{ route('inventory.categories.store') }}" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <details class="group border-b border-gray-200" @if ($errors->any()) open @endif>
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-purple-500 sm:px-6">
+                        <span class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-full bg-purple-100 text-lg font-medium leading-none text-purple-800" aria-hidden="true">+</span>
+                            <span>
+                                <span class="block text-sm font-bold text-gray-900">Add a product</span>
+                                <span class="mt-0.5 block text-xs text-gray-500">New items start with zero stock. Record quantities through Stock In.</span>
+                            </span>
+                        </span>
+                        <svg class="h-5 w-5 shrink-0 text-gray-400 transition group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.22 7.22a.75.75 0 0 1 1.06 0L10 10.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd"/></svg>
+                    </summary>
+                    <div class="border-t border-gray-100 bg-gray-50/70 px-5 py-5 sm:px-6">
+                        <form method="POST" action="{{ route('inventory.store') }}" enctype="multipart/form-data" class="space-y-6">
                             @csrf
-                            <div class="min-w-0 flex-1">
-                                <label for="new-category-name" class="mb-1 block text-xs font-semibold text-gray-700">Add Category</label>
-                                <input id="new-category-name" type="text" name="name" placeholder="e.g. GPU, Monitor, SSD" required class="w-full rounded-lg border-gray-300 bg-white px-3 py-2 text-sm focus:border-purple-500 focus:ring-purple-500">
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900">Product details</h3>
+                                <p class="mt-1 text-xs text-gray-500">SKU is generated automatically if you leave it blank.</p>
+                                <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                                    <label class="text-xs font-semibold text-gray-700 lg:col-span-2">Product name
+                                        <input type="text" name="name" value="{{ old('name') }}" required maxlength="150" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">SKU / barcode
+                                        <input type="text" name="sku" value="{{ old('sku') }}" maxlength="100" placeholder="Auto-generated" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Type
+                                        <select name="type" required class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                            @foreach ($productTypeOptions as $value => $label)
+                                                <option value="{{ $value }}" @selected(old('type', 'accessory') === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Category
+                                        <select name="category" required class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                            <option value="general" @selected(old('category', 'general') === 'general')>General</option>
+                                            @foreach ($categories as $category)
+                                                <option value="{{ $category }}" @selected(old('category') === $category)>{{ $category }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Selling price
+                                        <span class="relative mt-1.5 block">
+                                            <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-gray-500">₱</span>
+                                            <input type="number" name="price" min="0" step="1" value="{{ old('price', 0) }}" required class="block w-full rounded-lg border-gray-300 bg-white pl-8 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                        </span>
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Stock location
+                                        <select name="stock_location" required class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                            @foreach (['warehouse' => 'Warehouse', 'store' => 'Store', 'used_in_pc' => 'Used in PC'] as $value => $label)
+                                                <option value="{{ $value }}" @selected(old('stock_location', 'warehouse') === $value)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Low-stock alert level
+                                        <input type="number" name="low_stock_threshold" min="0" value="{{ old('low_stock_threshold', 5) }}" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700">Warranty (months)
+                                        <input type="number" name="warranty_months" min="0" max="1200" value="{{ old('warranty_months') }}" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                    </label>
+                                    <label class="text-xs font-semibold text-gray-700 sm:col-span-2 lg:col-span-4">Description
+                                        <textarea name="description" rows="2" maxlength="255" placeholder="Optional product details" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">{{ old('description') }}</textarea>
+                                    </label>
+                                </div>
                             </div>
-                            <button type="submit" class="inline-flex shrink-0 items-center justify-center rounded-lg bg-purple-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-800">Add Category</button>
-                        </form>
 
-                        @if ($categoryRecords->isNotEmpty())
-                            <div class="border-t border-gray-100 pt-4">
-                                <form id="category-order-form" method="POST" action="{{ route('inventory.categories.reorder') }}" class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                                    @csrf
-                                    <div data-category-order-inputs></div>
-                                    <p class="text-xs text-gray-500">Drag categories into your preferred order, then save.</p>
-                                    <button type="submit" class="rounded-lg border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-bold text-purple-800 transition hover:bg-purple-100">Save category order</button>
-                                </form>
-                            <div data-category-list class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                            <div class="border-t border-gray-200 pt-5">
+                                <h3 class="text-sm font-bold text-gray-900">Product photos</h3>
+                                <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                                    @foreach (['image' => 'Main product photo', 'before_image' => 'Before photo', 'after_image' => 'After photo'] as $field => $label)
+                                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-gray-300 bg-white p-3 transition hover:border-purple-400 hover:bg-purple-50/40">
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500" aria-hidden="true">
+                                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M1 5.75A2.75 2.75 0 0 1 3.75 3h12.5A2.75 2.75 0 0 1 19 5.75v8.5A2.75 2.75 0 0 1 16.25 17H3.75A2.75 2.75 0 0 1 1 14.25v-8.5ZM4.5 6a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm12.28 8.06-3.2-4.27a.75.75 0 0 0-1.2 0l-1.64 2.18-1.2-1.2a.75.75 0 0 0-1.06 0l-3.3 3.3h10.07c.63 0 1.17-.39 1.4-.94l.13-.07Z" clip-rule="evenodd"/></svg>
+                                            </span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block text-xs font-semibold text-gray-800">{{ $label }}</span>
+                                                <span data-file-name class="mt-0.5 block truncate text-xs text-gray-500">Choose an image</span>
+                                            </span>
+                                            <input type="file" name="{{ $field }}" accept="image/jpeg,image/png,image/webp" class="sr-only" data-file-input>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <div class="flex flex-col gap-4 border-t border-gray-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                                <label class="inline-flex items-center gap-3 text-sm font-medium text-gray-700">
+                                    <input type="checkbox" name="requires_serial" value="1" @checked(old('requires_serial')) class="h-4 w-4 rounded border-gray-300 text-purple-700 focus:ring-purple-500">
+                                    <span>
+                                        <span class="block font-semibold">Track serial numbers</span>
+                                        <span class="block text-xs text-gray-500">Require a serial number for each unit.</span>
+                                    </span>
+                                </label>
+                                <button type="submit" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-purple-700 px-5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10.75 3.5a.75.75 0 0 0-1.5 0v5.75H3.5a.75.75 0 0 0 0 1.5h5.75v5.75a.75.75 0 0 0 1.5 0v-5.75h5.75a.75.75 0 0 0 0-1.5h-5.75V3.5Z" clip-rule="evenodd"/></svg>
+                                    Add product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+
+                <div class="bg-white px-5 py-5 sm:px-6">
+                    <div class="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold text-gray-900">Categories</h3>
+                            <p class="mt-1 text-xs text-gray-500">Rename, add, or reorder the categories used in your catalog.</p>
+                        </div>
+                        <span class="w-fit rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-800">{{ $categoryRecords->count() }} categories</span>
+                    </div>
+
+                    <form method="POST" action="{{ route('inventory.categories.store') }}" class="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end">
+                        @csrf
+                        <label for="new-category-name" class="min-w-0 flex-1 text-xs font-semibold text-gray-700">Add category
+                            <input id="new-category-name" type="text" name="name" value="{{ old('name') }}" placeholder="For example: Graphics cards" required class="mt-1.5 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                        </label>
+                        <button type="submit" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-50 px-4 text-sm font-semibold text-purple-800 transition hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Add category</button>
+                    </form>
+
+                    @if ($categoryRecords->isNotEmpty())
+                        <div class="mt-4 border-t border-gray-100 pt-4">
+                            <form id="category-order-form" method="POST" action="{{ route('inventory.categories.reorder') }}" class="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                                @csrf
+                                <div data-category-order-inputs></div>
+                                <p class="text-xs text-gray-500">Drag a category card to change the display order.</p>
+                                <button type="submit" class="min-h-9 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-50">Save category order</button>
+                            </form>
+                            <div data-category-list class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
                                 @foreach ($categoryRecords as $category)
-                                    <div draggable="true" data-category-row data-category-id="{{ $category->id }}" class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 transition duration-150 motion-reduce:transition-none">
-                                        <span aria-hidden="true" class="cursor-grab select-none px-1 text-gray-400 active:cursor-grabbing">::</span>
+                                    <div draggable="true" data-category-row data-category-id="{{ $category->id }}" class="flex min-w-0 items-center gap-2 rounded-xl border border-gray-200 bg-gray-50/70 p-2 transition duration-150 motion-reduce:transition-none">
+                                        <span aria-hidden="true" class="cursor-grab select-none rounded-md px-1.5 py-2 text-gray-400 active:cursor-grabbing">⠿</span>
                                         <form method="POST" action="{{ route('inventory.categories.update', $category->id) }}" class="flex min-w-0 flex-1 items-center gap-2">
                                             @csrf
                                             @method('PATCH')
-                                            <input type="text" name="name" value="{{ $category->name }}" aria-label="Editable category name for {{ $category->name }}" required class="min-w-0 flex-1 rounded-lg border-gray-300 bg-white px-2 py-1.5 text-sm focus:border-purple-500 focus:ring-purple-500">
-                                            <button type="submit" class="rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-purple-800">Save</button>
+                                            <input type="text" name="name" value="{{ $category->name }}" aria-label="Editable category name for {{ $category->name }}" required class="min-w-0 flex-1 rounded-lg border-gray-300 bg-white px-2.5 py-2 text-sm focus:border-purple-500 focus:ring-purple-500">
+                                            <button type="submit" class="rounded-lg px-2.5 py-2 text-xs font-bold text-purple-800 transition hover:bg-purple-100" aria-label="Save {{ $category->name }} category">Save</button>
                                         </form>
-                                        <form method="POST" action="{{ route('inventory.categories.destroy', $category->id) }}" onsubmit="return confirm('Delete the {{ $category->name }} category?')">
+                                        <form method="POST" action="{{ route('inventory.categories.destroy', $category->id) }}" onsubmit="return confirm(@js('Delete the '.$category->name.' category?'))">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-red-100" aria-label="Delete {{ $category->name }} category">Delete</button>
+                                            <button type="submit" class="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Delete {{ $category->name }} category">
+                                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 2.75A1.75 1.75 0 0 0 6.75 4.5v.25h-2a.75.75 0 0 0 0 1.5h.3l.68 9.03A2.25 2.25 0 0 0 7.97 17.4h4.06a2.25 2.25 0 0 0 2.24-2.12l.68-9.03h.3a.75.75 0 0 0 0-1.5h-2V4.5a1.75 1.75 0 0 0-1.75-1.75h-3Zm3.25 2h-3.5V4.5a.25.25 0 0 1 .25-.25h3a.25.25 0 0 1 .25.25v.25Z" clip-rule="evenodd"/></svg>
+                                            </button>
                                         </form>
                                     </div>
                                 @endforeach
                             </div>
-                            </div>
-                        @else
-                            <p class="border-t border-gray-100 pt-4 text-sm text-gray-500">No categories yet. Add one to get started.</p>
-                        @endif
-                    </div>
+                        </div>
+                    @else
+                        <p class="mt-4 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-500">No categories yet. Add a category to organize products.</p>
+                    @endif
                 </div>
             </section>
 
-            <form method="GET" action="{{ route('inventory.index') }}" class="grid gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-4">
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Search inventory
-                    <input type="search" name="search" value="{{ $search }}" placeholder="Product, type, or category" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                </label>
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Category
-                    <select name="category" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                        <option value="all">All categories</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category }}" @selected($selectedCategory === $category)>{{ $category }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label class="text-xs font-bold uppercase tracking-wide text-gray-500">
-                    Sort stock quantity
-                    <select name="stock_sort" class="mt-1 block w-full rounded-lg border-gray-300 text-sm font-normal normal-case shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                        <option value="name" @selected($stockSort === 'name')>Default order</option>
-                        <option value="ascending" @selected($stockSort === 'ascending')>Ascending (lowest first)</option>
-                        <option value="descending" @selected($stockSort === 'descending')>Descending (highest first)</option>
-                    </select>
-                    <span class="mt-1 block text-[10px] font-normal normal-case text-gray-500">Low-stock products always appear first.</span>
-                </label>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-800">Apply filters</button>
-                    <a href="{{ route('inventory.index') }}" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">Clear</a>
-                </div>
-            </form>
+            <section class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <div class="border-b border-gray-200 px-5 py-5 sm:px-6">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-950">Stock overview</h2>
+                            <p class="mt-1 text-sm text-gray-500">Search the catalog and monitor on-hand quantities and reorder alerts.</p>
+                        </div>
+                        <span class="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">{{ $products->count() }} {{ \Illuminate\Support\Str::plural('product', $products->count()) }}</span>
+                    </div>
 
-            <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-sm text-gray-700">
-                        <thead class="bg-gray-50 text-xs uppercase tracking-[0.2em] text-gray-500">
-                            <tr>
-                                <th class="px-4 py-3">Photo</th>
-                                <th class="px-4 py-3">Product</th>
-                                <th class="px-4 py-3">Type</th>
-                                <th class="px-4 py-3">Category</th>
-                                <th class="px-4 py-3">Price (VAT incl.)</th>
-                                <th class="px-4 py-3">Stock</th>
-                                <th class="px-4 py-3">Stock status</th>
-                                <th class="px-4 py-3">Location</th>
-                                <th class="px-4 py-3">Edit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($products as $product)
-                                <tr class="border-t border-gray-200">
-                                    <td class="px-4 py-3">
-                                        @if ($product->image_path)
-                                            <img src="{{ asset('storage/'.$product->image_path) }}" alt="{{ $product->name }}" class="h-12 w-12 rounded-lg bg-gray-100 object-cover">
-                                        @else
-                                            <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 text-2xl font-light text-purple-500" aria-label="No product photo available">＋</div>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 font-semibold text-gray-900">{{ $product->name }}</td>
-                                    <td class="px-4 py-3 capitalize">{{ $product->type }}</td>
-                                    <td class="px-4 py-3">{{ $product->category }}</td>
-                                    <td class="px-4 py-3">₱{{ number_format($product->price, 2) }}</td>
-                                    <td class="px-4 py-3 {{ $product->stock_quantity <= $product->low_stock_threshold ? 'font-bold text-red-600' : '' }}">
-                                        {{ $product->stock_quantity }}
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        @if ($product->stock_quantity <= 0)
-                                            <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-800">OUT OF STOCK</span>
-                                        @elseif ($product->stock_quantity <= $product->low_stock_threshold)
-                                            <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-800">LOW STOCK</span>
-                                            <p class="mt-1 text-xs font-medium text-amber-700">Low-stock warning · threshold {{ $product->low_stock_threshold }}</p>
-                                        @else
-                                            <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-800">IN STOCK</span>
-                                        @endif
-                                    </td>
-                                    <td class="px-4 py-3 capitalize">{{ str_replace('_', ' ', $product->stock_location) }}</td>
-                                    <td class="px-4 py-3">
-                                        <a href="{{ route('inventory.products.edit', $product) }}" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">Edit item</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    <form method="GET" action="{{ route('inventory.index') }}" class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(16rem,1.5fr)_minmax(10rem,1fr)_minmax(12rem,1fr)_auto]">
+                        <label class="text-xs font-semibold text-gray-700">
+                            Search products
+                            <span class="relative mt-1.5 block">
+                                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 1 0 3.45 9.78l3.64 3.64a.75.75 0 1 0 1.06-1.06l-3.64-3.64A5.5 5.5 0 0 0 8.5 3ZM4.5 8.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/></svg>
+                                <input type="search" name="search" value="{{ $search }}" placeholder="Name, SKU, type, category" class="block w-full rounded-lg border-gray-300 pl-9 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                            </span>
+                        </label>
+                        <label class="text-xs font-semibold text-gray-700">Category
+                            <select name="category" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                <option value="all">All categories</option>
+                                @foreach ($categories as $category)
+                                    <option value="{{ $category }}" @selected($selectedCategory === $category)>{{ $category }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        <label class="text-xs font-semibold text-gray-700">Sort by stock
+                            <select name="stock_sort" class="mt-1.5 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
+                                <option value="name" @selected($stockSort === 'name')>Default order</option>
+                                <option value="ascending" @selected($stockSort === 'ascending')>Lowest stock first</option>
+                                <option value="descending" @selected($stockSort === 'descending')>Highest stock first</option>
+                            </select>
+                            <span class="mt-1 block text-[11px] font-normal text-gray-500">Low-stock products are prioritized.</span>
+                        </label>
+                        <div class="flex items-end gap-2">
+                            <button type="submit" class="inline-flex min-h-10 flex-1 items-center justify-center rounded-lg bg-gray-900 px-4 text-sm font-semibold text-white transition hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 xl:flex-none">Apply filters</button>
+                            <a href="{{ route('inventory.index') }}" class="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-4 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Clear</a>
+                        </div>
+                    </form>
                 </div>
-            </div>
+
+                @if ($products->isEmpty())
+                    <div class="px-6 py-16 text-center">
+                        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                            <svg class="h-6 w-6" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M3 4.75A1.75 1.75 0 0 1 4.75 3h10.5A1.75 1.75 0 0 1 17 4.75v10.5A1.75 1.75 0 0 1 15.25 17H4.75A1.75 1.75 0 0 1 3 15.25V4.75Z"/></svg>
+                        </span>
+                        <h3 class="mt-3 text-sm font-bold text-gray-900">No products found</h3>
+                        <p class="mt-1 text-sm text-gray-500">Try another search or clear the selected filters.</p>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="min-w-[1050px] w-full text-left text-sm text-gray-700">
+                            <thead class="bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-500">
+                                <tr>
+                                    <th scope="col" class="px-5 py-3">Product</th>
+                                    <th scope="col" class="px-4 py-3">SKU / barcode</th>
+                                    <th scope="col" class="px-4 py-3">Category</th>
+                                    <th scope="col" class="px-4 py-3 text-right">Price</th>
+                                    <th scope="col" class="px-4 py-3 text-center">On hand</th>
+                                    <th scope="col" class="px-4 py-3">Stock status</th>
+                                    <th scope="col" class="px-4 py-3">Location</th>
+                                    <th scope="col" class="px-5 py-3 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($products as $product)
+                                    @php
+                                        $lastStockIn = $product->stockInItems
+                                            ->filter(fn ($item) => $item->stockIn)
+                                            ->sortByDesc(fn ($item) => $item->stockIn->received_at)
+                                            ->first()?->stockIn?->received_at;
+                                    @endphp
+                                    <tr class="transition hover:bg-gray-50/80">
+                                        <td class="px-5 py-3.5">
+                                            <div class="flex min-w-0 items-center gap-3">
+                                                @if ($product->image_path)
+                                                    <img src="{{ asset('storage/'.$product->image_path) }}" alt="" class="h-11 w-11 shrink-0 rounded-lg border border-gray-200 bg-gray-100 object-cover">
+                                                @else
+                                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-gray-400" aria-hidden="true">
+                                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M1 5.75A2.75 2.75 0 0 1 3.75 3h12.5A2.75 2.75 0 0 1 19 5.75v8.5A2.75 2.75 0 0 1 16.25 17H3.75A2.75 2.75 0 0 1 1 14.25v-8.5Zm3.5.25a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z" clip-rule="evenodd"/></svg>
+                                                    </div>
+                                                @endif
+                                                <div class="min-w-0">
+                                                    <p class="truncate font-semibold text-gray-950">{{ $product->name }}</p>
+                                                    <p class="mt-0.5 text-xs capitalize text-gray-500">{{ str_replace('_', ' ', $product->type) }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3.5"><span class="rounded bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700">{{ $product->sku }}</span></td>
+                                        <td class="px-4 py-3.5">{{ $product->category }}</td>
+                                        <td class="px-4 py-3.5 text-right font-semibold tabular-nums text-gray-900">₱{{ number_format($product->price, 2) }}</td>
+                                        <td class="px-4 py-3.5 text-center">
+                                            <span class="{{ $product->stock_quantity <= $product->low_stock_threshold ? 'font-bold text-red-700' : 'font-semibold text-gray-900' }} tabular-nums">{{ number_format($product->stock_quantity) }}</span>
+                                            <span class="block text-[11px] text-gray-400">alert at {{ $product->low_stock_threshold }}</span>
+                                        </td>
+                                        <td class="px-4 py-3.5">
+                                            @if ($product->stock_quantity <= 0)
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-red-700 ring-1 ring-inset ring-red-200"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>OUT OF STOCK</span>
+                                                <p class="mt-1.5 text-[11px] text-gray-500">Last reorder: {{ $lastStockIn?->format('M j, Y') ?? 'Never recorded' }}</p>
+                                            @elseif ($product->stock_quantity <= $product->low_stock_threshold)
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-amber-800 ring-1 ring-inset ring-amber-200"><span class="h-1.5 w-1.5 rounded-full bg-amber-500"></span>LOW STOCK</span>
+                                                <p class="mt-1.5 text-[11px] text-gray-500">Last reorder: {{ $lastStockIn?->format('M j, Y') ?? 'Never recorded' }}</p>
+                                            @else
+                                                <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-wide text-emerald-800 ring-1 ring-inset ring-emerald-200"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>IN STOCK</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3.5 capitalize text-gray-600">{{ str_replace('_', ' ', $product->stock_location) }}</td>
+                                        <td class="px-5 py-3.5 text-right">
+                                            <a href="{{ route('inventory.products.edit', $product) }}" class="inline-flex min-h-9 items-center rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold text-gray-700 transition hover:border-purple-300 hover:bg-purple-50 hover:text-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Edit item</a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+                <div class="flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 bg-gray-50/70 px-5 py-3 text-xs text-gray-500">
+                    <span>Stock levels update when a stock-in delivery or sale is recorded.</span>
+                    <span>All prices in Philippine pesos (₱).</span>
+                </div>
+            </section>
         </div>
     </div>
-<script>
-    (() => {
-        const categoryList = document.querySelector('[data-category-list]');
-        const orderForm = document.querySelector('#category-order-form');
 
-        if (!categoryList || !orderForm) {
-            return;
-        }
+    <script>
+        (() => {
+            const categoryList = document.querySelector('[data-category-list]');
+            const orderForm = document.querySelector('#category-order-form');
 
-        let draggedCategory = null;
-
-        categoryList.addEventListener('dragstart', (event) => {
-            const row = event.target.closest('[data-category-row]');
-            if (!row) {
-                return;
-            }
-
-            draggedCategory = row;
-            row.classList.add('opacity-50', 'border-purple-500');
-            event.dataTransfer.effectAllowed = 'move';
-        });
-
-        categoryList.addEventListener('dragover', (event) => {
-            if (!draggedCategory) {
-                return;
-            }
-
-            event.preventDefault();
-            const rows = [...categoryList.querySelectorAll('[data-category-row]:not(.opacity-50)')];
-            const nextRow = rows.find((row) => event.clientY <= row.getBoundingClientRect().top + row.offsetHeight / 2);
-            categoryList.insertBefore(draggedCategory, nextRow ?? null);
-        });
-
-        categoryList.addEventListener('dragend', () => {
-            draggedCategory?.classList.remove('opacity-50', 'border-purple-500');
-            draggedCategory = null;
-        });
-
-        orderForm.addEventListener('submit', () => {
-            const inputs = orderForm.querySelector('[data-category-order-inputs]');
-            inputs.replaceChildren();
-
-            categoryList.querySelectorAll('[data-category-row]').forEach((row) => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'category_ids[]';
-                input.value = row.dataset.categoryId;
-                inputs.append(input);
+            document.querySelectorAll('[data-file-input]').forEach((input) => {
+                input.addEventListener('change', () => {
+                    const fileName = input.closest('label')?.querySelector('[data-file-name]');
+                    if (fileName) {
+                        fileName.textContent = input.files?.[0]?.name ?? 'Choose an image';
+                    }
+                });
             });
-        });
-    })();
-</script>
+
+            if (!categoryList || !orderForm) {
+                return;
+            }
+
+            let draggedCategory = null;
+
+            categoryList.addEventListener('dragstart', (event) => {
+                const row = event.target.closest('[data-category-row]');
+                if (!row) {
+                    return;
+                }
+
+                draggedCategory = row;
+                row.classList.add('opacity-50', 'border-purple-500');
+                event.dataTransfer.effectAllowed = 'move';
+            });
+
+            categoryList.addEventListener('dragover', (event) => {
+                if (!draggedCategory) {
+                    return;
+                }
+
+                event.preventDefault();
+                const rows = [...categoryList.querySelectorAll('[data-category-row]:not(.opacity-50)')];
+                const nextRow = rows.find((row) => event.clientY <= row.getBoundingClientRect().top + row.offsetHeight / 2);
+                categoryList.insertBefore(draggedCategory, nextRow ?? null);
+            });
+
+            categoryList.addEventListener('dragend', () => {
+                draggedCategory?.classList.remove('opacity-50', 'border-purple-500');
+                draggedCategory = null;
+            });
+
+            orderForm.addEventListener('submit', () => {
+                const inputs = orderForm.querySelector('[data-category-order-inputs]');
+                inputs.replaceChildren();
+
+                categoryList.querySelectorAll('[data-category-row]').forEach((row) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'category_ids[]';
+                    input.value = row.dataset.categoryId;
+                    inputs.append(input);
+                });
+            });
+        })();
+    </script>
 </x-app-layout>

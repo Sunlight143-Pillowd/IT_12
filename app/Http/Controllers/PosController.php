@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SalePayment;
 use App\Models\StockIn;
 use App\Models\StockInItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -19,6 +22,12 @@ class PosController extends Controller
 {
     public function index(): View
     {
+        $products = Product::query()
+            ->where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+        $customers = Customer::query()->orderBy('name')->get();
         $recentSales = Sale::with('items.units', 'items.product', 'storeOrder')
             ->latest()
             ->limit(10)
@@ -84,6 +93,8 @@ class PosController extends Controller
             'recentSales',
             'recentBuilds',
             'recentStockIns',
+            'products',
+            'customers',
             'posChartData',
             'receiptTotal',
             'invoiceTotal',
@@ -95,7 +106,7 @@ class PosController extends Controller
 
     public function receipt(Sale $sale): View
     {
-        $sale->load('items.units', 'items.product');
+        $sale->load('items.units', 'items.product', 'payments', 'customer');
 
         return view('pos-receipt', compact('sale'));
     }
@@ -103,8 +114,12 @@ class PosController extends Controller
     public function checkout(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'cart_json' => ['required', 'string'],
-            'customer_name' => ['required', 'string', 'max:150'],
+            'cart_json' => ['required', 'string', 'json'],
+            'customer_name' => ['nullable', 'string', 'max:150'],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'payment_method' => ['required', 'string', Rule::in(['cash', 'card', 'bank_transfer', 'other'])],
+            'payment_amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
+            'payment_reference' => ['nullable', 'string', 'max:150'],
         ]);
 
         $items = json_decode($data['cart_json'], true);
@@ -175,11 +190,13 @@ class PosController extends Controller
             return back()->with('error', 'A serial number cannot be assigned to more than one item.');
         }
 
-        return DB::transaction(function () use ($request, $preparedItems) {
+        return DB::transaction(function () use ($data, $preparedItems) {
             $total = 0.0;
+            $customer = isset($data['customer_id']) ? Customer::findOrFail($data['customer_id']) : null;
             $sale = Sale::create([
                 'employee_id' => auth()->id(),
-                'customer_name' => trim($request->string('customer_name')->toString()),
+                'customer_id' => $customer?->id,
+                'customer_name' => $customer?->name ?? (filled($data['customer_name'] ?? null) ? trim($data['customer_name']) : null),
                 'total_amount' => 0,
             ]);
 
@@ -203,35 +220,57 @@ class PosController extends Controller
                     'subtotal' => $subtotal,
                 ]);
 
+                $unitQuery = ProductUnit::query()
+                    ->where('product_id', $product->id)
+                    ->where('status', 'in_stock')
+                    ->orderBy('id')
+                    ->lockForUpdate();
                 if ($item['serial_numbers'] !== []) {
-                    $units = ProductUnit::query()
-                        ->where('product_id', $product->id)
-                        ->where('status', 'in_stock')
-                        ->whereIn('serial_number', $item['serial_numbers'])
-                        ->lockForUpdate()
-                        ->get();
+                    $unitQuery->whereIn('serial_number', $item['serial_numbers']);
+                } else {
+                    $unitQuery->limit($qty);
+                }
+                $units = $unitQuery->get();
 
-                    if ($units->count() !== $qty) {
-                        throw ValidationException::withMessages([
-                            'cart_json' => ['One or more selected serial numbers are no longer available.'],
-                        ]);
-                    }
+                if ($item['serial_numbers'] !== [] && $units->count() !== $qty) {
+                    throw ValidationException::withMessages([
+                        'cart_json' => ['One or more selected serial numbers are no longer available.'],
+                    ]);
+                }
 
-                    foreach ($units as $unit) {
-                        $unit->update([
-                            'sale_item_id' => $saleItem->id,
-                            'status' => 'sold',
-                            'sold_at' => now(),
-                        ]);
-                    }
+                foreach ($units as $unit) {
+                    $unit->update([
+                        'sale_item_id' => $saleItem->id,
+                        'status' => 'sold',
+                        'sold_at' => now(),
+                    ]);
                 }
 
                 $product->decrement('stock_quantity', $qty);
             }
 
-            $sale->update(['total_amount' => $total]);
+            $paymentAmount = round((float) $data['payment_amount'], 2);
+            if ($data['payment_method'] === 'cash' && $paymentAmount < round($total, 2)) {
+                throw ValidationException::withMessages([
+                    'payment_amount' => ['Cash received must cover the sale total.'],
+                ]);
+            }
+            if ($data['payment_method'] !== 'cash' && $paymentAmount !== round($total, 2)) {
+                throw ValidationException::withMessages([
+                    'payment_amount' => ['Non-cash payment must equal the sale total.'],
+                ]);
+            }
 
-            return redirect()->route('pos.index')->with('success', 'Sale completed successfully.');
+            $sale->update(['total_amount' => $total]);
+            SalePayment::create([
+                'sale_id' => $sale->id,
+                'method' => $data['payment_method'],
+                'amount' => $total,
+                'amount_tendered' => $paymentAmount,
+                'reference' => $data['payment_reference'] ?? null,
+            ]);
+
+            return redirect()->route('pos.receipt', $sale)->with('success', 'Sale completed successfully.');
         });
     }
 }

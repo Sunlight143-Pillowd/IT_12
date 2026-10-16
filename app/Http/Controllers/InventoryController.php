@@ -52,12 +52,14 @@ class InventoryController extends Controller
             : 'name';
 
         $products = Product::query()
+            ->with('stockInItems.stockIn')
             ->when($selectedCategory !== '' && $selectedCategory !== 'all', function ($query) use ($selectedCategory) {
                 $query->where('category', $selectedCategory);
             })
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('sku', 'like', '%'.$search.'%')
                         ->orWhere('type', 'like', '%'.$search.'%')
                         ->orWhere('category', 'like', '%'.$search.'%');
                 });
@@ -85,6 +87,7 @@ class InventoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
             'type' => ['required', 'string', Rule::in(array_keys(self::productTypeOptions()))],
             'category' => ['required', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -109,8 +112,9 @@ class InventoryController extends Controller
             }
         }
 
-        Product::create([
+        $product = Product::create([
             'name' => $data['name'],
+            'sku' => $data['sku'] ?? null,
             'slug' => Str::slug($data['name']).'-'.time(),
             'type' => $data['type'],
             'category' => $data['category'],
@@ -124,6 +128,9 @@ class InventoryController extends Controller
             ...$imagePaths,
             'is_active' => true,
         ]);
+        if (blank($product->sku)) {
+            $product->update(['sku' => 'CB-'.str_pad((string) $product->id, 6, '0', STR_PAD_LEFT)]);
+        }
 
         return redirect()->route('inventory.index')->with('success', 'Product added to inventory.');
     }
@@ -143,6 +150,7 @@ class InventoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'sku' => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product)],
             'type' => ['required', 'string', Rule::in(array_keys(self::productTypeOptions()))],
             'category' => ['required', 'string', 'max:100'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -158,6 +166,7 @@ class InventoryController extends Controller
 
         $product->fill([
             'name' => $data['name'],
+            'sku' => $data['sku'] ?: $product->sku,
             'slug' => Str::slug($data['name']).'-'.$product->id,
             'type' => $data['type'],
             'category' => $data['category'],
@@ -190,7 +199,7 @@ class InventoryController extends Controller
 
     public function uploadFeaturedImage(Request $request, Product $product): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $request->validate([
             'image' => [

@@ -39,11 +39,51 @@
                 <a href="{{ route('store.special-offers') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.special-offers')])>{{ __('Special offers') }}</a>
 
                 @auth
-                    @if (Auth::user()->isAdmin())
+                    @if (Auth::user()->canManageOrders())
                         <a href="{{ route('dashboard') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')])>{{ __('Dashboard') }}</a>
                     @else
                         <a href="{{ route('dashboard') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')])>{{ __('My Orders') }}</a>
                         <a href="{{ route('cart.index') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('cart.*')])>{{ __('Cart') }} ({{ array_sum(session('cart', [])) }})</a>
+                    @endif
+                    @if (Auth::user()->isEmployee())
+                        <div class="group relative shrink-0">
+                            <a href="{{ route('dashboard') }}" class="{{ $navigationLinkClasses }}" aria-haspopup="true">Back Office</a>
+                            <div class="invisible absolute left-0 top-full z-50 mt-2 max-h-96 min-w-56 translate-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                                @if (Auth::user()->hasPermission('inventory.manage'))
+                                    <a href="{{ route('inventory.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Inventory</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('stock_in.manage'))
+                                    <a href="{{ route('stock-in.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Stock In</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('sales.create'))
+                                    <a href="{{ route('pos.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">POS</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('quotations.manage'))
+                                    <a href="{{ route('quotation.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Quotations</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('builds.manage'))
+                                    <a href="{{ route('buildpc.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Build PC</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('customers.manage'))
+                                    <a href="{{ route('customers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Customers</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('suppliers.manage'))
+                                    <a href="{{ route('suppliers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Suppliers</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('warranty.verify'))
+                                    <a href="{{ route('warranty.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Warranty & Service</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('expenses.manage'))
+                                    <a href="{{ route('expenses.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Expenses</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('reports.view'))
+                                    <a href="{{ route('reports.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Reports</a>
+                                @endif
+                                @if (Auth::user()->hasPermission('employees.manage'))
+                                    <a href="{{ route('employees.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Employees & Roles</a>
+                                @endif
+                            </div>
+                        </div>
                     @endif
                 @else
                     <a href="{{ route('login') }}" @class([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('login')])>{{ __('Sign In') }}</a>

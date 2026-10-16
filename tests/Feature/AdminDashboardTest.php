@@ -163,6 +163,90 @@ class AdminDashboardTest extends TestCase
             ->assertViewHas('todaySales', 1400);
     }
 
+    public function test_staff_dashboard_renders_last_seven_days_sales_and_current_month_top_sellers(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $processor = Product::factory()->create(['name' => 'Dashboard Processor']);
+        $graphicsCard = Product::factory()->create(['name' => 'Dashboard Graphics Card']);
+        $oldProduct = Product::factory()->create(['name' => 'Last Month Product']);
+        $this->travelTo('2026-10-16 12:00:00');
+
+        $todaySale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Dashboard Chart Customer',
+            'total_amount' => 1000,
+        ]);
+        $todaySale->items()->create([
+            'product_id' => $processor->id,
+            'product_name' => $processor->name,
+            'unit_price' => 200,
+            'quantity' => 3,
+            'subtotal' => 600,
+        ]);
+        $todaySale->items()->create([
+            'product_id' => $graphicsCard->id,
+            'product_name' => $graphicsCard->name,
+            'unit_price' => 200,
+            'quantity' => 2,
+            'subtotal' => 400,
+        ]);
+
+        $weekSale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Earlier This Week',
+            'total_amount' => 400,
+        ]);
+        $weekSale->forceFill([
+            'created_at' => now()->subDays(6),
+            'updated_at' => now()->subDays(6),
+        ])->save();
+        $weekSale->items()->create([
+            'product_id' => $processor->id,
+            'product_name' => $processor->name,
+            'unit_price' => 200,
+            'quantity' => 2,
+            'subtotal' => 400,
+        ]);
+
+        $lastMonthSale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Last Month Customer',
+            'total_amount' => 9900,
+        ]);
+        $lastMonthSale->forceFill([
+            'created_at' => now()->startOfMonth()->subDay(),
+            'updated_at' => now()->startOfMonth()->subDay(),
+        ])->save();
+        $lastMonthSale->items()->create([
+            'product_id' => $oldProduct->id,
+            'product_name' => $oldProduct->name,
+            'unit_price' => 100,
+            'quantity' => 99,
+            'subtotal' => 9900,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertSee('Daily POS revenue for the last 7 days')
+            ->assertSee('₱1,400')
+            ->assertSee('Top-selling products')
+            ->assertSee('Dashboard Processor')
+            ->assertSee('5 sold')
+            ->assertSee('Dashboard Graphics Card')
+            ->assertSee('2 sold');
+
+        $response->assertViewHas('salesTrend', function ($salesTrend): bool {
+            $this->assertCount(7, $salesTrend);
+            $this->assertSame(1400.0, $salesTrend->sum('revenue'));
+
+            return true;
+        });
+        $response->assertViewHas('topSellingProducts', fn ($products): bool => $products->pluck('product_name')->all() === [
+            'Dashboard Processor',
+            'Dashboard Graphics Card',
+        ]);
+    }
+
     public function test_admin_navigation_links_are_visible_in_the_navbar(): void
     {
         $admin = User::factory()->create([

@@ -60,11 +60,51 @@
                 <a href="<?php echo e(route('store.special-offers')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('store.special-offers')]); ?>"><?php echo e(__('Special offers')); ?></a>
 
                 <?php if(auth()->guard()->check()): ?>
-                    <?php if(Auth::user()->isAdmin()): ?>
+                    <?php if(Auth::user()->canManageOrders()): ?>
                         <a href="<?php echo e(route('dashboard')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')]); ?>"><?php echo e(__('Dashboard')); ?></a>
                     <?php else: ?>
                         <a href="<?php echo e(route('dashboard')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('dashboard')]); ?>"><?php echo e(__('My Orders')); ?></a>
                         <a href="<?php echo e(route('cart.index')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('cart.*')]); ?>"><?php echo e(__('Cart')); ?> (<?php echo e(array_sum(session('cart', []))); ?>)</a>
+                    <?php endif; ?>
+                    <?php if(Auth::user()->isEmployee()): ?>
+                        <div class="group relative shrink-0">
+                            <a href="<?php echo e(route('dashboard')); ?>" class="<?php echo e($navigationLinkClasses); ?>" aria-haspopup="true">Back Office</a>
+                            <div class="invisible absolute left-0 top-full z-50 mt-2 max-h-96 min-w-56 translate-y-1 overflow-y-auto rounded-lg border border-gray-200 bg-white py-2 opacity-0 shadow-lg transition duration-150 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 group-focus-within:opacity-100">
+                                <?php if(Auth::user()->hasPermission('inventory.manage')): ?>
+                                    <a href="<?php echo e(route('inventory.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Inventory</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('stock_in.manage')): ?>
+                                    <a href="<?php echo e(route('stock-in.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Stock In</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('sales.create')): ?>
+                                    <a href="<?php echo e(route('pos.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">POS</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('quotations.manage')): ?>
+                                    <a href="<?php echo e(route('quotation.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Quotations</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('builds.manage')): ?>
+                                    <a href="<?php echo e(route('buildpc.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Build PC</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('customers.manage')): ?>
+                                    <a href="<?php echo e(route('customers.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Customers</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('suppliers.manage')): ?>
+                                    <a href="<?php echo e(route('suppliers.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Suppliers</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('warranty.verify')): ?>
+                                    <a href="<?php echo e(route('warranty.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Warranty & Service</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('expenses.manage')): ?>
+                                    <a href="<?php echo e(route('expenses.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Expenses</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('reports.view')): ?>
+                                    <a href="<?php echo e(route('reports.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Reports</a>
+                                <?php endif; ?>
+                                <?php if(Auth::user()->hasPermission('employees.manage')): ?>
+                                    <a href="<?php echo e(route('employees.index')); ?>" class="block px-4 py-2 text-sm text-gray-700 hover:bg-purple-50">Employees & Roles</a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
                     <?php endif; ?>
                 <?php else: ?>
                     <a href="<?php echo e(route('login')); ?>" class="<?php echo \Illuminate\Support\Arr::toCssClasses([$navigationLinkClasses, $activeNavigationLinkClasses => request()->routeIs('login')]); ?>"><?php echo e(__('Sign In')); ?></a>

@@ -18,7 +18,7 @@ class CategoryController extends Controller
 {
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
@@ -41,7 +41,7 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
@@ -76,7 +76,7 @@ class CategoryController extends Controller
 
     public function destroy(Request $request, Category $category): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $imagePath = $category->image_path;
 
@@ -91,7 +91,7 @@ class CategoryController extends Controller
 
     public function reorder(Request $request): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $validated = $request->validate([
             'category_ids' => ['required', 'array'],
@@ -118,7 +118,7 @@ class CategoryController extends Controller
 
     public function uploadImage(Request $request, string $categorySlug): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $category = Category::query()->where('slug', $categorySlug)->firstOrFail();
         $request->validate([
@@ -160,7 +160,7 @@ class CategoryController extends Controller
 
     public function uploadHomepageImage(Request $request, string $imageKey): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
         abort_unless(in_array($imageKey, ['hero-main', 'hero-secondary'], true), 404);
 
         $data = $request->validate([
