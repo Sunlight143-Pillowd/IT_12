@@ -7,6 +7,7 @@ use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\StockReservation;
+use App\Models\StoreOrder;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -34,12 +35,281 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('Customer Orders');
         $response->assertDontSee('Customer Build / PC Build Management');
         $response->assertSee('Live');
-        $response->assertDontSee('Products');
+        $response->assertSee('Total Products');
+        $response->assertSee('Total Orders');
+        $response->assertSee('Pending Orders');
+        $response->assertSee('Accepted Orders');
         $response->assertSee('Low Stock');
         $response->assertSee('Sales Today');
+        $response->assertSee('Total Revenue');
         $response->assertSee('Revenue');
+        $response->assertSee('Recent customer build requests');
         $response->assertSee('VIEW INVENTORY');
         $response->assertSee('OPEN POS');
+    }
+
+    public function test_dashboard_summary_counts_match_saved_products_orders_and_requests(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $customer = User::factory()->create(['email' => 'requester@example.com']);
+        Product::factory()->create(['stock_quantity' => 1, 'low_stock_threshold' => 2]);
+        Product::factory()->create(['stock_quantity' => 8, 'low_stock_threshold' => 2]);
+        StoreOrder::create([
+            'customer_name' => 'Pending dashboard order',
+            'customer_email' => 'pending@example.com',
+            'total_amount' => 100,
+            'status' => 'pending',
+        ]);
+        StoreOrder::create([
+            'customer_name' => 'Accepted dashboard order',
+            'customer_email' => 'accepted@example.com',
+            'total_amount' => 200,
+            'status' => 'accepted',
+        ]);
+        PcBuild::create([
+            'build_number' => 'PC-DASHBOARD-REQUEST',
+            'customer_name' => 'Dashboard Requester',
+            'customer_email' => $customer->email,
+            'user_id' => $customer->id,
+            'status' => 'pending',
+            'notes' => 'CPU: Custom processor',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertViewHas('products', 2)
+            ->assertViewHas('totalOrders', 2)
+            ->assertViewHas('pendingOrders', 1)
+            ->assertViewHas('acceptedOrders', 1)
+            ->assertViewHas('lowStock', 1)
+            ->assertViewHas('pendingBuildRequests', 1)
+            ->assertSee('Pending dashboard order')
+            ->assertSee('PC-DASHBOARD-REQUEST')
+            ->assertSee('CPU: Custom processor');
+    }
+
+    public function test_dashboard_today_metrics_only_include_orders_and_sales_from_today(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+
+        $this->travelTo('2026-10-11 12:00:00');
+        Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Yesterday Sale',
+            'total_amount' => 1000,
+        ]);
+        StoreOrder::create([
+            'customer_name' => 'Yesterday Order',
+            'customer_email' => 'yesterday@example.com',
+            'total_amount' => 1000,
+            'status' => 'pending',
+        ]);
+
+        $this->travelTo('2026-10-12 12:00:00');
+        Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Today Sale',
+            'total_amount' => 500,
+        ]);
+        $acceptedProduct = Product::factory()->create(['stock_quantity' => 2]);
+        $acceptedOrder = StoreOrder::create([
+            'customer_name' => 'Today Accepted Order',
+            'customer_email' => 'today-accepted@example.com',
+            'total_amount' => 900,
+            'status' => 'pending',
+        ]);
+        $acceptedOrder->items()->create([
+            'product_id' => $acceptedProduct->id,
+            'product_name' => $acceptedProduct->name,
+            'quantity' => 1,
+            'unit_price' => 900,
+            'subtotal' => 900,
+        ]);
+        StoreOrder::create([
+            'customer_name' => 'Today Pending Order',
+            'customer_email' => 'today-pending@example.com',
+            'total_amount' => 750,
+            'status' => 'pending',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('dashboard.orders.accept', $acceptedOrder))
+            ->assertRedirect(route('dashboard'));
+
+        $this->assertDatabaseHas('store_orders', [
+            'id' => $acceptedOrder->id,
+            'status' => 'accepted',
+        ]);
+        $this->assertDatabaseHas('sales', [
+            'store_order_id' => $acceptedOrder->id,
+            'total_amount' => 900,
+        ]);
+        $this->actingAs($admin)
+            ->get(route('pos.index'))
+            ->assertSee('Customer order #'.$acceptedOrder->id);
+
+        $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertSeeInOrder([
+                'Sales Today',
+                '₱1,400',
+                'Pending Orders Today',
+                '1',
+                'Low Stock',
+                'Total Revenue',
+                '₱2,400',
+            ])
+            ->assertViewHas('todayOrders', 1)
+            ->assertViewHas('todaySales', 1400);
+    }
+
+    public function test_staff_dashboard_renders_last_seven_days_sales_and_current_month_top_sellers(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $processor = Product::factory()->create(['name' => 'Dashboard Processor']);
+        $graphicsCard = Product::factory()->create(['name' => 'Dashboard Graphics Card']);
+        $oldProduct = Product::factory()->create(['name' => 'Last Month Product']);
+        $this->travelTo('2026-10-16 12:00:00');
+
+        $todaySale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Dashboard Chart Customer',
+            'total_amount' => 1000,
+        ]);
+        $todaySale->items()->create([
+            'product_id' => $processor->id,
+            'product_name' => $processor->name,
+            'unit_price' => 200,
+            'quantity' => 3,
+            'subtotal' => 600,
+        ]);
+        $todaySale->items()->create([
+            'product_id' => $graphicsCard->id,
+            'product_name' => $graphicsCard->name,
+            'unit_price' => 200,
+            'quantity' => 2,
+            'subtotal' => 400,
+        ]);
+
+        $weekSale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Earlier This Week',
+            'total_amount' => 400,
+        ]);
+        $weekSale->forceFill([
+            'created_at' => now()->subDays(6),
+            'updated_at' => now()->subDays(6),
+        ])->save();
+        $weekSale->items()->create([
+            'product_id' => $processor->id,
+            'product_name' => $processor->name,
+            'unit_price' => 200,
+            'quantity' => 2,
+            'subtotal' => 400,
+        ]);
+
+        $lastMonthSale = Sale::create([
+            'employee_id' => $admin->id,
+            'customer_name' => 'Last Month Customer',
+            'total_amount' => 9900,
+        ]);
+        $lastMonthSale->forceFill([
+            'created_at' => now()->startOfMonth()->subDay(),
+            'updated_at' => now()->startOfMonth()->subDay(),
+        ])->save();
+        $lastMonthSale->items()->create([
+            'product_id' => $oldProduct->id,
+            'product_name' => $oldProduct->name,
+            'unit_price' => 100,
+            'quantity' => 99,
+            'subtotal' => 9900,
+        ]);
+
+        $response = $this->actingAs($admin)
+            ->get(route('dashboard'))
+            ->assertSee('Daily POS revenue for the last 7 days')
+            ->assertSee('₱1,400')
+            ->assertSee('Top-selling products')
+            ->assertSee('Dashboard Processor')
+            ->assertSee('5 sold')
+            ->assertSee('Dashboard Graphics Card')
+            ->assertSee('2 sold');
+
+        $response->assertViewHas('salesTrend', function ($salesTrend): bool {
+            $this->assertCount(7, $salesTrend);
+            $this->assertSame(1400.0, $salesTrend->sum('revenue'));
+
+            return true;
+        });
+        $response->assertViewHas('topSellingProducts', fn ($products): bool => $products->pluck('product_name')->all() === [
+            'Dashboard Processor',
+            'Dashboard Graphics Card',
+        ]);
+    }
+
+    public function test_admin_navigation_links_are_visible_in_the_navbar(): void
+    {
+        $admin = User::factory()->create([
+            'email' => 'admin@davaobosscomputer.com',
+        ]);
+
+        $content = $this->actingAs($admin)->get(route('dashboard'))->assertOk()->getContent();
+        $this->assertStringContainsString('aria-label="Primary navigation"', $content);
+        $this->assertStringNotContainsString('aria-label="Toggle navigation"', $content);
+        $this->assertStringNotContainsString('app-responsive-navigation', $content);
+
+        $navigationStart = strpos($content, 'class="app-desktop-navigation');
+        $navigationEnd = strpos($content, '</nav>', $navigationStart);
+
+        $this->assertNotFalse($navigationStart);
+        $this->assertNotFalse($navigationEnd);
+
+        $navigation = substr($content, $navigationStart, $navigationEnd - $navigationStart);
+        $expectedLinks = [
+            'Store',
+            'Desktops',
+            'Laptops',
+            'Categories',
+            'Top Selling',
+            'Build PC',
+            'Special offers',
+            'Dashboard',
+        ];
+        $previousPosition = -1;
+
+        foreach ($expectedLinks as $label) {
+            $position = strpos($navigation, $label);
+
+            $this->assertNotFalse($position, "{$label} should be in the admin navbar.");
+            $this->assertGreaterThan($previousPosition, $position, "{$label} should appear in the requested navigation order.");
+            $previousPosition = $position;
+        }
+
+        foreach (['Inventory', 'Stock In', 'POS', 'Quotations', 'Build PC Orders'] as $label) {
+            $this->assertStringNotContainsString($label, $navigation);
+        }
+    }
+
+    public function test_customer_navigation_includes_my_orders_and_cart_in_the_navbar(): void
+    {
+        $customer = User::factory()->create([
+            'email' => 'customer@example.com',
+        ]);
+
+        $content = $this->actingAs($customer)->get(route('dashboard'))->assertOk()->getContent();
+        $navigationStart = strpos($content, 'class="app-desktop-navigation');
+        $navigationEnd = strpos($content, '</nav>', $navigationStart);
+
+        $this->assertNotFalse($navigationStart);
+        $this->assertNotFalse($navigationEnd);
+
+        $navigation = substr($content, $navigationStart, $navigationEnd - $navigationStart);
+
+        $this->assertStringContainsString('My Orders', $navigation);
+        $this->assertStringContainsString('href="'.route('dashboard').'"', $navigation);
+        $this->assertStringContainsString('Cart', $navigation);
+        $this->assertStringNotContainsString('Stock In', $navigation);
+        $this->assertStringNotContainsString('Quotations', $navigation);
     }
 
     public function test_regular_user_sees_purchase_history_and_back_button(): void
@@ -128,6 +398,8 @@ class AdminDashboardTest extends TestCase
         $response = $this->actingAs($user)->get('/dashboard/pos');
 
         $response->assertOk();
+        $response->assertSee('href="'.route('dashboard').'"', false);
+        $response->assertSee('Back to Dashboard');
         $response->assertSee('Receipts');
         $response->assertSee('Computer Build Orders');
         $response->assertSee('Receipt #'.$sale->id);
@@ -148,7 +420,6 @@ class AdminDashboardTest extends TestCase
         $response->assertSee('lg:col-span-2');
         $response->assertDontSee('<dialog', false);
         $response->assertDontSee('Products');
-        $response->assertDontSee('Cart');
         $response->assertDontSee('Complete Sale');
     }
 
@@ -178,6 +449,13 @@ class AdminDashboardTest extends TestCase
 
     public function test_category_links_route_to_matching_product_pages(): void
     {
+        foreach (['gaming', 'displays', 'peripherals'] as $categoryName) {
+            Category::create([
+                'name' => $categoryName,
+                'slug' => $categoryName,
+            ]);
+        }
+
         Product::create([
             'name' => 'RTX 4080',
             'slug' => 'rtx-4080',
@@ -220,13 +498,22 @@ class AdminDashboardTest extends TestCase
         $response = $this->get('/categories');
 
         $response->assertOk();
-        $response->assertSee('/desktops?filter=gaming');
-        $response->assertSee('/accessories?filter=displays');
-        $response->assertSee('/accessories?filter=peripherals');
+        $response->assertSee('/categories/gaming');
+        $response->assertSee('/categories/displays');
+        $response->assertSee('/categories/peripherals');
+
+        $this->get(route('store.category', ['categorySlug' => 'gaming']))
+            ->assertOk()
+            ->assertSee('RTX 4080')
+            ->assertDontSee('27&quot; Monitor')
+            ->assertDontSee('Mechanical Keyboard');
     }
 
     public function test_category_cards_keep_their_actual_labels_for_desktop_and_laptop_types(): void
     {
+        Category::create(['name' => 'Performance', 'slug' => 'performance']);
+        Category::create(['name' => 'Ready to Ship', 'slug' => 'ready-to-ship']);
+
         Product::create([
             'name' => 'Performance Tower',
             'slug' => 'performance-tower',

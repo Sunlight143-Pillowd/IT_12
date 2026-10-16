@@ -45,25 +45,41 @@ class InventoryController extends Controller
     public function index(Request $request): View
     {
         $selectedCategory = trim((string) $request->query('category', ''));
+        $search = trim((string) $request->query('search', ''));
+        $stockSort = $request->query('stock_sort', 'name');
+        $stockSort = in_array($stockSort, ['name', 'ascending', 'descending'], true)
+            ? $stockSort
+            : 'name';
 
         $products = Product::query()
+            ->with('stockInItems.stockIn')
             ->when($selectedCategory !== '' && $selectedCategory !== 'all', function ($query) use ($selectedCategory) {
                 $query->where('category', $selectedCategory);
             })
-            ->orderBy('type')
-            ->orderBy('name')
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('sku', 'like', '%'.$search.'%')
+                        ->orWhere('type', 'like', '%'.$search.'%')
+                        ->orWhere('category', 'like', '%'.$search.'%');
+                });
+            })
+            ->orderByRaw('CASE WHEN stock_quantity <= low_stock_threshold THEN 0 ELSE 1 END')
+            ->when($stockSort === 'ascending', fn ($query) => $query->orderBy('stock_quantity')->orderBy('name'))
+            ->when($stockSort === 'descending', fn ($query) => $query->orderByDesc('stock_quantity')->orderBy('name'))
+            ->when($stockSort === 'name', fn ($query) => $query->orderBy('type')->orderBy('name'))
             ->get();
 
-        $categoryRecords = Category::orderBy('name')->get();
-        $categories = $categoryRecords->pluck('name')->toArray();
-        $fallbackCategories = ['GPU', 'CPU', 'Monitor', 'Mouse', 'Keyboard', 'Case', 'Fans', 'CPU Cooler', 'SSD', 'RAM'];
-        $categories = array_values(array_unique(array_merge($categories, $fallbackCategories)));
+        $categoryRecords = Category::query()->orderBy('sort_order')->orderBy('id')->get();
+        $categories = $categoryRecords->pluck('name')->all();
 
         return view('inventory', [
             'products' => $products,
             'categories' => $categories,
             'categoryRecords' => $categoryRecords,
             'selectedCategory' => $selectedCategory,
+            'search' => $search,
+            'stockSort' => $stockSort,
         ]);
     }
 
@@ -71,6 +87,7 @@ class InventoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'sku' => ['nullable', 'string', 'max:100', 'unique:products,sku'],
             'type' => ['required', 'string', Rule::in(array_keys(self::productTypeOptions()))],
             'category' => ['required', 'string'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -95,8 +112,9 @@ class InventoryController extends Controller
             }
         }
 
-        Product::create([
+        $product = Product::create([
             'name' => $data['name'],
+            'sku' => $data['sku'] ?? null,
             'slug' => Str::slug($data['name']).'-'.time(),
             'type' => $data['type'],
             'category' => $data['category'],
@@ -110,6 +128,9 @@ class InventoryController extends Controller
             ...$imagePaths,
             'is_active' => true,
         ]);
+        if (blank($product->sku)) {
+            $product->update(['sku' => 'CB-'.str_pad((string) $product->id, 6, '0', STR_PAD_LEFT)]);
+        }
 
         return redirect()->route('inventory.index')->with('success', 'Product added to inventory.');
     }
@@ -129,6 +150,7 @@ class InventoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'sku' => ['nullable', 'string', 'max:100', Rule::unique('products', 'sku')->ignore($product)],
             'type' => ['required', 'string', Rule::in(array_keys(self::productTypeOptions()))],
             'category' => ['required', 'string', 'max:100'],
             'price' => ['required', 'numeric', 'min:0'],
@@ -144,6 +166,7 @@ class InventoryController extends Controller
 
         $product->fill([
             'name' => $data['name'],
+            'sku' => $data['sku'] ?: $product->sku,
             'slug' => Str::slug($data['name']).'-'.$product->id,
             'type' => $data['type'],
             'category' => $data['category'],
@@ -176,7 +199,7 @@ class InventoryController extends Controller
 
     public function uploadFeaturedImage(Request $request, Product $product): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('inventory.manage'), 403);
 
         $request->validate([
             'image' => [

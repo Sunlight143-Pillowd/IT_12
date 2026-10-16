@@ -16,7 +16,7 @@ return new class extends Migration
                 SET
                     Current_Stock = Current_Stock - NEW.quantity,
                     Notification = CASE
-                        WHEN (Current_Stock - NEW.quantity) <= COALESCE(reorder_level, 10)
+                        WHEN (Current_Stock - NEW.quantity) <= 10
                         THEN \'Low Stock\'
                         ELSE NULL
                     END

@@ -4,11 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StorePcBuildRequest;
 use App\Models\PcBuild;
+use App\Models\Product;
 use App\Models\User;
 use App\Services\PcBuildService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PcBuildController extends Controller
@@ -24,7 +26,7 @@ class PcBuildController extends Controller
             ->get();
         $customerBuildManagement = PcBuild::query()
             ->whereNotNull('user_id')
-            ->with('items.product')
+            ->with(['items.product', 'user'])
             ->latest()
             ->get();
 
@@ -34,7 +36,7 @@ class PcBuildController extends Controller
             'builds' => $builds,
             'customerBuildManagement' => $customerBuildManagement,
             'buildStatusOptions' => [
-                'pending' => ['accepted', 'cancelled'],
+                'pending' => ['cancelled'],
                 'accepted' => ['building', 'cancelled'],
                 'building' => ['testing', 'cancelled'],
                 'testing' => ['ready', 'cancelled'],
@@ -55,10 +57,8 @@ class PcBuildController extends Controller
         return redirect()->route('buildpc.index')->with('success', 'PC build #'.$build->build_number.' saved and reserved successfully.');
     }
 
-    public function customerIndex(): View
+    public function customerIndex(Request $request): View
     {
-        $products = $this->pcBuildService->availableProducts();
-
         $builds = auth()->check()
             ? PcBuild::query()
                 ->where('user_id', auth()->id())
@@ -66,44 +66,116 @@ class PcBuildController extends Controller
                 ->latest()
                 ->get()
             : collect();
+        $products = $this->pcBuildService->availableProducts();
 
         return view('store.build-pc', [
             'builds' => $builds,
             'componentGroups' => $this->pcBuildService->componentGroups(),
             'groupedProducts' => $this->groupProductsByType($products),
+            'pendingBuild' => $request->session()->pull('pending_customer_build', []),
         ]);
     }
 
     public function storeCustomerBuild(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            $submittedComponents = $request->input('components', []);
+            $pendingComponents = [];
+
+            if (is_array($submittedComponents)) {
+                foreach ($this->pcBuildService->componentGroups() as $component => $label) {
+                    $productId = $submittedComponents[$component] ?? '';
+                    $pendingComponents[$component] = is_scalar($productId) ? (string) $productId : '';
+                }
+            }
+
+            $request->session()->put('pending_customer_build', [
+                'customer_name' => is_string($request->input('customer_name')) ? $request->input('customer_name') : '',
+                'customer_email' => is_string($request->input('customer_email')) ? $request->input('customer_email') : '',
+                'components' => $pendingComponents,
+                'notes' => is_string($request->input('notes')) ? $request->input('notes') : '',
+            ]);
+            $request->session()->put('url.intended', route('buildpc.customer'));
+
+            return redirect()->route('login');
+        }
+
         $validated = $request->validate([
             'customer_name' => ['nullable', 'string', 'max:150'],
             'customer_email' => ['nullable', 'email', 'max:150'],
-            'items' => ['required', 'array'],
-            'items.*' => ['array'],
-            'items.*.product_id' => ['nullable', 'integer', 'exists:products,id'],
+            'components' => ['required', 'array:cpu,motherboard,gpu,ram,storage,power_supply,case,cpu_cooler'],
+            'components.*' => ['nullable', 'integer', 'exists:products,id'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        abort_unless($request->user() instanceof User, 401);
-        $build = $this->pcBuildService->createCustomerBuild($request->user(), $validated);
+        $componentGroups = $this->pcBuildService->componentGroups();
+        $products = $this->pcBuildService->availableProducts()->keyBy('id');
+        $estimatedCost = 0.0;
+        $componentNotes = collect($validated['components'])
+            ->map(function (int|string|null $productId, string $component) use ($componentGroups, $products, &$estimatedCost): ?string {
+                if ($productId === null) {
+                    return null;
+                }
+
+                $product = $products->get((int) $productId);
+
+                if ($product === null || $this->pcBuildService->componentGroupForProduct($product) !== $component) {
+                    throw ValidationException::withMessages([
+                        'components.'.$component => ['Select an available '.$componentGroups[$component].' from the list.'],
+                    ]);
+                }
+
+                $estimatedCost += (float) $product->price;
+
+                return $componentGroups[$component].': '.$product->name;
+            })
+            ->filter()
+            ->values();
+
+        if ($componentNotes->isEmpty()) {
+            throw ValidationException::withMessages([
+                'components' => ['Select at least one component for your build request.'],
+            ]);
+        }
+
+        $additionalNotes = trim((string) ($validated['notes'] ?? ''));
+        $validated['notes'] = $componentNotes
+            ->when($additionalNotes !== '', fn ($lines) => $lines->push('Additional notes: '.$additionalNotes))
+            ->implode("\n");
+
+        if (mb_strlen($validated['notes']) > 2000) {
+            throw ValidationException::withMessages([
+                'notes' => ['The combined component details must not exceed 2,000 characters.'],
+            ]);
+        }
+
+        $build = $this->pcBuildService->createCustomerBuild($user, $validated, $estimatedCost);
+        $request->session()->forget('pending_customer_build');
 
         return redirect()->route('buildpc.customer')->with('success', 'Build '.$build->build_number.' submitted. You can follow its status here and in your dashboard.');
     }
 
     public function updateCustomerBuild(Request $request, PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless($request->user()?->canManageOrders(), 403);
+        abort_unless($request->user()?->hasPermission('builds.manage'), 403);
         abort_if($pcBuild->user_id === null, 404);
 
         $validated = $request->validate([
             'status' => ['nullable', 'in:pending,accepted,building,testing,ready,completed,cancelled'],
-            'product_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-            'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+            'product_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
+            'before_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
+            'after_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:5120'],
         ]);
 
         if (! empty($validated['status']) && $validated['status'] !== $pcBuild->status) {
             $this->pcBuildService->updateCustomerBuildStatus($pcBuild, $validated['status']);
+        }
+
+        if (array_key_exists('notes', $validated)) {
+            $pcBuild->update(['notes' => trim((string) $validated['notes']) ?: null]);
         }
 
         $photoColumns = [
@@ -132,7 +204,7 @@ class PcBuildController extends Controller
 
     public function show(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-show', compact('pcBuild'));
@@ -140,7 +212,7 @@ class PcBuildController extends Controller
 
     public function print(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load(['items.product', 'reservations.product']);
 
         return view('build-pc-print', compact('pcBuild'));
@@ -148,15 +220,21 @@ class PcBuildController extends Controller
 
     public function edit(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
-        $products = $this->pcBuildService->availableProducts();
+        $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
+        $availableQuantities = $this->pcBuildService->availableQuantities($products, (int) $pcBuild->getKey());
+        $products->each(function (Product $product) use ($availableQuantities): void {
+            $product->setAttribute('available_for_build', $availableQuantities[$product->id] ?? 0);
+        });
         $selectedProducts = [];
 
         foreach ($pcBuild->items as $item) {
             $group = $this->pcBuildService->componentGroupForProduct($item->product);
-            $selectedProducts[$group ?? 'other'] = $item->product_id;
+            if ($group !== null) {
+                $selectedProducts[$group] = $item->product_id;
+            }
         }
 
         return view('build-pc-edit', [
@@ -171,15 +249,21 @@ class PcBuildController extends Controller
 
     public function customerEdit(PcBuild $pcBuild): View
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
         $pcBuild->load('items.product');
 
-        $products = $this->pcBuildService->availableProducts();
+        $products = $this->pcBuildService->availableProducts((int) $pcBuild->getKey());
+        $availableQuantities = $this->pcBuildService->availableQuantities($products, (int) $pcBuild->getKey());
+        $products->each(function (Product $product) use ($availableQuantities): void {
+            $product->setAttribute('available_for_build', $availableQuantities[$product->id] ?? 0);
+        });
         $selectedProducts = [];
 
         foreach ($pcBuild->items as $item) {
             $group = $this->pcBuildService->componentGroupForProduct($item->product);
-            $selectedProducts[$group ?? 'other'] = $item->product_id;
+            if ($group !== null) {
+                $selectedProducts[$group] = $item->product_id;
+            }
         }
 
         return view('store.build-pc-edit', [
@@ -194,7 +278,7 @@ class PcBuildController extends Controller
 
     public function update(Request $request, PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
 
         $validated = $request->validate([
             'items' => ['required', 'array', 'min:1'],
@@ -210,15 +294,8 @@ class PcBuildController extends Controller
 
     public function destroy(PcBuild $pcBuild): RedirectResponse
     {
-        abort_unless(auth()->user()?->canManageOrders() || $pcBuild->user_id === auth()->id(), 403);
-
-        if ($pcBuild->product_id) {
-            $pcBuild->product()->delete();
-        }
-
-        $pcBuild->items()->delete();
-        $pcBuild->reservations()->delete();
-        $pcBuild->delete();
+        abort_unless(auth()->user()?->hasPermission('builds.manage') || $pcBuild->user_id === auth()->id(), 403);
+        $this->pcBuildService->deleteBuild($pcBuild);
 
         return back()->with('success', 'PC build deleted successfully.');
     }
@@ -248,7 +325,7 @@ class PcBuildController extends Controller
                 ->filter(function ($product) use ($type): bool {
                     $group = $this->pcBuildService->componentGroupForProduct($product);
 
-                    return $type === 'other' ? $group === 'other' : $group === $type;
+                    return $group === $type;
                 })
                 ->values();
         }

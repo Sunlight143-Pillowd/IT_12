@@ -28,10 +28,16 @@
                     @csrf
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                         <label class="text-sm font-semibold text-gray-700">Supplier
-                            <input name="supplier_name" required value="{{ old('supplier_name') }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                            <select name="supplier_id" class="supplier-select mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                                <option value="">Choose saved supplier or enter below</option>
+                                @foreach ($suppliers as $supplier)
+                                    <option value="{{ $supplier->id }}" data-name="{{ $supplier->name }}" data-phone="{{ $supplier->phone }}">{{ $supplier->name }}</option>
+                                @endforeach
+                            </select>
+                            <input name="supplier_name" required value="{{ old('supplier_name') }}" placeholder="Supplier name" class="supplier-name mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                         </label>
                         <label class="text-sm font-semibold text-gray-700">Supplier contact
-                            <input name="supplier_contact" value="{{ old('supplier_contact') }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
+                            <input name="supplier_contact" value="{{ old('supplier_contact') }}" class="supplier-contact mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
                         </label>
                         <label class="text-sm font-semibold text-gray-700">Invoice number
                             <input name="invoice_number" required value="{{ old('invoice_number') }}" class="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-normal">
@@ -77,7 +83,16 @@
                                 <label class="text-xs font-semibold text-gray-600">Warranty (months)
                                     <input type="number" name="items[0][warranty_months]" min="0" max="1200" class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
                                 </label>
-                                <label class="text-xs font-semibold text-gray-600 md:col-span-2 xl:col-span-1">Serial numbers, one per line
+                                <label class="text-xs font-semibold text-gray-600">Lot code
+                                    <input name="items[0][lot_code]" maxlength="100" class="delivery-lot mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600">Manufacture date
+                                    <input type="date" name="items[0][manufactured_at]" class="delivery-manufactured-at mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600">Warranty end date
+                                    <input type="date" name="items[0][warranty_ends_at]" class="delivery-warranty-ends-at mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                                </label>
+                                <label class="text-xs font-semibold text-gray-600 md:col-span-2">Serial numbers, one per line
                                     <textarea name="items[0][serial_numbers]" rows="2" class="delivery-serials mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm"></textarea>
                                 </label>
                             </div>
@@ -93,7 +108,7 @@
                 </form>
 
                 <template id="delivery-item-template">
-                    <div class="delivery-item grid gap-3 rounded border border-gray-200 bg-gray-50 p-3 md:grid-cols-2 xl:grid-cols-5">
+                    <div class="delivery-item grid gap-3 rounded border border-gray-200 bg-gray-50 p-3 md:grid-cols-2 xl:grid-cols-4">
                         <label class="text-xs font-semibold text-gray-600">Product
                             <select required class="delivery-product mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
                                 <option value="">Select product</option>
@@ -111,7 +126,16 @@
                         <label class="text-xs font-semibold text-gray-600">Warranty (months)
                             <input type="number" min="0" max="1200" class="mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
                         </label>
-                        <label class="text-xs font-semibold text-gray-600 md:col-span-2 xl:col-span-1">Serial numbers, one per line
+                        <label class="text-xs font-semibold text-gray-600">Lot code
+                            <input maxlength="100" class="delivery-lot mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                        </label>
+                        <label class="text-xs font-semibold text-gray-600">Manufacture date
+                            <input type="date" class="delivery-manufactured-at mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                        </label>
+                        <label class="text-xs font-semibold text-gray-600">Warranty end date
+                            <input type="date" class="delivery-warranty-ends-at mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm">
+                        </label>
+                        <label class="text-xs font-semibold text-gray-600 md:col-span-2">Serial numbers, one per line
                             <textarea rows="2" class="delivery-serials mt-1 w-full rounded border border-gray-300 bg-white px-2 py-2 text-sm"></textarea>
                         </label>
                         <button type="button" class="remove-delivery-item justify-self-start text-xs font-semibold text-red-600">Remove item</button>
@@ -126,15 +150,20 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500">
-                            <tr><th class="px-4 py-3">Received</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Invoice</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Proof</th></tr>
+                            <tr><th class="px-4 py-3">Received</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Invoice</th><th class="px-4 py-3">Items</th><th class="px-4 py-3">Invoice total (VAT incl.)</th><th class="px-4 py-3">Proof</th><th class="px-4 py-3">Actions</th></tr>
                         </thead>
                         <tbody>
                             @forelse ($stockIns as $stockIn)
+                                @php
+                                    $invoiceTotal = $stockIn->items->sum(fn ($item): float => (float) $item->unit_cost * $item->quantity);
+                                    $invoiceVat = \App\Support\PhilippineVat::breakdown((float) $invoiceTotal);
+                                @endphp
                                 <tr class="border-t border-gray-200 align-top">
                                     <td class="px-4 py-3">{{ $stockIn->received_at->format('M j, Y') }}</td>
                                     <td class="px-4 py-3 font-semibold">{{ $stockIn->supplier_name }}</td>
                                     <td class="px-4 py-3">{{ $stockIn->invoice_number }}</td>
                                     <td class="px-4 py-3">{{ $stockIn->items->map(fn ($item) => $item->product->name.' × '.$item->quantity)->join(', ') }}</td>
+                                    <td class="px-4 py-3 font-semibold">₱{{ number_format($invoiceVat['total'], 2) }}<span class="mt-1 block text-xs font-normal text-gray-500">VAT included: ₱{{ number_format($invoiceVat['vat'], 2) }}</span></td>
                                     <td class="px-4 py-3">
                                         @if ($stockIn->delivery_document_path)
                                             <a class="font-semibold text-purple-700 hover:underline" href="{{ asset('storage/'.$stockIn->delivery_document_path) }}" target="_blank" rel="noopener">Document</a>
@@ -145,9 +174,12 @@
                                             @endif
                                         @endforeach
                                     </td>
+                                    <td class="px-4 py-3">
+                                        <a href="{{ route('stock-in.edit', $stockIn) }}" class="rounded border border-purple-200 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-50">Edit</a>
+                                    </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No supplier deliveries recorded yet.</td></tr>
+                                <tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No supplier deliveries recorded yet.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -178,6 +210,9 @@
                     'input[type="number"][min="0"]': 'unit_cost',
                     'input[type="number"][max="1200"]': 'warranty_months',
                     '.delivery-serials': 'serial_numbers',
+                    '.delivery-lot': 'lot_code',
+                    '.delivery-manufactured-at': 'manufactured_at',
+                    '.delivery-warranty-ends-at': 'warranty_ends_at',
                 };
 
                 Object.entries(fieldNames).forEach(([selector, name]) => {
@@ -190,6 +225,11 @@
             }
 
             document.getElementById('add-delivery-item').addEventListener('click', addItem);
+            document.querySelector('.supplier-select')?.addEventListener('change', (event) => {
+                const option = event.target.selectedOptions[0];
+                document.querySelector('.supplier-name').value = option?.dataset.name ?? '';
+                document.querySelector('.supplier-contact').value = option?.dataset.phone ?? '';
+            });
             itemsContainer.addEventListener('change', (event) => {
                 if (event.target.matches('.delivery-product')) {
                     updateSerialRequirement(event.target.closest('.delivery-item'));

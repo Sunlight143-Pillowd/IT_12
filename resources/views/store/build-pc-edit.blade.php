@@ -28,8 +28,8 @@
                                 <select id="component-{{ $type }}" name="items[{{ $type }}][product_id]" data-key="{{ $type }}" class="component-select w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
                                     <option value="">Remove / keep empty</option>
                                     @foreach ($groupedProducts[$type] ?? [] as $product)
-                                        <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" data-available="{{ $product->availableStock() }}" {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
-                                            {{ $product->name }} — ₱{{ number_format($product->price, 2) }} ({{ $product->availableStock() }} available)
+                                        <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" data-available="{{ $product->available_for_build }}" {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
+                                            {{ $product->name }} — ₱{{ number_format($product->price, 2) }} ({{ $product->available_for_build }} available)
                                         </option>
                                     @endforeach
                                 </select>
@@ -65,9 +65,16 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between rounded-xl bg-purple-50 px-4 py-4">
-                        <span class="text-sm font-bold uppercase tracking-wide text-purple-800">Estimated total</span>
+                        <div>
+                            <span class="block text-sm font-bold uppercase tracking-wide text-purple-800">Estimated total (VAT included)</span>
+                            <span class="mt-1 block text-xs text-purple-700">Catalog prices include 12% Philippine VAT.</span>
+                        </div>
                         <span id="build-total" class="text-2xl font-black text-purple-800">₱0.00</span>
                     </div>
+                    <dl class="mt-3 space-y-2 px-1 text-sm">
+                        <div class="flex justify-between gap-4 text-gray-600"><dt>Amount before VAT</dt><dd id="build-net">₱0.00</dd></div>
+                        <div class="flex justify-between gap-4 text-gray-600"><dt>VAT (12%, included)</dt><dd id="build-vat">₱0.00</dd></div>
+                    </dl>
 
                     <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
                         <button type="submit" style="background-color: #6b21a8; color: #fff;" class="inline-flex justify-center rounded-xl px-5 py-3 text-sm font-bold shadow-sm transition hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
@@ -83,8 +90,11 @@
     <script>
         const summaryBody = document.getElementById('build-summary-body');
         const totalEl = document.getElementById('build-total');
+        const netEl = document.getElementById('build-net');
+        const vatEl = document.getElementById('build-vat');
         const componentSelects = document.querySelectorAll('.component-select');
         const moneyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+        const vatRate = {{ \App\Support\PhilippineVat::RATE_PERCENT }};
 
         function updateBuildSummary() {
             const rows = [];
@@ -124,6 +134,9 @@
                 rows.forEach((row) => summaryBody.appendChild(row));
             }
             totalEl.textContent = moneyFormatter.format(total);
+            const vat = Math.round(total * vatRate / (100 + vatRate) * 100) / 100;
+            netEl.textContent = moneyFormatter.format(total - vat);
+            vatEl.textContent = moneyFormatter.format(vat);
         }
 
         componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));

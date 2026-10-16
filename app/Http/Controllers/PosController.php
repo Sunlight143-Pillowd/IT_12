@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\PcBuild;
 use App\Models\Product;
 use App\Models\ProductUnit;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\SalePayment;
+use App\Models\StockIn;
+use App\Models\StockInItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -17,7 +22,13 @@ class PosController extends Controller
 {
     public function index(): View
     {
-        $recentSales = Sale::with('items.units', 'items.product')
+        $products = Product::query()
+            ->where('is_active', true)
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+        $customers = Customer::query()->orderBy('name')->get();
+        $recentSales = Sale::with('items.units', 'items.product', 'storeOrder')
             ->latest()
             ->limit(10)
             ->get();
@@ -27,12 +38,75 @@ class PosController extends Controller
             ->limit(10)
             ->get();
 
-        return view('pos', compact('recentSales', 'recentBuilds'));
+        $recentStockIns = StockIn::with('items.product')
+            ->latest()
+            ->limit(10)
+            ->get();
+        $recentStockIns->each(static function (StockIn $stockIn): void {
+            $stockIn->setAttribute(
+                'invoice_total',
+                $stockIn->items->sum(fn (StockInItem $item): float => (float) $item->unit_cost * $item->quantity),
+            );
+        });
+        $reportStart = today()->subDays(29);
+        $reportEnd = now();
+        $dailySales = Sale::query()
+            ->select([])
+            ->selectRaw('DATE(created_at) as report_date, SUM(total_amount) as amount')
+            ->whereBetween('created_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(created_at)')
+            ->pluck('amount', 'report_date');
+        $dailyBuildReceipts = PcBuild::query()
+            ->select([])
+            ->selectRaw('DATE(stock_deducted_at) as report_date, SUM(total_cost) as amount')
+            ->whereNotNull('user_id')
+            ->whereNotNull('stock_deducted_at')
+            ->whereBetween('stock_deducted_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(stock_deducted_at)')
+            ->pluck('amount', 'report_date');
+        $dailyInvoices = StockIn::query()
+            ->join('stock_in_items', 'stock_ins.id', '=', 'stock_in_items.stock_in_id')
+            ->select([])
+            ->selectRaw('DATE(stock_ins.received_at) as report_date, SUM(stock_in_items.quantity * stock_in_items.unit_cost) as amount')
+            ->whereBetween('stock_ins.received_at', [$reportStart, $reportEnd])
+            ->groupByRaw('DATE(stock_ins.received_at)')
+            ->pluck('amount', 'report_date');
+        $posChartData = collect(range(0, 29))
+            ->map(function (int $dayOffset) use ($reportStart, $dailySales, $dailyBuildReceipts, $dailyInvoices): array {
+                $date = $reportStart->copy()->addDays($dayOffset);
+                $dateKey = $date->toDateString();
+
+                return [
+                    'label' => $date->format('M j'),
+                    'receipts' => (float) $dailySales->get($dateKey, 0) + (float) $dailyBuildReceipts->get($dateKey, 0),
+                    'invoices' => (float) $dailyInvoices->get($dateKey, 0),
+                ];
+            })
+            ->values();
+        $receiptTotal = (float) $posChartData->sum('receipts');
+        $invoiceTotal = (float) $posChartData->sum('invoices');
+        $chartTotal = $receiptTotal + $invoiceTotal;
+        $netTotal = $receiptTotal - $invoiceTotal;
+        $receiptSharePercent = $chartTotal > 0 ? round($receiptTotal / $chartTotal * 100, 2) : 0;
+
+        return view('pos', compact(
+            'recentSales',
+            'recentBuilds',
+            'recentStockIns',
+            'products',
+            'customers',
+            'posChartData',
+            'receiptTotal',
+            'invoiceTotal',
+            'chartTotal',
+            'netTotal',
+            'receiptSharePercent',
+        ));
     }
 
     public function receipt(Sale $sale): View
     {
-        $sale->load('items.units', 'items.product');
+        $sale->load('items.units', 'items.product', 'payments', 'customer');
 
         return view('pos-receipt', compact('sale'));
     }
@@ -40,8 +114,12 @@ class PosController extends Controller
     public function checkout(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'cart_json' => ['required', 'string'],
-            'customer_name' => ['required', 'string', 'max:150'],
+            'cart_json' => ['required', 'string', 'json'],
+            'customer_name' => ['nullable', 'string', 'max:150'],
+            'customer_id' => ['nullable', 'integer', 'exists:customers,id'],
+            'payment_method' => ['required', 'string', Rule::in(['cash', 'card', 'bank_transfer', 'other'])],
+            'payment_amount' => ['required', 'numeric', 'min:0.01', 'max:999999999.99'],
+            'payment_reference' => ['nullable', 'string', 'max:150'],
         ]);
 
         $items = json_decode($data['cart_json'], true);
@@ -112,11 +190,13 @@ class PosController extends Controller
             return back()->with('error', 'A serial number cannot be assigned to more than one item.');
         }
 
-        return DB::transaction(function () use ($request, $preparedItems) {
+        return DB::transaction(function () use ($data, $preparedItems) {
             $total = 0.0;
+            $customer = isset($data['customer_id']) ? Customer::findOrFail($data['customer_id']) : null;
             $sale = Sale::create([
                 'employee_id' => auth()->id(),
-                'customer_name' => trim($request->string('customer_name')->toString()),
+                'customer_id' => $customer?->id,
+                'customer_name' => $customer?->name ?? (filled($data['customer_name'] ?? null) ? trim($data['customer_name']) : null),
                 'total_amount' => 0,
             ]);
 
@@ -140,35 +220,57 @@ class PosController extends Controller
                     'subtotal' => $subtotal,
                 ]);
 
+                $unitQuery = ProductUnit::query()
+                    ->where('product_id', $product->id)
+                    ->where('status', 'in_stock')
+                    ->orderBy('id')
+                    ->lockForUpdate();
                 if ($item['serial_numbers'] !== []) {
-                    $units = ProductUnit::query()
-                        ->where('product_id', $product->id)
-                        ->where('status', 'in_stock')
-                        ->whereIn('serial_number', $item['serial_numbers'])
-                        ->lockForUpdate()
-                        ->get();
+                    $unitQuery->whereIn('serial_number', $item['serial_numbers']);
+                } else {
+                    $unitQuery->limit($qty);
+                }
+                $units = $unitQuery->get();
 
-                    if ($units->count() !== $qty) {
-                        throw ValidationException::withMessages([
-                            'cart_json' => ['One or more selected serial numbers are no longer available.'],
-                        ]);
-                    }
+                if ($item['serial_numbers'] !== [] && $units->count() !== $qty) {
+                    throw ValidationException::withMessages([
+                        'cart_json' => ['One or more selected serial numbers are no longer available.'],
+                    ]);
+                }
 
-                    foreach ($units as $unit) {
-                        $unit->update([
-                            'sale_item_id' => $saleItem->id,
-                            'status' => 'sold',
-                            'sold_at' => now(),
-                        ]);
-                    }
+                foreach ($units as $unit) {
+                    $unit->update([
+                        'sale_item_id' => $saleItem->id,
+                        'status' => 'sold',
+                        'sold_at' => now(),
+                    ]);
                 }
 
                 $product->decrement('stock_quantity', $qty);
             }
 
-            $sale->update(['total_amount' => $total]);
+            $paymentAmount = round((float) $data['payment_amount'], 2);
+            if ($data['payment_method'] === 'cash' && $paymentAmount < round($total, 2)) {
+                throw ValidationException::withMessages([
+                    'payment_amount' => ['Cash received must cover the sale total.'],
+                ]);
+            }
+            if ($data['payment_method'] !== 'cash' && $paymentAmount !== round($total, 2)) {
+                throw ValidationException::withMessages([
+                    'payment_amount' => ['Non-cash payment must equal the sale total.'],
+                ]);
+            }
 
-            return redirect()->route('pos.index')->with('success', 'Sale completed successfully.');
+            $sale->update(['total_amount' => $total]);
+            SalePayment::create([
+                'sale_id' => $sale->id,
+                'method' => $data['payment_method'],
+                'amount' => $total,
+                'amount_tendered' => $paymentAmount,
+                'reference' => $data['payment_reference'] ?? null,
+            ]);
+
+            return redirect()->route('pos.receipt', $sale)->with('success', 'Sale completed successfully.');
         });
     }
 }

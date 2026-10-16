@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @php
+        $buildAmount = $pcBuild->user_id !== null && $pcBuild->estimated_cost !== null
+            ? (float) $pcBuild->estimated_cost
+            : (float) $pcBuild->total_cost;
+        $buildVat = \App\Support\PhilippineVat::breakdown($buildAmount);
+    @endphp
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{{ $pcBuild->build_number }} - PC Build</title>
@@ -50,7 +56,21 @@
         </tbody>
     </table>
 
-    <div class="total">Total: ₱{{ number_format($pcBuild->total_cost, 2) }}</div>
+    <div class="total">
+        @if ($pcBuild->user_id !== null)
+            @if ($pcBuild->estimated_cost !== null)
+                <div>Amount before VAT: ₱{{ number_format($buildVat['net'], 2) }}</div>
+                <div>VAT (12%, included): ₱{{ number_format($buildVat['vat'], 2) }}</div>
+                <div>Estimated price: ₱{{ number_format($buildVat['total'], 2) }} (VAT included)</div>
+            @else
+                Quote pending
+            @endif
+        @else
+            <div>Amount before VAT: ₱{{ number_format($buildVat['net'], 2) }}</div>
+            <div>VAT (12%, included): ₱{{ number_format($buildVat['vat'], 2) }}</div>
+            <div>Total: ₱{{ number_format($buildVat['total'], 2) }} (VAT included)</div>
+        @endif
+    </div>
 
     @if ($pcBuild->notes)
         <div style="margin-top: 20px; border-top: 1px solid #d1d5db; padding-top: 12px;">

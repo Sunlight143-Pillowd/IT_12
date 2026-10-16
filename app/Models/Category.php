@@ -13,5 +13,6 @@ class Category extends Model
         'name',
         'slug',
         'image_path',
+        'sort_order',
     ];
 }

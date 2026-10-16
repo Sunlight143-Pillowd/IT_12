@@ -33,9 +33,9 @@
                                         <option value="{{ $product->id }}"
                                             data-name="{{ $product->name }}"
                                             data-price="{{ $product->price }}"
-                                            data-available="{{ max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity')) }}"
+                                            data-available="{{ $product->available_for_build }}"
                                             {{ ($selectedProducts[$type] ?? null) == $product->id ? 'selected' : '' }}>
-                                            {{ $product->name }} (Avail: {{ max(0, (int) $product->stock_quantity - (int) $product->reservations()->where('status', 'active')->sum('quantity')) }})
+                                            {{ $product->name }} (Avail: {{ $product->available_for_build }})
                                         </option>
                                     @endforeach
                                 </select>
@@ -67,9 +67,16 @@
                         </div>
 
                         <div class="mt-4 flex items-center justify-between rounded-lg border border-purple-200 bg-purple-50 px-4 py-3">
-                            <span class="text-sm font-bold uppercase tracking-[0.2em] text-purple-700">Total</span>
-                            <span id="build-total" class="text-2xl font-black text-purple-700">₱0</span>
+                            <div>
+                                <span class="block text-sm font-bold uppercase tracking-[0.2em] text-purple-700">Estimated total (VAT included)</span>
+                                <span class="mt-1 block text-xs text-purple-700">Catalog prices include 12% Philippine VAT.</span>
+                            </div>
+                            <span id="build-total" class="text-2xl font-black text-purple-700">₱0.00</span>
                         </div>
+                        <dl class="mt-3 space-y-2 px-1 text-sm">
+                            <div class="flex justify-between gap-4 text-gray-600"><dt>Amount before VAT</dt><dd id="build-net">₱0.00</dd></div>
+                            <div class="flex justify-between gap-4 text-gray-600"><dt>VAT (12%, included)</dt><dd id="build-vat">₱0.00</dd></div>
+                        </dl>
                     </div>
 
                     <div class="mt-6 flex items-center gap-3">
@@ -84,7 +91,10 @@
     <script>
         const summaryBody = document.getElementById('build-summary-body');
         const totalEl = document.getElementById('build-total');
+        const netEl = document.getElementById('build-net');
+        const vatEl = document.getElementById('build-vat');
         const selects = document.querySelectorAll('.component-select');
+        const vatRate = {{ \App\Support\PhilippineVat::RATE_PERCENT }};
 
         function formatMoney(value) {
             return new Intl.NumberFormat('en-PH', {
@@ -124,6 +134,9 @@
             }
 
             totalEl.textContent = formatMoney(total);
+            const vat = Math.round(total * vatRate / (100 + vatRate) * 100) / 100;
+            netEl.textContent = formatMoney(total - vat);
+            vatEl.textContent = formatMoney(vat);
         }
 
         selects.forEach((select) => select.addEventListener('change', renderBuildSummary));

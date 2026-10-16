@@ -1,6 +1,7 @@
 <x-app-layout>
     @php
         /** @var \Illuminate\Support\ViewErrorBag $errors */
+        $cartVat = \App\Support\PhilippineVat::breakdown((float) $subtotal);
     @endphp
 
     <x-slot name="header">
@@ -89,74 +90,26 @@
                     </section>
 
                     <aside class="h-fit rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                        <h3 class="text-lg font-black text-gray-900">Checkout</h3>
-                        <div class="mt-4 space-y-2 border-b border-gray-100 pb-4 text-sm">
+                        <h3 class="text-lg font-black uppercase tracking-wide text-gray-900">Cart Totals</h3>
+                        <div class="mt-5 space-y-3 border-b border-gray-100 pb-4 text-sm">
+                            <p class="text-xs text-gray-500">Catalog prices include 12% Philippine VAT.</p>
                             <div class="flex justify-between gap-4 text-gray-600">
-                                <span>Subtotal</span>
-                                <span>₱{{ number_format($subtotal, 2) }}</span>
+                                <span>Amount before VAT</span>
+                                <span class="font-semibold text-gray-900">₱{{ number_format($cartVat['net'], 2) }}</span>
                             </div>
-                            <div class="flex justify-between gap-4 text-base font-black text-gray-900">
-                                <span>Total</span>
-                                <span>₱{{ number_format($subtotal, 2) }}</span>
+                            <div class="flex justify-between gap-4 text-gray-600">
+                                <span>VAT (12%, included)</span>
+                                <span class="font-semibold text-gray-900">₱{{ number_format($cartVat['vat'], 2) }}</span>
+                            </div>
+                            <div class="flex justify-between gap-4 border-t border-gray-100 pt-3 font-bold text-gray-900">
+                                <span>Total (VAT included)</span>
+                                <span>₱{{ number_format($cartVat['total'], 2) }}</span>
                             </div>
                         </div>
-
-                        <form method="POST" action="{{ route('cart.order') }}" class="mt-5 space-y-5" x-data="{ fulfillment: '{{ old('fulfillment_method', 'pickup') }}' }">
-                            @csrf
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Customer information</legend>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Full name
-                                    <input type="text" name="customer_name" value="{{ old('customer_name', auth()->user()?->name) }}" maxlength="255" required autocomplete="name"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Email
-                                    <input type="email" name="customer_email" value="{{ old('customer_email', auth()->user()?->email) }}" maxlength="255" required autocomplete="email"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                                <label class="block text-sm font-medium text-gray-700">
-                                    Contact number <span class="font-normal text-gray-400">(optional)</span>
-                                    <input type="tel" name="customer_phone" value="{{ old('customer_phone') }}" maxlength="40" autocomplete="tel"
-                                           class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                </label>
-                            </fieldset>
-
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Delivery or pickup</legend>
-                                <div class="grid grid-cols-2 gap-3">
-                                    @foreach (['pickup' => 'Store pickup', 'delivery' => 'Delivery'] as $value => $label)
-                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-3 text-sm font-semibold text-gray-700 has-checked:border-purple-600 has-checked:bg-purple-50 has-checked:text-purple-800">
-                                            <input type="radio" name="fulfillment_method" value="{{ $value }}" x-model="fulfillment" @checked(old('fulfillment_method', 'pickup') === $value) class="border-gray-300 text-purple-700 focus:ring-purple-500">
-                                            {{ $label }}
-                                        </label>
-                                    @endforeach
-                                </div>
-                                <label x-cloak x-show="fulfillment === 'delivery'" class="block text-sm font-medium text-gray-700">
-                                    Delivery address
-                                    <textarea name="delivery_address" rows="3" maxlength="2000" :required="fulfillment === 'delivery'" autocomplete="street-address"
-                                              class="mt-1 block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">{{ old('delivery_address') }}</textarea>
-                                </label>
-                            </fieldset>
-
-                            <fieldset class="space-y-3">
-                                <legend class="text-sm font-bold text-gray-900">Mode of payment</legend>
-                                <div class="grid grid-cols-2 gap-3">
-                                    @foreach (['cash' => 'Cash', 'gcash' => 'GCash', 'bank_transfer' => 'Bank transfer', 'other' => 'Other'] as $value => $label)
-                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-3 text-sm font-semibold text-gray-700 has-checked:border-purple-600 has-checked:bg-purple-50 has-checked:text-purple-800">
-                                            <input type="radio" name="payment_method" value="{{ $value }}" @checked(old('payment_method', 'cash') === $value) class="border-gray-300 text-purple-700 focus:ring-purple-500">
-                                            {{ $label }}
-                                        </label>
-                                    @endforeach
-                                </div>
-                                <p class="text-xs text-gray-500">Payment is recorded as a preference only; online payment is not yet enabled.</p>
-                            </fieldset>
-
-                            <button type="submit" class="w-full rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                                Proceed to checkout
-                            </button>
-                            <p class="text-center text-xs leading-relaxed text-gray-500">Your order will be saved as pending until staff confirms it. Stock is deducted after acceptance.</p>
-                        </form>
+                        <a href="{{ route('checkout.index') }}" class="mt-5 inline-flex w-full justify-center rounded-xl bg-purple-700 px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
+                            Proceed to checkout
+                        </a>
+                        <p class="mt-3 text-center text-xs leading-relaxed text-gray-500">Review your shipping and billing details before placing the order.</p>
                     </aside>
                 </div>
             @endif

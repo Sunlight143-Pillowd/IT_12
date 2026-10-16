@@ -70,6 +70,11 @@
                             <span>Total</span>
                             <span id="quote-cart-total">₱0.00</span>
                         </div>
+                        <div class="mt-2 space-y-2 border-t border-gray-100 pt-3 text-sm">
+                            <div class="flex justify-between gap-4 text-gray-600"><span>Amount before VAT</span><span id="quote-cart-net">₱0.00</span></div>
+                            <div class="flex justify-between gap-4 text-gray-600"><span>VAT (12%, included)</span><span id="quote-cart-vat">₱0.00</span></div>
+                            <p class="text-xs text-gray-500">Catalog prices include Philippine VAT. Final quotation total includes VAT.</p>
+                        </div>
 
                         <button type="submit" id="quote-submit" disabled class="mt-4 w-full rounded bg-purple-600 px-4 py-3 text-sm font-semibold text-white hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-40">
                             Save &amp; Print Quotation
@@ -93,10 +98,13 @@
                         </thead>
                         <tbody>
                             @forelse ($quotations as $quotation)
+                                @php
+                                    $quotationVat = \App\Support\PhilippineVat::breakdown((float) $quotation->total_amount);
+                                @endphp
                                 <tr class="border-t border-gray-200">
                                     <td class="px-4 py-3 font-semibold text-gray-900">{{ $quotation->customer_name ?: 'Customer not recorded' }}</td>
                                     <td class="px-4 py-3">{{ $quotation->customer_contact ?? 'N/A' }}</td>
-                                    <td class="px-4 py-3 font-bold text-purple-600">₱{{ number_format($quotation->total_amount, 2) }}</td>
+                                    <td class="px-4 py-3 font-bold text-purple-600">₱{{ number_format($quotationVat['total'], 2) }}<span class="block text-xs font-normal text-gray-500">VAT included · ₱{{ number_format($quotationVat['vat'], 2) }}</span></td>
                                     <td class="px-4 py-3">{{ $quotation->items->count() }}</td>
                                     <td class="px-4 py-3"><a href="{{ route('quotation.show', $quotation) }}" class="rounded border border-gray-300 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 hover:border-purple-600 hover:text-purple-700">View</a></td>
                                 </tr>
@@ -118,10 +126,13 @@
             const cartItemsEl = document.getElementById('quote-cart-items');
             const emptyMsg = document.getElementById('quote-cart-empty-msg');
             const totalEl = document.getElementById('quote-cart-total');
+            const netEl = document.getElementById('quote-cart-net');
+            const vatEl = document.getElementById('quote-cart-vat');
             const cartJson = document.getElementById('quote-cart-json');
             const submitBtn = document.getElementById('quote-submit');
             const categoryFilter = document.getElementById('quote-category-filter');
             const productSearch = document.getElementById('quote-product-search');
+            const vatRate = {{ \App\Support\PhilippineVat::RATE_PERCENT }};
 
             function applyProductFilters() {
                 const categoryValue = categoryFilter ? categoryFilter.value : 'all';
@@ -143,6 +154,8 @@
                 if (cart.size === 0) {
                     cartItemsEl.appendChild(emptyMsg);
                     totalEl.textContent = money(0);
+                    netEl.textContent = money(0);
+                    vatEl.textContent = money(0);
                     cartJson.value = '';
                     submitBtn.disabled = true;
                     return;
@@ -171,6 +184,9 @@
                 });
 
                 totalEl.textContent = money(total);
+                const vat = Math.round(total * vatRate / (100 + vatRate) * 100) / 100;
+                netEl.textContent = money(total - vat);
+                vatEl.textContent = money(vat);
                 cartJson.value = JSON.stringify(Array.from(cart, ([id, item]) => ({
                     product_id: Number(id),
                     quantity: item.qty,

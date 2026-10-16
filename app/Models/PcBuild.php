@@ -19,6 +19,7 @@ class PcBuild extends Model
         'user_id',
         'status',
         'total_cost',
+        'estimated_cost',
         'notes',
         'product_id',
         'sold_at',
@@ -31,6 +32,7 @@ class PcBuild extends Model
 
     protected $casts = [
         'total_cost' => 'float',
+        'estimated_cost' => 'float',
         'sold_at' => 'datetime',
         'expires_at' => 'datetime',
         'stock_deducted_at' => 'datetime',

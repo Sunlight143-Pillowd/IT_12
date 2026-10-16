@@ -18,6 +18,9 @@ class ProductUnit extends Model
         'sale_item_id',
         'serial_number',
         'warranty_months',
+        'lot_code',
+        'manufactured_at',
+        'warranty_ends_at',
         'status',
         'sold_at',
     ];
@@ -26,6 +29,8 @@ class ProductUnit extends Model
     {
         return [
             'warranty_months' => 'integer',
+            'manufactured_at' => 'date',
+            'warranty_ends_at' => 'date',
             'sold_at' => 'datetime',
         ];
     }

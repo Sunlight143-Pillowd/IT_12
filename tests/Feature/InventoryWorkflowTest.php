@@ -19,11 +19,12 @@ class InventoryWorkflowTest extends TestCase
 
     public function test_inventory_categories_use_editable_text_fields_and_save_custom_names(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
         $category = Category::create([
             'name' => 'Displays',
             'slug' => 'displays',
         ]);
+        $product = Product::factory()->create(['category' => 'Displays']);
 
         $this->actingAs($user)
             ->get(route('inventory.index'))
@@ -44,12 +45,13 @@ class InventoryWorkflowTest extends TestCase
             'name' => 'Workstation Parts',
             'slug' => 'workstation-parts',
         ]);
+        $this->assertSame('Workstation Parts', $product->fresh()->category);
     }
 
     public function test_category_can_be_deleted_without_deleting_products_in_that_category(): void
     {
         Storage::fake('public');
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
         $imagePath = 'categories/displays.png';
         Storage::disk('public')->put($imagePath, 'category image');
         $category = Category::create([
@@ -67,11 +69,26 @@ class InventoryWorkflowTest extends TestCase
         $this->assertDatabaseMissing('categories', ['id' => $category->id]);
         $this->assertModelExists($product);
         $this->assertFalse(Storage::disk('public')->exists($imagePath));
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertDontSee('DISPLAYS')
+            ->assertDontSee('inventory/categories/displays/image');
+
+        $this->get(route('store.categories'))->assertDontSee('Displays');
+        $this->get(route('store.category', ['categorySlug' => 'displays']))->assertNotFound();
+        $this->get(route('inventory.index'))->assertDontSee('<option value="Displays"', false);
+
+        $this->actingAs($user)
+            ->post(route('inventory.categories.image', 'displays'))
+            ->assertNotFound();
+
+        $this->assertDatabaseMissing('categories', ['slug' => 'displays']);
     }
 
     public function test_category_text_field_rejects_duplicate_category_names(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
         $category = Category::create(['name' => 'Displays', 'slug' => 'displays']);
         Category::create(['name' => 'Gaming', 'slug' => 'gaming']);
 
@@ -88,6 +105,73 @@ class InventoryWorkflowTest extends TestCase
             'name' => 'Displays',
             'slug' => 'displays',
         ]);
+    }
+
+    public function test_staff_can_reorder_categories_and_customers_see_the_saved_order(): void
+    {
+        $admin = User::factory()->create(['email' => 'admin@davaobosscomputer.com']);
+        $regularUser = User::factory()->create();
+        $alpha = Category::create(['name' => 'Alpha Parts', 'slug' => 'alpha-parts']);
+        $beta = Category::create(['name' => 'Beta Parts', 'slug' => 'beta-parts']);
+        Product::factory()->create(['category' => $alpha->name, 'stock_quantity' => 3]);
+        Product::factory()->create(['category' => $beta->name, 'stock_quantity' => 3]);
+
+        $this->actingAs($regularUser)
+            ->post(route('inventory.categories.reorder'), ['category_ids' => [$beta->id, $alpha->id]])
+            ->assertForbidden();
+
+        $this->actingAs($admin)
+            ->get(route('inventory.index'))
+            ->assertSee('draggable="true"', false)
+            ->assertSee('Save category order');
+
+        $this->actingAs($admin)
+            ->post(route('inventory.categories.reorder'), ['category_ids' => [$beta->id, $alpha->id]])
+            ->assertRedirect(route('inventory.index'))
+            ->assertSessionHas('success', 'Category order saved.');
+
+        $this->assertSame(0, $beta->fresh()->sort_order);
+        $this->assertSame(1, $alpha->fresh()->sort_order);
+
+        $catalog = $this->get(route('store.categories'))->assertOk()->getContent();
+        $this->assertLessThan(
+            strpos($catalog, 'Alpha Parts'),
+            strpos($catalog, 'Beta Parts')
+        );
+    }
+
+    public function test_inventory_stock_sorting_respects_search_and_low_stock_status(): void
+    {
+        $user = User::factory()->create();
+        Product::factory()->create([
+            'name' => 'Stock Sort Low',
+            'category' => 'Sorting Test',
+            'stock_quantity' => 1,
+            'low_stock_threshold' => 2,
+        ]);
+        Product::factory()->create([
+            'name' => 'Stock Sort High',
+            'category' => 'Sorting Test',
+            'stock_quantity' => 8,
+            'low_stock_threshold' => 2,
+        ]);
+        Product::factory()->create([
+            'name' => 'Unrelated Product',
+            'stock_quantity' => 0,
+            'low_stock_threshold' => 0,
+        ]);
+
+        $ascending = $this->actingAs($user)
+            ->get(route('inventory.index', ['search' => 'Stock Sort', 'stock_sort' => 'ascending']))
+            ->assertSee('Stock Sort Low')
+            ->assertSee('Stock Sort High')
+            ->assertSee('LOW STOCK')
+            ->assertDontSee('Unrelated Product')
+            ->getContent();
+        $this->assertLessThan(strpos($ascending, 'Stock Sort High'), strpos($ascending, 'Stock Sort Low'));
+
+        $descending = $this->get(route('inventory.index', ['search' => 'Stock Sort', 'stock_sort' => 'descending']))->getContent();
+        $this->assertLessThan(strpos($descending, 'Stock Sort High'), strpos($descending, 'Stock Sort Low'));
     }
 
     public function test_supplier_delivery_uploads_proof_records_units_and_increments_stock(): void
@@ -166,6 +250,151 @@ class InventoryWorkflowTest extends TestCase
         $this->assertSame(0, $product->fresh()->stock_quantity);
         $this->assertDatabaseCount('stock_ins', 0);
         $this->assertDatabaseCount('product_units', 0);
+    }
+
+    public function test_stock_in_delivery_can_be_edited_and_reconciles_stock_and_serial_units(): void
+    {
+        Storage::fake('public');
+        $user = User::factory()->create();
+        $product = Product::factory()->create([
+            'name' => 'Serial Keyboard',
+            'requires_serial' => true,
+            'warranty_months' => 24,
+        ]);
+        $this->actingAs($user)->post(route('stock-in.store'), [
+            'supplier_name' => 'Example Components',
+            'invoice_number' => 'INV-EDIT-1',
+            'received_at' => '2026-10-01',
+            'delivery_document' => UploadedFile::fake()->create('invoice.pdf', 100, 'application/pdf'),
+            'items' => [[
+                'product_id' => $product->id,
+                'quantity' => 2,
+                'unit_cost' => 1200,
+                'warranty_months' => 24,
+                'serial_numbers' => "KB-1001\nKB-1002",
+            ]],
+        ])->assertRedirect(route('stock-in.index'));
+        $stockIn = StockIn::firstOrFail();
+
+        $this->get(route('stock-in.edit', $stockIn))
+            ->assertOk()
+            ->assertSee('Edit supplier delivery')
+            ->assertSee('KB-1001')
+            ->assertSee('read-only')
+            ->assertDontSee('name="items[', false);
+
+        $this->patch(route('stock-in.update', $stockIn), [
+            'supplier_name' => 'Updated Components',
+            'supplier_contact' => '09170000000',
+            'invoice_number' => 'INV-EDIT-2',
+            'received_at' => '2026-10-02',
+            'notes' => 'Corrected delivery details',
+        ])->assertRedirect(route('stock-in.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+        $this->assertDatabaseHas('stock_ins', [
+            'id' => $stockIn->id,
+            'supplier_name' => 'Updated Components',
+            'invoice_number' => 'INV-EDIT-2',
+            'notes' => 'Corrected delivery details',
+        ]);
+        $this->assertDatabaseHas('stock_in_items', [
+            'stock_in_id' => $stockIn->id,
+            'quantity' => 2,
+            'unit_cost' => 1200,
+            'warranty_months' => 24,
+        ]);
+        $this->assertDatabaseHas('product_units', [
+            'product_id' => $product->id,
+            'serial_number' => 'KB-1001',
+            'warranty_months' => 24,
+            'status' => 'in_stock',
+        ]);
+        $this->assertDatabaseHas('product_units', [
+            'product_id' => $product->id,
+            'serial_number' => 'KB-1002',
+            'warranty_months' => 24,
+            'status' => 'in_stock',
+        ]);
+        $this->assertDatabaseCount('product_units', 2);
+
+        $this->from(route('stock-in.edit', $stockIn))
+            ->patch(route('stock-in.update', $stockIn), [
+                'supplier_name' => 'Updated Components',
+                'invoice_number' => 'INV-EDIT-2',
+                'received_at' => '2026-10-02',
+                'items' => [[
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'unit_cost' => 1500,
+                    'warranty_months' => 18,
+                    'serial_numbers' => 'KB-1002',
+                ]],
+            ])
+            ->assertRedirect(route('stock-in.edit', $stockIn))
+            ->assertSessionHasErrors('items');
+
+        $this->assertSame(2, $product->fresh()->stock_quantity);
+        $this->assertDatabaseHas('stock_in_items', [
+            'stock_in_id' => $stockIn->id,
+            'quantity' => 2,
+            'unit_cost' => 1200,
+            'warranty_months' => 24,
+        ]);
+        $this->assertDatabaseCount('product_units', 2);
+    }
+
+    public function test_delivery_with_sold_units_allows_metadata_edits_but_locks_item_changes(): void
+    {
+        $user = User::factory()->create();
+        $product = Product::factory()->create(['requires_serial' => true, 'stock_quantity' => 1]);
+        $stockIn = StockIn::factory()->create(['employee_id' => $user->id]);
+        $item = $stockIn->items()->create([
+            'product_id' => $product->id,
+            'quantity' => 1,
+            'unit_cost' => 8000,
+            'warranty_months' => 36,
+        ]);
+        ProductUnit::create([
+            'stock_in_item_id' => $item->id,
+            'product_id' => $product->id,
+            'serial_number' => 'SOLD-UNIT-1',
+            'warranty_months' => 36,
+            'status' => 'sold',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('stock-in.edit', $stockIn))
+            ->assertOk()
+            ->assertSee('Delivered products, quantities, unit costs, warranties, and serial numbers are read-only.');
+
+        $this->patch(route('stock-in.update', $stockIn), [
+            'supplier_name' => $stockIn->supplier_name,
+            'supplier_contact' => $stockIn->supplier_contact,
+            'invoice_number' => $stockIn->invoice_number,
+            'received_at' => $stockIn->received_at->toDateString(),
+            'notes' => 'Metadata is still editable',
+        ])->assertRedirect(route('stock-in.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('stock_ins', [
+            'id' => $stockIn->id,
+            'notes' => 'Metadata is still editable',
+        ]);
+        $this->assertDatabaseHas('stock_in_items', ['id' => $item->id, 'quantity' => 1]);
+        $this->assertDatabaseHas('product_units', ['serial_number' => 'SOLD-UNIT-1', 'status' => 'sold']);
+
+        $this->from(route('stock-in.edit', $stockIn))
+            ->patch(route('stock-in.update', $stockIn), [
+                'supplier_name' => $stockIn->supplier_name,
+                'invoice_number' => $stockIn->invoice_number,
+                'received_at' => $stockIn->received_at->toDateString(),
+                'items' => [],
+            ])->assertRedirect(route('stock-in.edit', $stockIn))
+            ->assertSessionHasErrors('items');
+
+        $this->assertDatabaseHas('stock_in_items', ['id' => $item->id, 'quantity' => 1]);
     }
 
     public function test_inventory_product_can_be_edited_with_product_and_before_after_photos(): void

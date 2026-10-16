@@ -34,63 +34,74 @@
                         <div class="mb-5 grid gap-4 md:grid-cols-2">
                             <div>
                                 <label for="customer_name" class="mb-2 block text-sm font-bold text-gray-800">Your name</label>
-                                <input id="customer_name" name="customer_name" type="text" value="{{ old('customer_name', auth()->user()?->name ?? '') }}" required class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="John Doe">
+                                <input id="customer_name" name="customer_name" type="text" value="{{ old('customer_name', $pendingBuild['customer_name'] ?? auth()->user()?->name ?? '') }}" required maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="John Doe">
                             </div>
                             <div>
-                                <label for="customer_email" class="mb-2 block text-sm font-bold text-gray-800">Email address</label>
-                                <input id="customer_email" name="customer_email" type="email" value="{{ old('customer_email', auth()->user()?->email ?? '') }}" required class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="you@example.com">
+                                <label for="customer_email" class="mb-2 block text-sm font-bold text-gray-800">Email address <span class="font-normal text-gray-400">(optional)</span></label>
+                                <input id="customer_email" name="customer_email" type="email" value="{{ old('customer_email', $pendingBuild['customer_email'] ?? auth()->user()?->email ?? '') }}" maxlength="150" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500" placeholder="you@example.com">
                             </div>
                         </div>
                         <div class="mb-5">
                             <h2 class="text-lg font-black text-gray-900">Choose your components</h2>
-                            <p class="mt-1 text-sm text-gray-500">Choose available parts and see the estimated total before submitting.</p>
+                            <p class="mt-1 text-sm text-gray-500">Choose from currently available products. Select at least one component; our team will review your request and provide a quote.</p>
                         </div>
                         <div class="grid gap-4 sm:grid-cols-2">
                             @foreach ($componentGroups as $type => $label)
-                                <div class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                                <div>
                                     <label for="component-{{ $type }}" class="mb-2 block text-sm font-bold text-gray-800">{{ $label }}</label>
-                                    <select id="component-{{ $type }}" name="items[{{ $type }}][product_id]" data-key="{{ $type }}" class="component-select w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">
-                                        <option value="">Select {{ $label }}</option>
+                                    <select id="component-{{ $type }}" name="components[{{ $type }}]" class="w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm transition focus:border-purple-500 focus:ring-purple-500">
+                                        <option value="">Select {{ $label }} (optional)</option>
                                         @foreach ($groupedProducts[$type] ?? [] as $product)
-                                            <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" data-available="{{ $product->availableStock() }}">
-                                                {{ $product->name }} — ₱{{ number_format($product->price, 2) }} ({{ $product->availableStock() }} available)
+                                            <option value="{{ $product->id }}" data-name="{{ $product->name }}" data-price="{{ $product->price }}" @selected((string) old('components.'.$type, $pendingBuild['components'][$type] ?? '') === (string) $product->id)>
+                                                {{ $product->name }} — ₱{{ number_format($product->price, 2) }} · {{ $product->availableStock() }} available
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
                             @endforeach
                         </div>
-                    </section>
-
-                    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
-                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 class="text-lg font-black text-gray-900">Selected components</h2>
-                                <p class="mt-1 text-sm text-gray-500">Availability is checked again at checkout.</p>
+                        <section id="customer-build-receipt" aria-live="polite" class="mt-5 rounded-xl border border-purple-200 bg-purple-50 p-4">
+                            <div class="mb-3">
+                                <h3 class="text-base font-black text-purple-900">Estimated receipt</h3>
+                                <p class="mt-1 text-xs text-purple-800">Catalog prices include 12% Philippine VAT. Final quote will be confirmed by our team.</p>
                             </div>
-                            <p class="text-sm font-semibold text-gray-500">Build status: <span class="text-amber-700">Pending</span></p>
-                        </div>
-                        <div class="mt-4 overflow-x-auto rounded-xl border border-gray-200">
-                            <table class="min-w-full text-left text-sm">
-                                <thead class="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
-                                    <tr><th class="px-4 py-3">Component</th><th class="px-4 py-3">Availability</th><th class="px-4 py-3 text-right">Price</th></tr>
-                                </thead>
-                                <tbody id="build-summary-body">
-                                    <tr><td colspan="3" class="px-4 py-6 text-center text-gray-500">Select components to start your build.</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between rounded-xl bg-purple-50 px-4 py-4">
-                            <span class="text-sm font-bold uppercase tracking-wide text-purple-800">Estimated total</span>
-                            <span id="build-total" class="text-2xl font-black text-purple-800">₱0.00</span>
-                        </div>
+                            <div class="overflow-x-auto rounded-lg border border-purple-100 bg-white">
+                                <table class="min-w-full text-left text-sm">
+                                    <thead class="bg-purple-50 text-xs uppercase tracking-wide text-purple-800">
+                                        <tr><th class="px-3 py-2">Component</th><th class="px-3 py-2 text-right">Amount</th></tr>
+                                    </thead>
+                                    <tbody id="customer-build-receipt-items">
+                                        <tr><td colspan="2" class="px-3 py-4 text-center text-gray-500">Select components to see your estimate.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <dl class="mt-3 space-y-2 text-sm">
+                                <div class="flex justify-between gap-4 text-gray-700">
+                                    <dt>Amount before VAT</dt>
+                                    <dd id="customer-build-net" class="font-semibold">₱0.00</dd>
+                                </div>
+                                <div class="flex justify-between gap-4 text-gray-700">
+                                    <dt>VAT (12%, included)</dt>
+                                    <dd id="customer-build-vat" class="font-semibold">₱0.00</dd>
+                                </div>
+                                <div class="flex justify-between gap-4 border-t border-purple-200 pt-2 font-black text-purple-900">
+                                    <dt>Estimated total (VAT included)</dt>
+                                    <dd id="customer-build-total">₱0.00</dd>
+                                </div>
+                            </dl>
+                        </section>
+                        <label for="build-notes" class="mt-5 block text-sm font-bold text-gray-800">
+                            Additional notes <span class="font-normal text-gray-400">(optional)</span>
+                            <textarea id="build-notes" name="notes" rows="3" maxlength="2000" placeholder="Budget, intended use, or other preferences" class="mt-2 block w-full rounded-lg border-gray-300 bg-white text-sm shadow-sm focus:border-purple-500 focus:ring-purple-500">{{ old('notes', $pendingBuild['notes'] ?? '') }}</textarea>
+                        </label>
                         <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
-                            @auth
-                                <button type="submit" style="background-color: #6b21a8; color: #fff;" class="inline-flex justify-center rounded-xl px-5 py-3 text-sm font-bold shadow-sm transition hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"><span>Checkout</span></button>
-                            @else
-                                <a href="{{ route('login') }}" class="inline-flex justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800">Sign in to checkout</a>
-                            @endauth
-                            <p class="text-xs text-gray-500">Stock is deducted only after your build request is accepted.</p>
+                            <button type="submit" class="inline-flex justify-center rounded-xl bg-purple-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">Submit build request</button>
+                            <p class="text-xs text-gray-500">
+                                Estimated price uses the selected catalog parts. Additional notes are not included; our team will confirm the final quote.
+                                @guest
+                                    <span class="font-semibold text-purple-700">You’ll be asked to sign in before submitting.</span>
+                                @endguest
+                            </p>
                         </div>
                     </section>
                 </form>
@@ -110,6 +121,20 @@
                                     <p class="text-xs font-bold uppercase tracking-wide text-gray-500">Build ID · {{ $build->build_number }}</p>
                                     <h3 class="mt-1 text-lg font-bold text-gray-900">{{ $build->customer_name }}</h3>
                                     <p class="text-sm text-gray-500">{{ $build->created_at->format('M j, Y') }}</p>
+                                    @if ($build->notes)
+                                        <p class="mt-2 whitespace-pre-line text-sm text-gray-700">{{ $build->notes }}</p>
+                                    @endif
+                                    <p class="mt-2 text-sm font-semibold text-gray-700">
+                                        @if ($build->estimated_cost !== null)
+                                            @php
+                                                $buildVat = \App\Support\PhilippineVat::breakdown((float) $build->estimated_cost);
+                                            @endphp
+                                            Estimated price (VAT included): ₱{{ number_format($buildVat['total'], 2) }}
+                                            <span class="block text-xs font-normal text-gray-500">Includes ₱{{ number_format($buildVat['vat'], 2) }} Philippine VAT (12%).</span>
+                                        @else
+                                            Quote pending
+                                        @endif
+                                    </p>
                                 </div>
                                 <span class="w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">{{ ucfirst($build->status) }}</span>
                             </div>
@@ -133,52 +158,61 @@
     </div>
 
     <script>
-        const summaryBody = document.getElementById('build-summary-body');
-        const totalEl = document.getElementById('build-total');
-        const componentSelects = document.querySelectorAll('.component-select');
-        const moneyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+        (() => {
+            const componentSelects = document.querySelectorAll('#customer-build-form select[name^="components["]');
+            const receiptItems = document.getElementById('customer-build-receipt-items');
+            const netElement = document.getElementById('customer-build-net');
+            const vatElement = document.getElementById('customer-build-vat');
+            const totalElement = document.getElementById('customer-build-total');
+            const moneyFormatter = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
+            const vatRate = {{ \App\Support\PhilippineVat::RATE_PERCENT }};
 
-        function updateBuildSummary() {
-            const rows = [];
-            let total = 0;
+            function updateEstimatedReceipt() {
+                const rows = [];
+                let total = 0;
 
-            componentSelects.forEach((select) => {
-                const option = select.selectedOptions[0];
-                if (!option || !option.value) {
-                    return;
+                componentSelects.forEach((select) => {
+                    const option = select.selectedOptions[0];
+                    if (!option || !option.value) {
+                        return;
+                    }
+
+                    const price = Number(option.dataset.price || 0);
+                    total += price;
+
+                    const row = document.createElement('tr');
+                    row.className = 'border-t border-gray-100';
+                    const componentCell = document.createElement('td');
+                    componentCell.className = 'px-3 py-2 font-medium text-gray-800';
+                    componentCell.textContent = option.dataset.name;
+                    const amountCell = document.createElement('td');
+                    amountCell.className = 'px-3 py-2 text-right font-semibold text-gray-900';
+                    amountCell.textContent = moneyFormatter.format(price);
+                    row.append(componentCell, amountCell);
+                    rows.push(row);
+                });
+
+                receiptItems.replaceChildren();
+                if (rows.length === 0) {
+                    const row = document.createElement('tr');
+                    const cell = document.createElement('td');
+                    cell.colSpan = 2;
+                    cell.className = 'px-3 py-4 text-center text-gray-500';
+                    cell.textContent = 'Select components to see your estimate.';
+                    row.appendChild(cell);
+                    receiptItems.appendChild(row);
+                } else {
+                    rows.forEach((row) => receiptItems.appendChild(row));
                 }
 
-                const price = Number(option.dataset.price || 0);
-                const available = Number(option.dataset.available || 0);
-                total += price;
-
-                const row = document.createElement('tr');
-                row.className = 'border-t border-gray-100';
-                [option.dataset.name, available >= 1 ? `${available} available` : 'Out of stock', moneyFormatter.format(price)].forEach((value, index) => {
-                    const cell = document.createElement('td');
-                    cell.className = `px-4 py-3 ${index === 2 ? 'text-right font-bold text-purple-800' : 'text-gray-700'}`;
-                    cell.textContent = value;
-                    row.appendChild(cell);
-                });
-                rows.push(row);
-            });
-
-            summaryBody.replaceChildren();
-            if (rows.length === 0) {
-                const row = document.createElement('tr');
-                const cell = document.createElement('td');
-                cell.colSpan = 3;
-                cell.className = 'px-4 py-6 text-center text-gray-500';
-                cell.textContent = 'Select components to start your build.';
-                row.appendChild(cell);
-                summaryBody.appendChild(row);
-            } else {
-                rows.forEach((row) => summaryBody.appendChild(row));
+                const vat = Math.round(total * vatRate / (100 + vatRate) * 100) / 100;
+                netElement.textContent = moneyFormatter.format(total - vat);
+                vatElement.textContent = moneyFormatter.format(vat);
+                totalElement.textContent = moneyFormatter.format(total);
             }
-            totalEl.textContent = moneyFormatter.format(total);
-        }
 
-        componentSelects.forEach((select) => select.addEventListener('change', updateBuildSummary));
-        updateBuildSummary();
+            componentSelects.forEach((select) => select.addEventListener('change', updateEstimatedReceipt));
+            updateEstimatedReceipt();
+        })();
     </script>
 </x-app-layout>
